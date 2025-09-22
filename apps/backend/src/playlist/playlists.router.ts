@@ -6,14 +6,14 @@ import {
   Router,
   UseMiddlewares,
 } from "nestjs-trpc";
-import { PlaylistService } from "./service";
+import { PlaylistService } from "./playlists.service";
 import { z } from "zod";
 import { AuthMiddleware } from "src/auth/auth.middleware";
 import type { UserSession } from "@mguay/nestjs-better-auth";
 import { Xtream } from "@iptv/xtream-api";
 import { zodPlaylistsSchema } from "./schema";
 
-@Router({ alias: "playlist" })
+@Router({ alias: "playlists" })
 @UseMiddlewares(AuthMiddleware)
 export class PlaylistRouter {
   constructor(private readonly playlistService: PlaylistService) {}

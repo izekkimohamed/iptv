@@ -4,7 +4,7 @@ import { trpc } from "@/lib/trpc";
 
 export default function Home() {
   const { data: playlists, isLoading: isFetchingPlaylists } =
-    trpc.playlist.getPlaylists.useQuery();
+    trpc.playlists.getPlaylists.useQuery();
 
   if (isFetchingPlaylists) {
     return <div>Loading...</div>;

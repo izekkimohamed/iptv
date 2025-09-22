@@ -1,3 +1,4 @@
+import { index } from "drizzle-orm/pg-core";
 import {
   pgTable,
   integer,
@@ -23,8 +24,6 @@ export const playlists = pgTable("playlists", {
   createdAt: text("created_at").notNull(),
 });
 
-// Type inference
-
 export const zodPlaylistsSchema = z.object({
   id: z.number(),
   userId: z.string(),
@@ -38,3 +37,32 @@ export const zodPlaylistsSchema = z.object({
 });
 
 export type PlaylistsType = z.infer<typeof zodPlaylistsSchema>;
+
+export const categories = pgTable(
+  "categories",
+  {
+    categoryId: integer("category_id").primaryKey(),
+    categoryName: text("category_name").notNull(),
+    playlistId: integer("playlist_id").references(() => playlists.id, {
+      onDelete: "cascade",
+    }),
+    type: text("type", { enum: ["channels", "movies", "series"] }).notNull(),
+  },
+  (table) => ({
+    playlistIdx: index("playlist_idx").on(table.playlistId),
+    typeIdx: index("type_idx").on(table.type),
+    playlistTypeIdx: index("playlist_type_idx").on(
+      table.playlistId,
+      table.type
+    ),
+  })
+);
+
+export const zodCategoriesSchema = z.object({
+  categoryId: z.number(),
+  categoryName: z.string(),
+  playlistId: z.number(),
+  type: z.enum(["channels", "movies", "series"]),
+});
+export const zodCategoriesList = z.array(zodCategoriesSchema);
+export type CategoriesType = z.infer<typeof zodCategoriesSchema>;

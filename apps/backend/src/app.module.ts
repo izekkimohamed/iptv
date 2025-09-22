@@ -7,11 +7,12 @@ import { DatabaseModule } from "./database/database.module";
 import { AppContext } from "./app.context";
 import { AuthService } from "@mguay/nestjs-better-auth";
 
-import { PlaylistModule } from "./playlist/module";
-import { PlaylistService } from "./playlist/service";
+import { PlaylistModule } from "./playlist/playlists.module";
+import { PlaylistService } from "./playlist/playlists.service";
 
 import { AuthMiddleware } from "./auth/auth.middleware";
 import { CommonModule } from "./common/common.module";
+import { ChannelsModule } from "./channels/channels.module";
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { CommonModule } from "./common/common.module";
     PlaylistModule,
     DatabaseModule,
     CommonModule,
+    ChannelsModule,
   ],
 
   providers: [

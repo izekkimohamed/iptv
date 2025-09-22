@@ -1,4 +1,3 @@
-import { camelCaseSerializer } from "@iptv/xtream-api/camelcase";
 import {
   Inject,
   Injectable,
@@ -26,7 +25,6 @@ export class PlaylistService {
     userId: string
   ) {
     const xtream = this.common.xtream(url, username, password);
-    xtream.serializerType = camelCaseSerializer.type;
     const data = await xtream.getProfile();
     if (!data) {
       throw new InternalServerErrorException(

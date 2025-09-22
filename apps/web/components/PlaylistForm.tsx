@@ -19,7 +19,7 @@ export default function SophisticatedLoginForm() {
     mutate: createPlaylist,
     isPending,
     error,
-  } = trpc.playlist.createPlaylist.useMutation({
+  } = trpc.playlists.createPlaylist.useMutation({
     onSuccess: (data) => {
       setUrlStatus("");
       setFormData({ url: "", username: "", password: "" });
