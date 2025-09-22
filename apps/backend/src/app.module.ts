@@ -1,0 +1,40 @@
+import { Module } from "@nestjs/common";
+import { AuthModule } from "./auth/auth.module";
+import { TRPCModule } from "nestjs-trpc";
+import { AppConfigModule } from "./config/config.module";
+import { ConfigModule } from "@nestjs/config";
+import { DatabaseModule } from "./database/database.module";
+import { AppContext } from "./app.context";
+import { AuthService } from "@mguay/nestjs-better-auth";
+
+import { PlaylistModule } from "./playlist/module";
+import { PlaylistService } from "./playlist/service";
+
+import { AuthMiddleware } from "./auth/auth.middleware";
+import { CommonModule } from "./common/common.module";
+
+@Module({
+  imports: [
+    AppConfigModule,
+    AuthModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: [".env.local"],
+    }),
+    TRPCModule.forRoot({
+      autoSchemaFile: "../../packages/trpc/src/server",
+      context: AppContext,
+    }),
+    PlaylistModule,
+    DatabaseModule,
+    CommonModule,
+  ],
+
+  providers: [
+    AppContext,
+    PlaylistService,
+    AuthService,
+    AuthMiddleware, // 👈 make Better Auth service injectable
+  ],
+})
+export class AppModule {}
