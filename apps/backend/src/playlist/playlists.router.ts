@@ -33,7 +33,17 @@ export class PlaylistRouter {
       password: z.string(),
     }),
 
-    output: z.any(),
+    output: z.object({
+      id: z.number(),
+      userId: z.string(),
+      baseUrl: z.string(),
+      username: z.string(),
+      password: z.string(),
+      status: z.string(),
+      expDate: z.string(),
+      isTrial: z.string(),
+      createdAt: z.string(),
+    }),
   })
   async createPlaylist(
     @Input("url") url: string,
@@ -47,6 +57,27 @@ export class PlaylistRouter {
       username,
       password,
       context.user.id
+    );
+  }
+  @Mutation({
+    input: z.object({
+      url: z.string(),
+      username: z.string(),
+      password: z.string(),
+      playlistId: z.number(),
+    }),
+  })
+  async updatePlaylists(
+    @Input("url") url: string,
+    @Input("username") username: string,
+    @Input("password") password: string,
+    @Input("playlistId") playlistId: number
+  ) {
+    return this.playlistService.updatePlaylists(
+      url,
+      username,
+      password,
+      playlistId
     );
   }
 }

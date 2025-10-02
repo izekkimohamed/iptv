@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { useRouter } from "next/navigation";
+import { usePlaylistStore } from "@/store/appStore";
 import { useState, useEffect } from "react";
 
 export default function SophisticatedLoginForm() {
@@ -8,12 +8,13 @@ export default function SophisticatedLoginForm() {
     username: "",
     password: "",
   });
-  const router = useRouter();
 
   const [urlError, setUrlError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [urlTouched, setUrlTouched] = useState(false);
   const [urlStatus, setUrlStatus] = useState("");
+  const { startPlaylistCreation, selectPlaylist, addPlaylist } =
+    usePlaylistStore();
 
   const {
     mutate: createPlaylist,
@@ -21,10 +22,12 @@ export default function SophisticatedLoginForm() {
     error,
   } = trpc.playlists.createPlaylist.useMutation({
     onSuccess: (data) => {
+      if (!data) return;
       setUrlStatus("");
       setFormData({ url: "", username: "", password: "" });
-      router.push("/");
-      console.log(data);
+      addPlaylist(data);
+      selectPlaylist(data);
+      startPlaylistCreation();
     },
   });
 
@@ -77,7 +80,7 @@ export default function SophisticatedLoginForm() {
     formData.url && formData.username && formData.password && !urlError;
 
   return (
-    <div className='font-mono backdrop-blur-md border border-white/20 rounded-2xl p-8 shadow-2xl'>
+    <div className='font-mono backdrop-blur-md border border-white/20 rounded-2xl p-8 shadow-2xl max-w-md mx-auto w-full'>
       <div className='text-center mb-8'>
         <div className='mx-auto h-12 w-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mb-4'>
           <svg

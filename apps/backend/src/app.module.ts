@@ -13,6 +13,8 @@ import { PlaylistService } from "./playlist/playlists.service";
 import { AuthMiddleware } from "./auth/auth.middleware";
 import { CommonModule } from "./common/common.module";
 import { ChannelsModule } from "./channels/channels.module";
+import { MoviesModule } from "./movies/movies.module";
+import { SeriesModule } from "./series/series.module";
 
 @Module({
   imports: [
@@ -30,6 +32,8 @@ import { ChannelsModule } from "./channels/channels.module";
     DatabaseModule,
     CommonModule,
     ChannelsModule,
+    MoviesModule,
+    SeriesModule,
   ],
 
   providers: [

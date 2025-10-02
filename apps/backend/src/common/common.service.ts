@@ -7,45 +7,82 @@ import { ConfigService } from "@nestjs/config";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Xtream } from "@iptv/xtream-api";
 import { DATABASE_CONNECTION } from "src/database/database-connection";
+import { z } from "zod";
 
-interface TmdbCast {
-  name: string;
-  profile_path: string | null;
-}
+const TmdbCastSchema = z.object({
+  name: z.string(),
+  profile_path: z.string().nullable(),
+});
 
-interface TmdbCrew {
-  job: string;
-  name: string;
-}
+const TmdbCrewSchema = z.object({
+  job: z.string(),
+  name: z.string(),
+});
 
-interface TmdbCredits {
-  cast: TmdbCast[];
-  crew: TmdbCrew[];
-}
+const TmdbCreditsSchema = z.object({
+  cast: z.array(TmdbCastSchema),
+  crew: z.array(TmdbCrewSchema),
+});
 
-interface TmdbVideo {
-  id: string;
-  key: string;
-  site: string;
-  type: string;
-  name: string;
-}
+const TmdbVideoSchema = z.object({
+  id: z.string(),
+  key: z.string(),
+  site: z.string(),
+  type: z.string(),
+  name: z.string(),
+});
 
-interface TmdbDetailsResponse {
-  id: number;
-  title?: string;
-  name?: string;
-  overview?: string;
-  genres?: { id: number; name: string }[];
-  runtime?: number;
-  episode_run_time?: number[];
-  release_date?: string;
-  first_air_date?: string;
-  poster_path?: string | null;
-  backdrop_path?: string | null;
-  credits?: TmdbCredits;
-  videos?: { results: TmdbVideo[] };
-}
+const TmdbDetailsResponseSchema = z.object({
+  id: z.number(),
+  title: z.string().optional(),
+  name: z.string().optional(),
+  overview: z.string().optional(),
+  genres: z
+    .array(
+      z.object({
+        id: z.number(),
+        name: z.string(),
+      })
+    )
+    .optional(),
+  runtime: z.number().optional(),
+  episode_run_time: z.array(z.number()).optional(),
+  release_date: z.string().optional(),
+  first_air_date: z.string().optional(),
+  poster_path: z.string().nullable().optional(),
+  backdrop_path: z.string().nullable().optional(),
+  credits: TmdbCreditsSchema.optional(),
+  videos: z
+    .object({
+      results: z.array(
+        z.object({
+          id: z.string(),
+          key: z.string(),
+          site: z.string(),
+          type: z.string(),
+          name: z.string(),
+        })
+      ),
+    })
+    .optional(),
+});
+
+// Export types if you want to extract them from the schemas
+export type TmdbCast = z.infer<typeof TmdbCastSchema>;
+export type TmdbCrew = z.infer<typeof TmdbCrewSchema>;
+export type TmdbCredits = z.infer<typeof TmdbCreditsSchema>;
+export type TmdbVideo = z.infer<typeof TmdbVideoSchema>;
+export type TmdbDetailsResponse = z.infer<typeof TmdbDetailsResponseSchema>;
+
+// Export the schemas
+export {
+  TmdbCastSchema,
+  TmdbCrewSchema,
+  TmdbCreditsSchema,
+  TmdbVideoSchema,
+  TmdbDetailsResponseSchema,
+};
+
 @Injectable()
 export class CommonService {
   private readonly tmdbApiKey: string | undefined;
@@ -103,7 +140,8 @@ export class CommonService {
     await Promise.all(Array.from({ length: concurrency }, () => insertChunk()));
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return {
-      message: `Inserte Success: ${results.length} rows affected`,
+      success: true,
+      message: `${data.length} Inserted  successfully.`,
     };
   }
   async getTmdbInfo(
@@ -133,7 +171,7 @@ export class CommonService {
 
       let id = tmdbId;
       if (!id && name) {
-        const query = encodeURIComponent(name);
+        const query = name.replace(/[^|]*\|/g, "");
         const yearParam =
           type === "movie" && year ? `&year=${year}`
           : type === "show" && year ? `&first_air_date_year=${year}`

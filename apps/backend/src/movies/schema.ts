@@ -1,52 +1,56 @@
 import { foreignKey } from "drizzle-orm/pg-core";
 import {
   text,
+  serial,
   integer,
   index,
   uniqueIndex,
-  boolean,
   pgTable,
 } from "drizzle-orm/pg-core";
 import { categories, playlists } from "src/playlist/schema";
 import * as z from "zod";
-export const channels = pgTable(
-  "channels",
+
+export const movies = pgTable(
+  "movies",
   {
     id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    streamId: integer("stream_id").notNull(),
     name: text("name").notNull(),
     streamType: text("stream_type").notNull(),
-    streamId: integer("stream_id").notNull(),
-    streamIcon: text("stream_icon"),
+    streamIcon: text("stream_icon").notNull(),
+    rating: text("rating").notNull(),
+    added: text("added").notNull(),
     categoryId: integer("category_id").notNull(),
     playlistId: integer("playlist_id")
       .references(() => playlists.id, { onDelete: "cascade" })
       .notNull(),
-    isFavorite: boolean("is_favorite").default(false),
+    containerExtension: text("container_extension").notNull(),
     url: text("url").notNull(),
   },
   (table) => ({
-    categoryIdx: index("channels_category_idx").on(table.categoryId),
-    uniqueChannel: uniqueIndex("unique_channel").on(
+    categoryIdx: index("movies_category_idx").on(table.categoryId),
+    uniqueMovies: uniqueIndex("unique_movies").on(
       table.streamId,
       table.categoryId,
       table.playlistId
     ),
-    favoriteIdx: index("favorite_idx").on(table.isFavorite),
   })
 );
 
-export const zodChannelsSchema = z.object({
+export const zodMovieSchema = z.object({
   id: z.number(),
+  streamId: z.number(),
   name: z.string(),
   streamType: z.string(),
-  streamId: z.number(),
-  streamIcon: z.string().optional(),
+  streamIcon: z.string(),
+  rating: z.string(),
+  added: z.string(),
   categoryId: z.number(),
   playlistId: z.number(),
-  isFavorite: z.boolean().default(false),
+  containerExtension: z.string(),
   url: z.string(),
 });
 
-export const zodChannelsList = z.array(zodChannelsSchema);
-export type ChannelsSelectType = z.infer<typeof zodChannelsSchema>;
-export type ChannelsListType = z.infer<typeof zodChannelsList>;
+export const zodMoviesList = z.array(zodMovieSchema);
+export type MoviesSelectType = z.infer<typeof zodMovieSchema>;
+export type MoviesListType = z.infer<typeof zodMoviesList>;

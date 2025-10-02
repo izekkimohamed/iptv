@@ -1,11 +1,6 @@
 import { index } from "drizzle-orm/pg-core";
-import {
-  pgTable,
-  integer,
-  text,
-  boolean,
-  timestamp,
-} from "drizzle-orm/pg-core";
+import { uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, integer, text } from "drizzle-orm/pg-core";
 import { user } from "src/database/schema";
 import * as z from "zod";
 
@@ -41,7 +36,8 @@ export type PlaylistsType = z.infer<typeof zodPlaylistsSchema>;
 export const categories = pgTable(
   "categories",
   {
-    categoryId: integer("category_id").primaryKey(),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    categoryId: integer("category_id").notNull(),
     categoryName: text("category_name").notNull(),
     playlistId: integer("playlist_id").references(() => playlists.id, {
       onDelete: "cascade",
@@ -55,10 +51,16 @@ export const categories = pgTable(
       table.playlistId,
       table.type
     ),
+    // Add unique constraint for categoryId within each playlist
+    uniqueCategoryPerPlaylist: uniqueIndex("unique_category_per_playlist").on(
+      table.categoryId,
+      table.playlistId
+    ),
   })
 );
 
 export const zodCategoriesSchema = z.object({
+  id: z.number(),
   categoryId: z.number(),
   categoryName: z.string(),
   playlistId: z.number(),

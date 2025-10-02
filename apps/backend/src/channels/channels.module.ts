@@ -7,5 +7,6 @@ import { ChannelsRouter } from "./channels.router";
 @Module({
   imports: [DatabaseModule, CommonModule],
   providers: [ChannelsService, ChannelsRouter],
+  exports: [ChannelsService],
 })
 export class ChannelsModule {}

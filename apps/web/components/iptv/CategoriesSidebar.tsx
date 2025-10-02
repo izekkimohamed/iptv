@@ -20,18 +20,83 @@ export default function CategoriesSidebar({
   selectedCategoryId,
   onCategoryClick,
 }: CategoriesSidebarProps) {
-  return (
-    <div className='w-80 bg-black/20 backdrop-blur-md border-r border-white/10 flex flex-col'>
-      <div className='px-6 py-4 border-b border-white/10'>
-        <h1 className='text-2xl font-bold text-white'>Categories</h1>
-        <p className='text-gray-400 text-sm mt-1'>
-          {categories?.length || 0} available
-        </p>
-      </div>
+  const listRef = React.useRef<HTMLDivElement>(null);
 
-      <div className='flex-1 overflow-y-auto'>
+  React.useEffect(() => {
+    if (!selectedCategoryId || !listRef.current || !categories?.length) {
+      return;
+    }
+
+    const container = listRef.current;
+
+    const scrollToSelected = () => {
+      // try to find by id attribute first
+      let selectedEl = container.querySelector(
+        `[data-category-id="${selectedCategoryId}"]`
+      ) as HTMLElement | null;
+
+      // fallback: maybe the page used streamId in the link
+      if (!selectedEl) {
+        selectedEl = container.querySelector(
+          `[data-category-streamid="${selectedCategoryId}"]`
+        ) as HTMLElement | null;
+      }
+
+      if (!selectedEl) {
+        // Could be timing / element not yet rendered. Try again next frame.
+        // But also log to help debugging if it truly can't be found.
+        requestAnimationFrame(() => {
+          const retryEl = container.querySelector(
+            `[data-category-id="${selectedCategoryId}"],[data-category-streamid="${selectedCategoryId}"]`
+          ) as HTMLElement | null;
+          if (retryEl) {
+            // center the element in the container
+            const offset =
+              retryEl.offsetTop -
+              container.clientHeight / 2 +
+              retryEl.clientHeight / 2;
+            container.scrollTo({
+              top: Math.max(0, offset),
+              behavior: "smooth",
+            });
+          } else {
+            console.warn(
+              `categorysSidebar: couldn't find DOM element for selectedCategoryId=${selectedCategoryId}. ` +
+                "Check that you pass category.categoryId (not streamId) and that the list has rendered."
+            );
+          }
+        });
+        return;
+      }
+
+      // center the element vertically inside the container
+      const offset =
+        selectedEl.offsetTop -
+        container.clientHeight / 2 +
+        selectedEl.clientHeight / 2;
+      container.scrollTo({ top: Math.max(0, offset), behavior: "smooth" });
+    };
+
+    // run scrolling
+    scrollToSelected();
+    // run once more after a short delay in case layout shifts (images loading etc.)
+    const t = window.setTimeout(scrollToSelected, 120);
+
+    return () => {
+      window.clearTimeout(t);
+    };
+  }, [selectedCategoryId, categories?.length, isLoading]);
+  return (
+    <div className='w-[350px] bg-white/10 backdrop-blur-md rounded-sm border border-white/20  flex flex-col relative'>
+      <div className='px-4 py-3 bg-purple-500/5 rounded-t-sm border-b border-white/10'>
+        <h3 className='text-lg font-semibold text-white'>Categories</h3>
+      </div>
+      <div
+        className='flex-1 overflow-y-auto flex flex-col relative'
+        ref={listRef}
+      >
         {isLoading ?
-          <div className='flex items-center justify-center py-12'>
+          <div className='flex items-center justify-center py-12 '>
             <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500'></div>
           </div>
         : !categories?.length ?
@@ -48,6 +113,8 @@ export default function CategoriesSidebar({
                     "border-purple-500 bg-white/10 text-white"
                   : "border-transparent text-gray-300 hover:text-white"
                 }`}
+                data-category-id={category.categoryId}
+                data-category-streamid={category.playlistId}
               >
                 <div className='flex items-center space-x-2'>
                   <span className='mr-1'>📁</span>
@@ -59,6 +126,14 @@ export default function CategoriesSidebar({
             ))}
           </div>
         }
+      </div>
+      <div className=' p-4 bg-white/5 rounded-sm border-t border-white/10'>
+        <div className='space-y-1 text-xs text-gray-400'>
+          <div className='flex justify-between'>
+            <span>Total Categories:</span>
+            <span className='text-white font-bold'>{categories?.length}</span>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,8 @@
+import { trpc } from "@/lib/trpc";
 import React from "react";
+import LoadingSpinner from "../ui/LoadingSpinner";
 
-interface Channel {
+export interface Channel {
   id: number;
   name: string;
   streamType: string;
@@ -18,91 +20,112 @@ interface Category {
   type: string;
   playlistId: number;
 }
+interface PlaylistProps {
+  url: string;
+  username: string;
+  password: string;
+}
 
 interface ChannelInfoPanelProps {
   selectedChannel: Channel;
   selectedCategory?: Category;
+  playlistProps: PlaylistProps;
   onToggleFavorite?: (channel: Channel) => void;
   onCopyUrl?: (url: string) => void;
 }
 
+// helper to decode base64 safely
+const decodeBase64 = (str: string) => {
+  try {
+    return decodeURIComponent(
+      atob(str)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+  } catch {
+    return str;
+  }
+};
+
+// progress calculation
+const getProgress = (start: string, end: string) => {
+  const now = Date.now();
+  const startMs = new Date(start).getTime();
+  const endMs = new Date(end).getTime();
+  if (now < startMs) return 0;
+  if (now > endMs) return 100;
+  return ((now - startMs) / (endMs - startMs)) * 100;
+};
+
 export default function ChannelInfoPanel({
   selectedChannel,
-  selectedCategory,
-  onToggleFavorite,
-  onCopyUrl,
+  playlistProps,
 }: ChannelInfoPanelProps) {
-  const handleToggleFavorite = () => {
-    if (onToggleFavorite) {
-      onToggleFavorite(selectedChannel);
-    }
-  };
+  const { url, username, password } = playlistProps;
+  const { data: epg, isLoading } = trpc.channels.getShortEpg.useQuery({
+    channelId: selectedChannel.streamId,
+    url,
+    username,
+    password,
+  });
 
-  const handleCopyUrl = () => {
-    if (onCopyUrl) {
-      onCopyUrl(selectedChannel.url);
-    } else {
-      // Default behavior
-      navigator.clipboard.writeText(selectedChannel.url);
-    }
-  };
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
 
   return (
-    <div className='bg-black/20 backdrop-blur-md border-t border-white/10 p-6'>
-      <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-        <div className='bg-white/5 rounded-lg p-4'>
-          <h5 className='text-sm font-medium text-gray-400 mb-2'>
-            Channel Info
-          </h5>
-          <div className='space-y-1 text-sm'>
-            <div className='flex justify-between'>
-              <span className='text-gray-400'>Name:</span>
-              <span className='text-white'>{selectedChannel.name}</span>
-            </div>
-            <div className='flex justify-between'>
-              <span className='text-gray-400'>Type:</span>
-              <span className='text-white capitalize'>
-                {selectedChannel.streamType}
-              </span>
-            </div>
-            <div className='flex justify-between'>
-              <span className='text-gray-400'>Stream ID:</span>
-              <span className='text-white'>{selectedChannel.streamId}</span>
-            </div>
-          </div>
-        </div>
+    <div className='flex-1 bg-black/20 backdrop-blur-md border-t border-white/10 p-6 flex flex-col h-full overflow-y-auto'>
+      <h5 className='text-sm font-medium text-gray-400 mb-4'>
+        Now & Next on {selectedChannel.name}
+      </h5>
 
-        <div className='bg-white/5 rounded-lg p-4'>
-          <h5 className='text-sm font-medium text-gray-400 mb-2'>Category</h5>
-          <div className='space-y-1 text-sm'>
-            <div className='text-white font-medium'>
-              {selectedCategory?.categoryName || "Unknown"}
-            </div>
-            <div className='text-gray-400 capitalize'>
-              {selectedCategory?.type || "Unknown"}
-            </div>
-          </div>
-        </div>
+      <div className='flex-1 overflow-y-auto space-y-4 pr-2'>
+        {epg?.length ?
+          epg.map((listing) => {
+            const progress = getProgress(listing.start, listing.end);
 
-        <div className='bg-white/5 rounded-lg p-4'>
-          <h5 className='text-sm font-medium text-gray-400 mb-2'>Actions</h5>
-          <div className='space-y-2'>
-            <button
-              onClick={handleToggleFavorite}
-              className='w-full bg-yellow-500/20 hover:bg-yellow-500 text-yellow-400 hover:text-white py-1 px-3 rounded text-sm transition-colors'
-            >
-              {selectedChannel.isFavorite ?
-                "⭐ Remove Favorite"
-              : "☆ Add Favorite"}
-            </button>
-            <button
-              onClick={handleCopyUrl}
-              className='w-full bg-blue-500/20 hover:bg-blue-500 text-blue-400 hover:text-white py-1 px-3 rounded text-sm transition-colors'
-            >
-              📋 Copy URL
-            </button>
-          </div>
-        </div>
+            return (
+              <div
+                key={listing.id}
+                className='bg-white/5 rounded-lg p-4 flex flex-col relative'
+              >
+                {/* Program Title & Time */}
+                <div className='flex justify-between items-center mb-1'>
+                  <span className='text-white font-medium'>
+                    {decodeBase64(listing.title)}
+                  </span>
+                  <span className='text-gray-400 text-xs'>
+                    {new Date(listing.start).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}{" "}
+                    -{" "}
+                    {new Date(listing.end).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+
+                {/* Description */}
+                <p className='text-gray-400 text-sm line-clamp-3 mb-2'>
+                  {decodeBase64(listing.description)}
+                </p>
+
+                {/* Progress bar only if current program */}
+                {progress > 0 && progress < 100 && (
+                  <div className='w-full h-1 bg-gray-700 rounded-full overflow-hidden'>
+                    <div
+                      className='h-full bg-purple-500 transition-all'
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })
+        : <div className='text-gray-400 text-sm'>No EPG available</div>}
       </div>
     </div>
   );
