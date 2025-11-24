@@ -47,20 +47,20 @@ export class ChannelsRouter {
       password: z.string(),
       channelId: z.number(),
     }),
-    output: z.array(
-      z.object({
-        id: z.string(),
-        epg_id: z.string(),
-        title: z.string(),
-        lang: z.string(),
-        channel_id: z.string(),
-        description: z.string(),
-        start: z.string(),
-        end: z.string(),
-        start_timestamp: z.string(),
-        stop_timestamp: z.string(),
-      })
-    ),
+    // output: z.array(
+    //   z.object({
+    //     id: z.string(),
+    //     epg_id: z.string(),
+    //     title: z.string(),
+    //     lang: z.string(),
+    //     channel_id: z.string(),
+    //     description: z.string(),
+    //     start: z.string(),
+    //     end: z.string(),
+    //     start_timestamp: z.string(),
+    //     stop_timestamp: z.string(),
+    //   })
+    // ),
   })
   async getShortEpg(
     @Input("url") url: string,
@@ -125,7 +125,6 @@ export class ChannelsRouter {
     @Input("password") password: string,
     @Input("playlistId") playlistId: number
   ) {
-    console.log("Creating categories");
     return this.channelsService.createChannelsCategories(
       url,
       username,

@@ -4,7 +4,7 @@ import CategoriesSidebar from "@/components/iptv/CategoriesSidebar";
 import ChannelInfoPanel from "@/components/iptv/ChannelInfoPanel";
 import ChannelsSidebar from "@/components/iptv/ChannelsSidebar";
 import PlayerHeader from "@/components/iptv/PlayerHeader";
-import VideoPlayer from "@/components/iptv/VideoPlayer";
+import VideoPlayer from "@/components/videoPlayer";
 import EmptyState from "@/components/ui/EmptyState";
 import { trpc } from "@/lib/trpc";
 import { usePlaylistStore } from "@/store/appStore";
@@ -106,14 +106,19 @@ export default function ChannelsPage() {
               <div className='h-full flex flex-col'>
                 {/* Video Player Area */}
                 <div className='h-1/2'>
-                  <VideoPlayer src={selectedChannel?.url} />
+                  {/* <VideoPlayer src={selectedChannel?.url} /> */}
+                  <VideoPlayer
+                    src={selectedChannel?.url}
+                    poster={selectedChannel?.streamIcon}
+                    title={selectedChannel?.name}
+                    autoPlay
+                  />
                 </div>
 
                 {/* Channel Info */}
                 <div className='h-1/2 '>
                   <ChannelInfoPanel
                     selectedChannel={selectedChannel}
-                    selectedCategory={selectedCategory}
                     playlistProps={{
                       url: playlist?.baseUrl,
                       username: playlist?.username,

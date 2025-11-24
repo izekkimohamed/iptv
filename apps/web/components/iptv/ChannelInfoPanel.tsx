@@ -28,10 +28,8 @@ interface PlaylistProps {
 
 interface ChannelInfoPanelProps {
   selectedChannel: Channel;
-  selectedCategory?: Category;
+
   playlistProps: PlaylistProps;
-  onToggleFavorite?: (channel: Channel) => void;
-  onCopyUrl?: (url: string) => void;
 }
 
 // helper to decode base64 safely

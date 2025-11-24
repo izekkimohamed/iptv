@@ -9,8 +9,8 @@ export default function SignInPage() {
   if (session) {
     redirect("/");
   }
-  const handleSignIn = async () => {
-    const data = await authClient.signIn.social({
+  const handleSignIn = () => {
+    authClient.signIn.social({
       provider: "google",
       callbackURL: "/",
     });

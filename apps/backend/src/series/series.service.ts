@@ -1,6 +1,6 @@
-import { XtreamShowListing } from "@iptv/xtream-api";
+import { XtreamShowInfo, XtreamShowListing } from "@iptv/xtream-api";
 import { Inject, Injectable } from "@nestjs/common";
-import { and, eq, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { CommonService } from "src/common/common.service";
 import { DATABASE_CONNECTION } from "src/database/database-connection";
@@ -15,28 +15,58 @@ export class SeriesService {
     private readonly common: CommonService
   ) {}
 
-  // async getSeries(playlistId: number, categoryId: number) {
-  //   return await this.database
-  //     .select()
-  //     .from(series)
-  //     .where(
-  //       and(
-  //         eq(series.playlistId, playlistId),
-  //         eq(series.categoryId, categoryId)
-  //       )
-  //     );
-  // }
-  // async getSerie(
-  //   url: string,
-  //   username: string,
-  //   password: string,
-  //   serieId: number
-  // ) {
-  //   const xtream = this.common.xtream(url, username, password);
-  //   return await xtream.getShow({
-  //     showId: serieId,
-  //   });
-  // }
+  async getSeriesCategories(playlistId: number) {
+    return await this.database
+      .select()
+      .from(categories)
+
+      .where(
+        and(
+          eq(categories.playlistId, playlistId),
+          eq(categories.type, "series")
+        )
+      )
+      .orderBy(asc(categories.id));
+  }
+
+  async getSeries(playlistId: number, categoryId: number) {
+    return await this.database
+      .select()
+      .from(series)
+      .where(
+        and(
+          eq(series.playlistId, playlistId),
+          eq(series.categoryId, categoryId)
+        )
+      )
+      .orderBy(asc(series.id));
+  }
+  async getSerie(
+    url: string,
+    username: string,
+    password: string,
+    serieId: number
+  ) {
+    const res = await fetch(
+      `${url}/player_api.php?username=${username}&password=${password}&action=get_series_info&series_id=${serieId}`
+    );
+    const data = await res.json();
+    if (!data) {
+      throw new Error(
+        `Failed to get serie details from Xtream API: ${data.message}`
+      );
+    }
+    const seasons = Object.keys(data.episodes).map((season) => Number(season));
+    data.seasons = seasons;
+    // fetch tmdb details
+    const details = await this.common.getTmdbInfo(
+      "show",
+      data.info.tmdb_id,
+      data.info.name,
+      new Date(data.info.first_aired).getFullYear()
+    );
+    return { ...data, tmdb: details };
+  }
   async createSerie(
     url: string,
     username: string,
@@ -67,7 +97,7 @@ export class SeriesService {
       const newCategories: (typeof categories.$inferInsert)[] =
         missingCategoryIds.map((id) => ({
           playlistId: playlistId,
-          type: "channels",
+          type: "series",
           categoryName: `category ${id}`,
           categoryId: id,
         }));
@@ -95,7 +125,13 @@ export class SeriesService {
       })
     );
 
-    return await this.common.batchInsert(series, seriesChunk);
+    await this.common.batchInsert(series, seriesChunk, {
+      chunkSize: 3000,
+      concurrency: 5,
+      onProgress: (progress) => {
+        console.log(`${progress.percent}% complete`);
+      },
+    });
   }
 
   async createSeriesCategories(

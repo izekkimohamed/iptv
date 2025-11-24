@@ -59,13 +59,19 @@ export class ChannelsService {
         name: channel.name,
         streamType: channel.stream_type,
         streamId: channel.stream_id,
-        streamIcon: channel.stream_icon,
+        streamIcon: channel.stream_icon || "",
         playlistId: playlist,
         isFavorite: false,
         url: channel.url || "",
       })
     );
-    return await this.common.batchInsert(channels, tempChannels);
+    await this.common.batchInsert(channels, tempChannels, {
+      chunkSize: 3000,
+      concurrency: 5,
+      onProgress: (progress) => {
+        console.log(`${progress.percent}% complete`);
+      },
+    });
   }
   async createChannelsCategories(
     url: string,
@@ -110,14 +116,16 @@ export class ChannelsService {
             eq(channels.playlistId, playlist),
             eq(channels.categoryId, categoryId)
           )
-        );
+        )
+        .orderBy(desc(channels.isFavorite), asc(channels.id));
     } else if (favorites) {
       return await this.database
         .select()
         .from(channels)
         .where(
           and(eq(channels.playlistId, playlist), eq(channels.isFavorite, true))
-        );
+        )
+        .orderBy(asc(channels.id));
     }
   }
   async getChannelsCategories(playlist: number) {

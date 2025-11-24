@@ -15,6 +15,8 @@ import { CommonModule } from "./common/common.module";
 import { ChannelsModule } from "./channels/channels.module";
 import { MoviesModule } from "./movies/movies.module";
 import { SeriesModule } from "./series/series.module";
+import { channels } from "./channels/schema";
+import { playlists } from "./playlist/schema";
 
 @Module({
   imports: [
@@ -27,6 +29,7 @@ import { SeriesModule } from "./series/series.module";
     TRPCModule.forRoot({
       autoSchemaFile: "../../packages/trpc/src/server",
       context: AppContext,
+      schemaFileImports: [playlists, channels],
     }),
     PlaylistModule,
     DatabaseModule,

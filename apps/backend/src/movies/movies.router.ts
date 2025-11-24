@@ -2,11 +2,7 @@ import { Input, Mutation, Query, Router } from "nestjs-trpc";
 import { MoviesService } from "./movies.service";
 import * as z from "zod";
 import { zodCategoriesSchema } from "../playlist/schema";
-import {
-  TmdbDetailsResponseSchema,
-  TmdbVideoSchema,
-} from "../common/common.service";
-import { zodMoviesList } from "./schema";
+import { MovieOutputSchema, zodMoviesList } from "./schema";
 
 @Router({ alias: "movies" })
 export class MoviesRouter {
@@ -24,6 +20,7 @@ export class MoviesRouter {
   ) {
     return this.moviesService.getMovies(playlistId, categoryId);
   }
+
   @Query({
     input: z.object({
       url: z.string(),
@@ -31,6 +28,7 @@ export class MoviesRouter {
       password: z.string(),
       movieId: z.number(),
     }),
+    // output: MovieOutputSchema,
   })
   async getMovie(
     @Input("url") url: string,
@@ -46,37 +44,37 @@ export class MoviesRouter {
       name: z.string().nullable(),
       year: z.number().nullable(),
     }),
-    output: z.object({
-      id: z.number(),
-      title: z.string(),
-      overview: z.string(),
-      genres: z.array(
-        z.object({
-          id: z.number(),
-          name: z.string(),
-        })
-      ),
-      runtime: z.number(),
-      releaseDate: z.string(),
-      poster: z.string().nullable(),
-      backdrop: z.string().nullable(),
-      director: z.string(),
-      cast: z.array(
-        z.object({
-          name: z.string(),
-          profilePath: z.string().nullable(),
-        })
-      ),
-      videos: z.array(
-        z.object({
-          id: z.string(),
-          key: z.string(),
-          site: z.string(),
-          type: z.string(),
-          name: z.string(),
-        })
-      ),
-    }),
+    // output: z.object({
+    //   id: z.number(),
+    //   title: z.string(),
+    //   overview: z.string(),
+    //   genres: z.array(
+    //     z.object({
+    //       id: z.number(),
+    //       name: z.string(),
+    //     })
+    //   ),
+    //   runtime: z.number(),
+    //   releaseDate: z.string(),
+    //   poster: z.string().nullable(),
+    //   backdrop: z.string().nullable(),
+    //   director: z.string(),
+    //   cast: z.array(
+    //     z.object({
+    //       name: z.string(),
+    //       profilePath: z.string().nullable(),
+    //     })
+    //   ),
+    //   videos: z.array(
+    //     z.object({
+    //       id: z.string(),
+    //       key: z.string(),
+    //       site: z.string(),
+    //       type: z.string(),
+    //       name: z.string(),
+    //     })
+    //   ),
+    // }),
   })
   async getMovieDetails(
     @Input("tmdbId") tmdbId?: number,
@@ -100,8 +98,6 @@ export class MoviesRouter {
     @Input("password") password: string,
     @Input("playlistId") playlistId: number
   ) {
-    console.log("createMovie");
-
     return this.moviesService.createMovie(url, username, password, playlistId);
   }
 

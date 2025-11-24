@@ -1,10 +1,4 @@
-import React, { forwardRef, useEffect, useCallback, RefObject } from "react";
-
-/// Extend Document interface to include vendor-prefixed fullscreen properties
-interface DocumentWithFullscreen extends Document {
-  webkitFullscreenElement?: Element | null;
-  mozFullScreenElement?: Element | null;
-}
+import React from "react";
 
 type ControlsProps = {
   isFullscreen: boolean;

@@ -3,7 +3,7 @@ import {
   Injectable,
   InternalServerErrorException,
 } from "@nestjs/common";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import { CommonService } from "src/common/common.service";
@@ -37,11 +37,13 @@ export class PlaylistService {
         "Failed to get profile from xtream"
       );
     }
+    console.log("data", data);
+
     const playlist = await this.database
       .insert(playlists)
       .values({
         baseUrl: url,
-        expDate: data.exp_date,
+        expDate: data.exp_date || "",
         isTrial: data.is_trial,
         password: data.password,
         username: data.username,
@@ -97,5 +99,14 @@ export class PlaylistService {
       .where(eq(playlists.userId, userId));
 
     return data;
+  }
+  async deletePlaylist(playlistId: number, userId: string) {
+    const [name] = await this.database
+      .delete(playlists)
+      .where(and(eq(playlists.id, playlistId), eq(playlists.userId, userId)))
+      .returning({ id: playlists.username });
+    return {
+      success: `Playlist ${name} deleted successfully`,
+    };
   }
 }

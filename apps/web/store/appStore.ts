@@ -29,7 +29,7 @@ interface PlaylistState {
 
 export const usePlaylistStore = create<PlaylistState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       firstLaunch: true,
       isCreatingPlaylist: false,
       playlists: [],

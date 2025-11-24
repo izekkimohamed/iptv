@@ -125,6 +125,14 @@
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
   }
+  [data-isfullscreen="true"] video {
+   object-fit: fill !important; ;
+   height: 100% !important;
+  }
+  [data-isfullscreen="false"] video {
+   object-fit: contain !important; ;
+   height: 100% !important;
+  }
   /* Custom Scrollbar Styles */
 
 /* Webkit browsers (Chrome, Safari, Edge) */

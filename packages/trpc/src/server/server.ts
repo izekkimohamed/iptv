@@ -37,6 +37,11 @@ const appRouter = t.router({
       username: z.string(),
       password: z.string(),
       playlistId: z.number(),
+    })).mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as any),
+    deletePlaylist: publicProcedure.input(z.object({
+      playlistId: z.number(),
+    })).output(z.object({
+      success: z.string(),
     })).mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as any)
   }),
   channels: t.router({
@@ -69,20 +74,7 @@ const appRouter = t.router({
       username: z.string(),
       password: z.string(),
       channelId: z.number(),
-    })).output(z.array(
-      z.object({
-        id: z.string(),
-        epg_id: z.string(),
-        title: z.string(),
-        lang: z.string(),
-        channel_id: z.string(),
-        description: z.string(),
-        start: z.string(),
-        end: z.string(),
-        start_timestamp: z.string(),
-        stop_timestamp: z.string(),
-      })
-    )).query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as any),
+    })).query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as any),
     toggleFavorite: publicProcedure.input(z.object({
       channelsId: z.number(),
       isFavorite: z.boolean(),
@@ -127,36 +119,6 @@ const appRouter = t.router({
       tmdbId: z.number().nullable(),
       name: z.string().nullable(),
       year: z.number().nullable(),
-    })).output(z.object({
-      id: z.number(),
-      title: z.string(),
-      overview: z.string(),
-      genres: z.array(
-        z.object({
-          id: z.number(),
-          name: z.string(),
-        })
-      ),
-      runtime: z.number(),
-      releaseDate: z.string(),
-      poster: z.string().nullable(),
-      backdrop: z.string().nullable(),
-      director: z.string(),
-      cast: z.array(
-        z.object({
-          name: z.string(),
-          profilePath: z.string().nullable(),
-        })
-      ),
-      videos: z.array(
-        z.object({
-          id: z.string(),
-          key: z.string(),
-          site: z.string(),
-          type: z.string(),
-          name: z.string(),
-        })
-      ),
     })).query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as any),
     createMovie: publicProcedure.input(z.object({
       url: z.string(),
@@ -181,13 +143,42 @@ const appRouter = t.router({
     })).mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as any)
   }),
   series: t.router({
+    getseries: publicProcedure.input(z.object({
+      playlistId: z.number(),
+      categoryId: z.number(),
+    })).output(z.array(z.object({
+      id: z.number(),
+      seriesId: z.number(),
+      name: z.string(),
+      cover: z.string(),
+      plot: z.string(),
+      cast: z.string().nullable(), // since sometimes ""
+      director: z.string().nullable(),
+      genere: z.string().nullable(), // fix typo if API always sends "genere"
+      releaseDate: z.string().nullable(),
+      lastModified: z.string(),
+      rating: z.string(),
+      backdropPath: z.string().nullable(),
+      youtubeTrailer: z.string().nullable(),
+      episodeRunTime: z.string(),
+      categoryId: z.number(),
+      playlistId: z.number(),
+    }))).query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as any),
+    getSerie: publicProcedure.input(z.object({
+      url: z.string(),
+      username: z.string(),
+      password: z.string(),
+      serieId: z.number(),
+    })).query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as any),
     createSerie: publicProcedure.input(z.object({
       url: z.string(),
       username: z.string(),
       password: z.string(),
       playlistId: z.number(),
     })).mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as any),
-    getSeriesCategories: publicProcedure.query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as any),
+    getSeriesCategories: publicProcedure.input(z.object({
+      playlistId: z.number(),
+    })).query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as any),
     createSeriesCategories: publicProcedure.input(z.object({
       url: z.string(),
       username: z.string(),

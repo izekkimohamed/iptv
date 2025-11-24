@@ -9,7 +9,19 @@ import { CommonService } from "../common/common.service";
 import { DATABASE_CONNECTION } from "../database/database-connection";
 import { movies } from "./schema";
 import { categories } from "../playlist/schema";
-import { and, eq, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
+
+const importJobs = new Map<
+  string,
+  {
+    status: "processing" | "completed" | "failed";
+    progress: number;
+    total: number;
+    inserted: number;
+    failed: number;
+    error?: string;
+  }
+>();
 
 @Injectable()
 export class MoviesService {
@@ -18,6 +30,168 @@ export class MoviesService {
     private readonly database: NodePgDatabase,
     private readonly common: CommonService
   ) {}
+
+  async createMovie(
+    url: string,
+    username: string,
+    password: string,
+    playlistId: number
+  ) {
+    const jobId = `movie-${playlistId}-${Date.now()}`;
+
+    // Initialize job
+    importJobs.set(jobId, {
+      status: "processing",
+      progress: 0,
+      total: 0,
+      inserted: 0,
+      failed: 0,
+    });
+
+    // Start import in background
+    this.importMovies(url, username, password, playlistId, jobId).catch(
+      (err) => {
+        const job = importJobs.get(jobId);
+        if (job) {
+          job.status = "failed";
+          job.error = err.message;
+        }
+        console.error("Movie import failed:", err);
+      }
+    );
+
+    // Return job ID for polling
+    return {
+      success: true,
+      jobId,
+      message: "Movie import started",
+    };
+  }
+
+  async checkImportStatus(jobId: string) {
+    const job = importJobs.get(jobId);
+
+    if (!job) {
+      return {
+        success: false,
+        message: "Job not found",
+      };
+    }
+
+    return {
+      success: true,
+      ...job,
+    };
+  }
+
+  private async importMovies(
+    url: string,
+    username: string,
+    password: string,
+    playlistId: number,
+    jobId: string
+  ) {
+    const job = importJobs.get(jobId)!;
+
+    try {
+      const xtream = this.common.xtream(url, username, password);
+      const moviesData = await xtream.getMovies();
+
+      job.total = moviesData.length;
+      job.progress = 10;
+
+      // Collect categories and transform data in one loop
+      const categoryMap = new Map<number, boolean>();
+      const moviesChunk: (typeof movies.$inferInsert)[] = [];
+
+      for (const movie of moviesData) {
+        const categoryId = movie.category_id ? Number(movie.category_id) : 0;
+
+        if (categoryId) {
+          categoryMap.set(categoryId, true);
+        }
+
+        moviesChunk.push({
+          streamId: movie.stream_id,
+          name: movie.name,
+          streamType: "movie",
+          streamIcon: movie.stream_icon || "",
+          rating: movie.rating?.toString() ?? "0",
+          added: movie.added,
+          categoryId: categoryId,
+          playlistId: playlistId,
+          containerExtension: movie.container_extension,
+          url: movie.url || "",
+        });
+      }
+
+      job.progress = 20;
+
+      // Handle categories
+      const uniqueCategoryIds = Array.from(categoryMap.keys());
+
+      if (uniqueCategoryIds.length > 0) {
+        const existingCategories = await this.database
+          .select({ categoryId: categories.categoryId })
+          .from(categories)
+          .where(sql`${categories.categoryId} = ANY(${uniqueCategoryIds})`);
+
+        const existingSet = new Set(
+          existingCategories.map((c) => c.categoryId)
+        );
+        const missingIds = uniqueCategoryIds.filter(
+          (id) => !existingSet.has(id)
+        );
+
+        if (missingIds.length > 0) {
+          const newCategories = missingIds.map((id) => ({
+            playlistId: playlistId,
+            type: "movies" as const,
+            categoryName: `category ${id}`,
+            categoryId: id,
+          })) as (typeof categories.$inferInsert)[];
+
+          await this.database
+            .insert(categories)
+            .values(newCategories)
+            .onConflictDoNothing();
+        }
+      }
+
+      job.progress = 30;
+
+      // Insert movies with progress tracking
+      const result = await this.common.batchInsert(movies, moviesChunk, {
+        chunkSize: 5000,
+        concurrency: 5,
+        onConflict: "nothing",
+        onProgress: (progress) => {
+          job.progress = 30 + Math.floor((progress.percent / 100) * 70);
+          job.inserted = progress.inserted;
+          job.failed = progress.failed;
+        },
+      });
+
+      // Mark as completed
+      job.status = "completed";
+      job.progress = 100;
+      job.inserted = result.inserted;
+      job.failed = result.failed;
+
+      console.log(
+        `✅ Movie import completed: ${result.inserted} inserted, ${result.failed} failed`
+      );
+
+      // Clean up after 5 minutes
+      setTimeout(() => {
+        importJobs.delete(jobId);
+      }, 300000);
+    } catch (error) {
+      job.status = "failed";
+      job.error = error instanceof Error ? error.message : String(error);
+      throw error;
+    }
+  }
 
   async getMovies(playlistId: number, categoryId: number) {
     return await this.database
@@ -28,7 +202,8 @@ export class MoviesService {
           eq(movies.playlistId, playlistId),
           eq(movies.categoryId, categoryId)
         )
-      );
+      )
+      .orderBy(asc(movies.id));
   }
   async getMovie(
     url: string,
@@ -36,7 +211,6 @@ export class MoviesService {
     password: string,
     movieId: number
   ) {
-    const xtream = this.common.xtream(url, username, password);
     const res = await fetch(
       `${url}/player_api.php?username=${username}&password=${password}&action=get_vod_info&vod_id=${movieId}`
     );
@@ -55,63 +229,8 @@ export class MoviesService {
 
     return {
       ...data,
-      ...details,
+      tmdb: details,
     };
-  }
-
-  async createMovie(
-    url: string,
-    username: string,
-    password: string,
-    playlistId: number
-  ) {
-    const xtream = this.common.xtream(url, username, password);
-    const moviesData = await xtream.getMovies();
-
-    // check how many unique category ids there are in channels
-    const uniqueCategoryIds = new Set<number>();
-    moviesData.forEach((movie) => {
-      if (movie.category_id) {
-        uniqueCategoryIds.add(Number(movie.category_id));
-      }
-    });
-    //now get the channelsCategories from the the db and list the ids that are not in the db
-    const existingCategories = await this.database
-      .select({
-        selected: categories.categoryId,
-      })
-      .from(categories);
-    const missingCategoryIds = Array.from(uniqueCategoryIds).filter(
-      (id) => !existingCategories.map((cat) => cat.selected).includes(id)
-    );
-    //create the missing categories in the db
-    if (missingCategoryIds.length > 0) {
-      const newCategories: (typeof categories.$inferInsert)[] =
-        missingCategoryIds.map((id) => ({
-          playlistId: playlistId,
-          type: "movies",
-          categoryName: `category ${id}`,
-          categoryId: id,
-        }));
-      await this.database.insert(categories).values(newCategories);
-    }
-
-    const moviesChunk: (typeof movies.$inferInsert)[] = moviesData.map(
-      (movie) => ({
-        streamId: movie.stream_id,
-        name: movie.name,
-        streamType: "movie",
-        streamIcon: movie.stream_icon || "",
-        rating: movie.rating?.toString() ?? "0",
-        added: movie.added,
-        categoryId: +movie.category_id,
-        playlistId: playlistId,
-        containerExtension: movie.container_extension,
-        url: movie.url || "",
-      })
-    );
-
-    return await this.common.batchInsert(movies, moviesChunk);
   }
 
   async getMovieCategories(playlistId: number) {
@@ -123,7 +242,8 @@ export class MoviesService {
           eq(categories.playlistId, playlistId),
           eq(categories.type, "movies")
         )
-      );
+      )
+      .orderBy(asc(categories.id));
   }
   async createMovieCategory(
     url: string,

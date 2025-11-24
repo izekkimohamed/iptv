@@ -19,20 +19,6 @@ export const playlists = pgTable("playlists", {
   createdAt: text("created_at").notNull(),
 });
 
-export const zodPlaylistsSchema = z.object({
-  id: z.number(),
-  userId: z.string(),
-  baseUrl: z.string(),
-  username: z.string(),
-  password: z.string(),
-  status: z.string(),
-  expDate: z.string(),
-  isTrial: z.string(),
-  createdAt: z.string(),
-});
-
-export type PlaylistsType = z.infer<typeof zodPlaylistsSchema>;
-
 export const categories = pgTable(
   "categories",
   {
@@ -58,6 +44,20 @@ export const categories = pgTable(
     ),
   })
 );
+
+export const zodPlaylistsSchema = z.object({
+  id: z.number(),
+  userId: z.string(),
+  baseUrl: z.string(),
+  username: z.string(),
+  password: z.string(),
+  status: z.string(),
+  expDate: z.string(),
+  isTrial: z.string(),
+  createdAt: z.string(),
+});
+
+export type PlaylistsType = z.infer<typeof zodPlaylistsSchema>;
 
 export const zodCategoriesSchema = z.object({
   id: z.number(),

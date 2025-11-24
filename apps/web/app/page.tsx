@@ -318,25 +318,20 @@ export default function IPTVHomePage() {
                 <Link
                   href={`/channels?categoryId=${channel.categoryId}&channelId=${channel.id}`}
                   key={channel.id}
-                  className='min-w-[200px] bg-white/10 backdrop-blur-md rounded-xl py-4 px-2 border border-white/20 hover:bg-white/20  cursor-pointer'
+                  className='min-w-[200px]  cursor-pointer'
                 >
-                  <div className='flex items-center gap-2 transition-all duration-300 transform hover:scale-105'>
+                  <div className='flex items-center gap-2 '>
                     <div className='relative '>
                       <Image
-                        className='object-cover w-auto h-auto'
-                        width={70}
-                        height={70}
+                        className='object-cover w-auto h-auto rounded-3xl'
+                        width={150}
+                        height={150}
                         src={
                           channel.streamIcon ||
                           "https://via.placeholder.com/150x150"
                         }
                         alt={channel.name}
                       />
-                    </div>
-                    <div className='flex-1'>
-                      <h3 className='text-white font-semibold text-sm text-center'>
-                        {channel.name}
-                      </h3>
                     </div>
                   </div>
                 </Link>

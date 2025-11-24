@@ -9,6 +9,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { categories, playlists } from "src/playlist/schema";
 import * as z from "zod";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 export const channels = pgTable(
   "channels",
   {
@@ -24,15 +25,11 @@ export const channels = pgTable(
     isFavorite: boolean("is_favorite").default(false),
     url: text("url").notNull(),
   },
-  (table) => ({
-    categoryIdx: index("channels_category_idx").on(table.categoryId),
-    uniqueChannel: uniqueIndex("unique_channel").on(
-      table.streamId,
-      table.categoryId,
-      table.playlistId
-    ),
-    favoriteIdx: index("favorite_idx").on(table.isFavorite),
-  })
+  (t) => [
+    index("channels_category_idx").on(t.categoryId),
+    uniqueIndex("unique_channel").on(t.streamId, t.categoryId, t.playlistId),
+    index("favorite_idx").on(t.isFavorite),
+  ]
 );
 
 export const zodChannelsSchema = z.object({
@@ -46,7 +43,6 @@ export const zodChannelsSchema = z.object({
   isFavorite: z.boolean().default(false),
   url: z.string(),
 });
-
 export const zodChannelsList = z.array(zodChannelsSchema);
 export type ChannelsSelectType = z.infer<typeof zodChannelsSchema>;
 export type ChannelsListType = z.infer<typeof zodChannelsList>;

@@ -44,21 +44,21 @@ export const series = pgTable(
 
 export const zodSerieSchema = z.object({
   id: z.number(),
-  series_id: z.number(),
+  seriesId: z.number(),
   name: z.string(),
   cover: z.string(),
   plot: z.string(),
-  cast: z.string(),
+  cast: z.string().nullable(), // since sometimes ""
   director: z.string().nullable(),
-  genre: z.string().nullable(),
+  genere: z.string().nullable(), // fix typo if API always sends "genere"
   releaseDate: z.string().nullable(),
-  last_modified: z.string(),
+  lastModified: z.string(),
   rating: z.string(),
-  backdrop_path: z.string().nullable(),
-  youtube_trailer: z.string().nullable(),
-  episode_run_time: z.string(),
-  category_id: z.string(),
-  playlist_id: z.string(),
+  backdropPath: z.string().nullable(),
+  youtubeTrailer: z.string().nullable(),
+  episodeRunTime: z.string(),
+  categoryId: z.number(),
+  playlistId: z.number(),
 });
 
 export const zodseriesList = z.array(zodSerieSchema);

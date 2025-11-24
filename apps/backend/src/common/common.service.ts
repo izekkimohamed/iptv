@@ -8,6 +8,7 @@ import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Xtream } from "@iptv/xtream-api";
 import { DATABASE_CONNECTION } from "src/database/database-connection";
 import { z } from "zod";
+import { sql } from "drizzle-orm";
 
 const TmdbCastSchema = z.object({
   name: z.string(),
@@ -107,41 +108,188 @@ export class CommonService {
     return data as T;
   }
 
-  async batchInsert<T>(
+  async batchInsert<T extends Record<string, any>>(
     table: any,
     data: T[],
-    chunkSize = 500,
-    concurrency = 3
+    options: {
+      chunkSize?: number;
+      concurrency?: number;
+      onConflict?: "nothing" | "update";
+      conflictTarget?: string[];
+      updateColumns?: string[];
+      onProgress?: (progress: {
+        inserted: number;
+        failed: number;
+        total: number;
+        percent: number;
+      }) => void;
+    } = {}
   ) {
+    const {
+      chunkSize = 5000, // Reduced from 8000 for better memory management
+      concurrency = 3, // Increased default for better parallelism
+      onConflict = "nothing",
+      conflictTarget = [],
+      updateColumns = [],
+      onProgress,
+    } = options;
+
+    // Early return for empty data
+    if (data.length === 0) {
+      return {
+        success: true,
+        inserted: 0,
+        failed: 0,
+        total: 0,
+        message: "No data to insert.",
+      };
+    }
+
+    // Split data into chunks
     const chunks: T[][] = [];
     for (let i = 0; i < data.length; i += chunkSize) {
       chunks.push(data.slice(i, i + chunkSize));
     }
 
-    const results: T[][] = [];
-    let index = 0;
+    console.log(
+      `Starting batch insert: ${data.length} records in ${chunks.length} chunks (concurrency: ${concurrency})`
+    );
 
-    // Helper function to process a chunk
-    const insertChunk = async () => {
+    let index = 0;
+    let insertedCount = 0;
+    let failedCount = 0;
+    const failedChunks: Array<{
+      chunkIndex: number;
+      error: string;
+      data: T[];
+    }> = [];
+
+    // Use mutex for thread-safe counter updates
+    const updateProgress = () => {
+      if (onProgress) {
+        const total = data.length;
+        const processed = insertedCount + failedCount;
+        const percent = Math.round((processed / total) * 100);
+        onProgress({
+          inserted: insertedCount,
+          failed: failedCount,
+          total,
+          percent,
+        });
+      }
+    };
+
+    // Process a single chunk with retry logic
+    const insertChunk = async (
+      chunk: T[],
+      chunkIndex: number,
+      retryCount = 0
+    ): Promise<boolean> => {
+      const maxRetries = 2;
+
+      try {
+        await this.database.transaction(async (tx) => {
+          let query: any = tx.insert(table).values(chunk);
+
+          if (onConflict === "nothing") {
+            query = query.onConflictDoNothing();
+          } else if (onConflict === "update" && conflictTarget.length > 0) {
+            // Build update object dynamically
+            const updateSet: Record<string, any> = {};
+            const columnsToUpdate =
+              updateColumns.length > 0 ? updateColumns : Object.keys(chunk[0]);
+
+            columnsToUpdate.forEach((col) => {
+              updateSet[col] = sql`excluded.${sql.identifier(col)}`;
+            });
+
+            query = query.onConflictDoUpdate({
+              target: conflictTarget,
+              set: updateSet,
+            });
+          }
+
+          await query;
+        });
+
+        insertedCount += chunk.length;
+        updateProgress();
+        return true;
+      } catch (err) {
+        if (retryCount < maxRetries) {
+          console.warn(
+            `Chunk ${chunkIndex} failed, retrying (${retryCount + 1}/${maxRetries})...`
+          );
+          await new Promise((resolve) =>
+            setTimeout(resolve, 1000 * (retryCount + 1))
+          ); // Exponential backoff
+          return insertChunk(chunk, chunkIndex, retryCount + 1);
+        }
+
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        console.error(
+          `Chunk ${chunkIndex} failed after ${maxRetries} retries:`,
+          errorMessage
+        );
+
+        failedCount += chunk.length;
+        failedChunks.push({
+          chunkIndex,
+          error: errorMessage,
+          data: chunk,
+        });
+        updateProgress();
+        return false;
+      }
+    };
+
+    // Worker function to process chunks concurrently
+    const worker = async () => {
       while (index < chunks.length) {
-        const currentIndex = index;
-        index++;
+        const currentIndex = index++;
         const chunk = chunks[currentIndex];
-        try {
-          await this.database.insert(table).values(chunk).onConflictDoNothing(); // don't use returning() for big batches
-          results.push(chunk);
-        } catch (err) {
-          console.error("Batch insert error:", err);
+
+        await insertChunk(chunk, currentIndex);
+
+        // Log progress every 10 chunks
+        if ((currentIndex + 1) % 10 === 0) {
+          console.log(
+            `Progress: ${currentIndex + 1}/${chunks.length} chunks processed`
+          );
         }
       }
     };
 
-    // Start limited number of parallel insert "workers"
-    await Promise.all(Array.from({ length: concurrency }, () => insertChunk()));
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    // Start time tracking
+    const startTime = Date.now();
+
+    // Execute workers in parallel
+    await Promise.all(
+      Array.from({ length: Math.min(concurrency, chunks.length) }, () =>
+        worker()
+      )
+    );
+
+    const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+    const recordsPerSecond = Math.round(insertedCount / parseFloat(duration));
+
+    console.log(
+      `Batch insert completed in ${duration}s (${recordsPerSecond} records/sec)`
+    );
+    console.log(`Results: ${insertedCount} inserted, ${failedCount} failed`);
+
     return {
-      success: true,
-      message: `${data.length} Inserted  successfully.`,
+      success: failedCount === 0,
+      inserted: insertedCount,
+      failed: failedCount,
+      total: data.length,
+      duration: parseFloat(duration),
+      recordsPerSecond,
+      message:
+        failedCount === 0 ?
+          `${insertedCount} records inserted successfully in ${duration}s.`
+        : `${insertedCount} records inserted, ${failedCount} failed. Check failedChunks for details.`,
+      failedChunks: failedChunks.length > 0 ? failedChunks : undefined,
     };
   }
   async getTmdbInfo(
@@ -162,6 +310,7 @@ export class CommonService {
     cast: { name: string; profilePath: string | null }[];
     videos: TmdbVideo[];
   } | null> {
+    if (!tmdbId && !name) return null;
     try {
       if (!this.tmdbApiKey) {
         throw new Error("TMDB_API_KEY not configured");

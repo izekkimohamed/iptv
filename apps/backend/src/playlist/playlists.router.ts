@@ -80,4 +80,19 @@ export class PlaylistRouter {
       playlistId
     );
   }
+  @Mutation({
+    input: z.object({
+      playlistId: z.number(),
+    }),
+    output: z.object({
+      success: z.string(),
+    }),
+  })
+  async deletePlaylist(
+    @Input("playlistId") playlistId: number,
+    @Ctx() context: UserSession
+  ) {
+    console.log("Deleting playlist");
+    return this.playlistService.deletePlaylist(playlistId, context.user.id);
+  }
 }

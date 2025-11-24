@@ -1,5 +1,6 @@
 import Image from "next/image";
 import React from "react";
+import { Button } from "../ui/button";
 
 interface Channel {
   id: number;
@@ -41,9 +42,9 @@ export default function ChannelsSidebar({
   const listRef = React.useRef<HTMLDivElement | null>(null);
 
   // sort by favorite
-  const sortedCategories = channels?.toSorted((channel) =>
-    channel.isFavorite ? -1 : 1
-  );
+  // const sortedCategories = channels?.toSorted((channel) =>
+  //   channel.isFavorite ? -1 : 1
+  // );
 
   return (
     <div className='w-[350px] bg-black/15 backdrop-blur-md border border-white/10 flex flex-col'>
@@ -68,17 +69,17 @@ export default function ChannelsSidebar({
           <div className='flex items-center justify-center py-12'>
             <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500'></div>
           </div>
-        : !sortedCategories?.length ?
+        : !channels?.length ?
           <div className='text-center py-12 px-6'>
             <div className='text-4xl mb-4 opacity-50'>📂</div>
             <p className='text-gray-400'>No channels in this category</p>
           </div>
         : <div className='py-2'>
-            {sortedCategories.map((channel) => (
-              <button
+            {channels.map((channel) => (
+              <Button
                 key={channel.id}
                 onClick={() => onChannelClick(channel.id)}
-                className={`w-full text-left px-2 py-3 cursor-pointer hover:bg-white/10 transition-colors border-l-4 ${
+                className={`w-full text-left cursor-pointer hover:bg-white/10 transition-colors border-l-4 bg-transparent rounded-none ${
                   selectedChannelId === channel.id.toString() ?
                     "border-purple-500 bg-white/10 text-white"
                   : "border-transparent text-gray-300 hover:text-white"
@@ -86,14 +87,14 @@ export default function ChannelsSidebar({
                 data-channel-id={channel.id}
                 data-channel-streamid={channel.streamId}
               >
-                <div className='flex items-center space-x-3'>
+                <div className='flex relative items-center justify-between w-full space-x-3  '>
                   {channel.streamIcon ?
                     <Image
-                      width={60}
-                      height={60}
-                      src={channel.streamIcon}
+                      width={40}
+                      height={40}
+                      src={channel.streamIcon.trim()}
                       alt={channel.name}
-                      className='rounded w-auto h-auto'
+                      className='rounded '
                       onError={(e) => {
                         e.currentTarget.style.display = "none";
                       }}
@@ -103,7 +104,12 @@ export default function ChannelsSidebar({
                     </div>
                   }
                   <div className='flex-1 min-w-0 flex justify-between items-center'>
-                    <div className='truncate font-medium'>{channel.name}</div>
+                    <div
+                      className='truncate text-lg
+                     font-medium'
+                    >
+                      {channel.name}
+                    </div>
                     <div className='flex items-center space-x-2 text-xs text-gray-500 '>
                       {channel.isFavorite && (
                         <span className='text-yellow-400 text-lg'>♥️</span>
@@ -111,7 +117,7 @@ export default function ChannelsSidebar({
                     </div>
                   </div>
                 </div>
-              </button>
+              </Button>
             ))}
           </div>
         }

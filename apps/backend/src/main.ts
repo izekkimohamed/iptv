@@ -22,6 +22,12 @@ async function bootstrap() {
   // Re-enable Nest's JSON body parser AFTER mounting BetterAuth
   expressApp.use(require("express").json());
 
+  // Increase server timeout to 10 minutes
+  const server = app.getHttpServer();
+  server.setTimeout(600000); // 10 minutes in milliseconds
+  server.headersTimeout = 610000; // Slightly more than setTimeout
+  server.keepAliveTimeout = 605000; // Between the two
+
   await app.listen(process.env.PORT ?? 4000);
 }
 bootstrap();

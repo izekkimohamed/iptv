@@ -87,20 +87,20 @@ export default function CategoriesSidebar({
     };
   }, [selectedCategoryId, categories?.length, isLoading]);
   return (
-    <div className='w-[350px] bg-white/10 backdrop-blur-md rounded-sm border border-white/20  flex flex-col relative'>
-      <div className='px-4 py-3 bg-purple-500/5 rounded-t-sm border-b border-white/10'>
+    <div className='w-[350px] flex flex-col relative'>
+      <div className='px-4 py-3 border-b rounded-t-sm bg-white/5 border-white/10'>
         <h3 className='text-lg font-semibold text-white'>Categories</h3>
       </div>
       <div
-        className='flex-1 overflow-y-auto flex flex-col relative'
+        className='relative flex flex-col flex-1 overflow-y-auto'
         ref={listRef}
       >
         {isLoading ?
           <div className='flex items-center justify-center py-12 '>
-            <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500'></div>
+            <div className='w-8 h-8 border-b-2 border-purple-500 rounded-full animate-spin'></div>
           </div>
         : !categories?.length ?
-          <div className='text-center py-12 px-6'>
+          <div className='px-6 py-12 text-center'>
             <p className='text-gray-400'>No categories available</p>
           </div>
         : <div className='py-2'>
@@ -118,7 +118,7 @@ export default function CategoriesSidebar({
               >
                 <div className='flex items-center space-x-2'>
                   <span className='mr-1'>📁</span>
-                  <span className='truncate font-medium'>
+                  <span className='font-medium truncate'>
                     {category.categoryName}
                   </span>
                 </div>
@@ -127,11 +127,11 @@ export default function CategoriesSidebar({
           </div>
         }
       </div>
-      <div className=' p-4 bg-white/5 rounded-sm border-t border-white/10'>
+      <div className='p-4 border-t rounded-sm bg-white/5 border-white/10'>
         <div className='space-y-1 text-xs text-gray-400'>
           <div className='flex justify-between'>
             <span>Total Categories:</span>
-            <span className='text-white font-bold'>{categories?.length}</span>
+            <span className='font-bold text-white'>{categories?.length}</span>
           </div>
         </div>
       </div>

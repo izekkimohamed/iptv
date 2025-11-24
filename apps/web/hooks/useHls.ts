@@ -16,8 +16,7 @@ export const useVideoSource = ({ src, autoPlay = true }: UseVideoProps) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
   const bandwidthIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const lastBytesRef = useRef(0);
-  const lastTimeRef = useRef(0);
+  // Removed unused refs
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +63,9 @@ export const useVideoSource = ({ src, autoPlay = true }: UseVideoProps) => {
 
       // Method 2: Use NetworkInformation API if available
       if ("connection" in navigator) {
-        const connection = (navigator as any).connection;
+        const connection = (
+          navigator as Navigator & { connection?: { downlink: number } }
+        ).connection;
         if (connection && connection.downlink) {
           // Convert Mbps to bps
           console.log("bandwidth:", connection.downlink);
@@ -107,7 +108,6 @@ export const useVideoSource = ({ src, autoPlay = true }: UseVideoProps) => {
     const handleProgress = () => {
       if (video.buffered.length > 0) {
         const bufferedEnd = video.buffered.end(video.buffered.length - 1);
-        const currentTime = video.currentTime;
         const bufferedBytes = bufferedEnd * 1000000; // Rough estimation
         setTotalBytes(bufferedBytes);
       }
