@@ -108,7 +108,7 @@ export default function ChannelsPage() {
                 <div className='h-1/2'>
                   {/* <VideoPlayer src={selectedChannel?.url} /> */}
                   <VideoPlayer
-                    src={selectedChannel?.url}
+                    src={selectedChannel?.url.replace(".ts", ".m3u8")}
                     poster={selectedChannel?.streamIcon}
                     title={selectedChannel?.name}
                     autoPlay

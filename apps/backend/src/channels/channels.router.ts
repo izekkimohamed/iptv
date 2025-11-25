@@ -1,12 +1,10 @@
 import { Input, Mutation, Query, Router, UseMiddlewares } from "nestjs-trpc";
-import { AuthMiddleware } from "src/auth/auth.middleware";
 import * as z from "zod";
 import { ChannelsService } from "./channels.service";
 import { zodCategoriesSchema } from "../playlist/schema";
 import { zodChannelsList } from "./schema";
 
 @Router({ alias: "channels" })
-@UseMiddlewares(AuthMiddleware)
 export class ChannelsRouter {
   constructor(private readonly channelsService: ChannelsService) {}
 

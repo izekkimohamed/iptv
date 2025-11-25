@@ -17,6 +17,8 @@ export class SeriesRouter {
     @Input("playlistId") playlistId: number,
     @Input("categoryId") categoryId: number
   ) {
+    console.log("series");
+
     return this.seriesService.getSeries(playlistId, categoryId);
   }
   @Query({

@@ -8,22 +8,18 @@ import {
 } from "nestjs-trpc";
 import { PlaylistService } from "./playlists.service";
 import { z } from "zod";
-import { AuthMiddleware } from "src/auth/auth.middleware";
-import type { UserSession } from "@mguay/nestjs-better-auth";
-import { Xtream } from "@iptv/xtream-api";
 import { zodPlaylistsSchema } from "./schema";
 
 @Router({ alias: "playlists" })
-@UseMiddlewares(AuthMiddleware)
 export class PlaylistRouter {
   constructor(private readonly playlistService: PlaylistService) {}
 
   @Query({
     output: z.array(zodPlaylistsSchema),
   })
-  async getPlaylists(@Ctx() context: UserSession) {
+  async getPlaylists() {
     console.log("Getting playlists");
-    return await this.playlistService.getPlaylists(context.user.id);
+    return await this.playlistService.getPlaylists();
   }
 
   @Mutation({
@@ -48,16 +44,10 @@ export class PlaylistRouter {
   async createPlaylist(
     @Input("url") url: string,
     @Input("username") username: string,
-    @Input("password") password: string,
-    @Ctx() context: UserSession
+    @Input("password") password: string
   ) {
     console.log("Creating playlist");
-    return this.playlistService.createPlaylist(
-      url,
-      username,
-      password,
-      context.user.id
-    );
+    return this.playlistService.createPlaylist(url, username, password);
   }
   @Mutation({
     input: z.object({
@@ -88,11 +78,8 @@ export class PlaylistRouter {
       success: z.string(),
     }),
   })
-  async deletePlaylist(
-    @Input("playlistId") playlistId: number,
-    @Ctx() context: UserSession
-  ) {
+  async deletePlaylist(@Input("playlistId") playlistId: number) {
     console.log("Deleting playlist");
-    return this.playlistService.deletePlaylist(playlistId, context.user.id);
+    return this.playlistService.deletePlaylist(playlistId);
   }
 }

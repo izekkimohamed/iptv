@@ -24,12 +24,7 @@ export class PlaylistService {
     private readonly seriesService: SeriesService
   ) {}
 
-  async createPlaylist(
-    url: string,
-    username: string,
-    password: string,
-    userId: string
-  ) {
+  async createPlaylist(url: string, username: string, password: string) {
     const xtream = this.common.xtream(url, username, password);
     const data = await xtream.getProfile();
     if (!data) {
@@ -48,7 +43,7 @@ export class PlaylistService {
         password: data.password,
         username: data.username,
         status: data.status,
-        userId,
+        userId: "",
         createdAt: new Date().toISOString(),
       })
       .onConflictDoNothing()
@@ -92,18 +87,15 @@ export class PlaylistService {
       await this.seriesService.createSerie(url, username, password, playlistId),
     ]);
   }
-  async getPlaylists(userId: string) {
-    const data = await this.database
-      .select()
-      .from(playlists)
-      .where(eq(playlists.userId, userId));
+  async getPlaylists() {
+    const data = await this.database.select().from(playlists);
 
     return data;
   }
-  async deletePlaylist(playlistId: number, userId: string) {
+  async deletePlaylist(playlistId: number) {
     const [name] = await this.database
       .delete(playlists)
-      .where(and(eq(playlists.id, playlistId), eq(playlists.userId, userId)))
+      .where(and(eq(playlists.id, playlistId)))
       .returning({ id: playlists.username });
     return {
       success: `Playlist ${name} deleted successfully`,

@@ -30,8 +30,6 @@ export const createTrpcClient = (url: string) => {
         fetch(url, options) {
           return fetch(url, {
             ...options,
-            credentials: "include",
-            signal: AbortSignal.timeout(300000), // 5 minutes
           });
         },
       }),

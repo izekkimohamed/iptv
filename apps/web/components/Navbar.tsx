@@ -1,7 +1,8 @@
 "use client";
 import { trpc } from "@/lib/trpc";
 import { usePlaylistStore } from "@/store/appStore";
-import { RefreshCcw, Trash2 } from "lucide-react";
+import { LogOutIcon, RefreshCcw, Trash2 } from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -13,8 +14,12 @@ import {
 } from "./ui/select";
 import { Button } from "./ui/button";
 
+async function quitApp() {
+  await invoke("quit_app");
+}
+
 export default function NavBar() {
-  const { selectedPlaylist, selectPlaylist, playlists, removePlaylist } =
+  const { selectedPlaylist, selectPlaylist, removePlaylist } =
     usePlaylistStore();
   const router = useRouter();
   const utils = trpc.useUtils();
@@ -25,6 +30,7 @@ export default function NavBar() {
       alert(data.success);
     },
   });
+  const { data: playlists } = trpc.playlists.getPlaylists.useQuery();
 
   const navItems = [
     { label: "Channels", href: "/channels" },
@@ -120,6 +126,13 @@ export default function NavBar() {
                 <RefreshCcw className={`w-5 h-5 text-gray-200 `} />
               </button>
             </div>
+            <Button
+              variant={"outline"}
+              className='cursor-pointer'
+              onClick={() => quitApp()}
+            >
+              <LogOutIcon width={10} height={10} />
+            </Button>
           </div>
         </div>
       </div>

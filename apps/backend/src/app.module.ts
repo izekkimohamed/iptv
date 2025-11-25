@@ -10,7 +10,6 @@ import { AuthService } from "@mguay/nestjs-better-auth";
 import { PlaylistModule } from "./playlist/playlists.module";
 import { PlaylistService } from "./playlist/playlists.service";
 
-import { AuthMiddleware } from "./auth/auth.middleware";
 import { CommonModule } from "./common/common.module";
 import { ChannelsModule } from "./channels/channels.module";
 import { MoviesModule } from "./movies/movies.module";
@@ -21,7 +20,6 @@ import { playlists } from "./playlist/schema";
 @Module({
   imports: [
     AppConfigModule,
-    AuthModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: [".env.local"],
@@ -39,11 +37,6 @@ import { playlists } from "./playlist/schema";
     SeriesModule,
   ],
 
-  providers: [
-    AppContext,
-    PlaylistService,
-    AuthService,
-    AuthMiddleware, // 👈 make Better Auth service injectable
-  ],
+  providers: [AppContext, PlaylistService],
 })
 export class AppModule {}

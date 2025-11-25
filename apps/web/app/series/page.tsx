@@ -28,7 +28,7 @@ export default function SeriesPage() {
         playlistId: selectedPlaylist?.id || 0,
       },
       {
-        enabled: !!selectedCategoryId,
+        enabled: !!selectedCategoryId && !!selectedPlaylist,
       }
     );
 
@@ -95,10 +95,10 @@ export default function SeriesPage() {
               <ItemsList
                 key={item.seriesId}
                 streamId={item.seriesId}
-                title={item.name}
-                image={item.cover}
+                title={item.name!}
+                image={item.cover!}
                 onMovieClick={() => handleserieClick(item.seriesId)}
-                rating={item.rating}
+                rating={item.rating!}
               />
             ))}
         </div>

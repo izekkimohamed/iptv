@@ -45,18 +45,18 @@ export const series = pgTable(
 export const zodSerieSchema = z.object({
   id: z.number(),
   seriesId: z.number(),
-  name: z.string(),
-  cover: z.string(),
-  plot: z.string(),
+  name: z.string().nullable(),
+  cover: z.string().nullable(),
+  plot: z.string().nullable(),
   cast: z.string().nullable(), // since sometimes ""
   director: z.string().nullable(),
   genere: z.string().nullable(), // fix typo if API always sends "genere"
   releaseDate: z.string().nullable(),
-  lastModified: z.string(),
-  rating: z.string(),
+  lastModified: z.string().nullable(),
+  rating: z.string().nullable(),
   backdropPath: z.string().nullable(),
   youtubeTrailer: z.string().nullable(),
-  episodeRunTime: z.string(),
+  episodeRunTime: z.string().nullable(),
   categoryId: z.number(),
   playlistId: z.number(),
 });
