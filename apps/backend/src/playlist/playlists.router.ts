@@ -5,12 +5,12 @@ import {
   Query,
   Router,
   UseMiddlewares,
-} from "nestjs-trpc";
-import { PlaylistService } from "./playlists.service";
-import { z } from "zod";
-import { zodPlaylistsSchema } from "./schema";
+} from 'nestjs-trpc';
+import { PlaylistService } from './playlists.service';
+import { z } from 'zod';
+import { zodPlaylistsSchema } from './schema';
 
-@Router({ alias: "playlists" })
+@Router({ alias: 'playlists' })
 export class PlaylistRouter {
   constructor(private readonly playlistService: PlaylistService) {}
 
@@ -18,7 +18,6 @@ export class PlaylistRouter {
     output: z.array(zodPlaylistsSchema),
   })
   async getPlaylists() {
-    console.log("Getting playlists");
     return await this.playlistService.getPlaylists();
   }
 
@@ -42,11 +41,10 @@ export class PlaylistRouter {
     }),
   })
   async createPlaylist(
-    @Input("url") url: string,
-    @Input("username") username: string,
-    @Input("password") password: string
+    @Input('url') url: string,
+    @Input('username') username: string,
+    @Input('password') password: string,
   ) {
-    console.log("Creating playlist");
     return this.playlistService.createPlaylist(url, username, password);
   }
   @Mutation({
@@ -58,16 +56,16 @@ export class PlaylistRouter {
     }),
   })
   async updatePlaylists(
-    @Input("url") url: string,
-    @Input("username") username: string,
-    @Input("password") password: string,
-    @Input("playlistId") playlistId: number
+    @Input('url') url: string,
+    @Input('username') username: string,
+    @Input('password') password: string,
+    @Input('playlistId') playlistId: number,
   ) {
     return this.playlistService.updatePlaylists(
       url,
       username,
       password,
-      playlistId
+      playlistId,
     );
   }
   @Mutation({
@@ -78,8 +76,7 @@ export class PlaylistRouter {
       success: z.string(),
     }),
   })
-  async deletePlaylist(@Input("playlistId") playlistId: number) {
-    console.log("Deleting playlist");
+  async deletePlaylist(@Input('playlistId') playlistId: number) {
     return this.playlistService.deletePlaylist(playlistId);
   }
 }

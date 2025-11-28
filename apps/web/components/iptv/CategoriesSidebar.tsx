@@ -1,4 +1,5 @@
-import React from "react";
+import { Search, X } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
 
 interface Category {
   categoryId: number;
@@ -20,9 +21,14 @@ export default function CategoriesSidebar({
   selectedCategoryId,
   onCategoryClick,
 }: CategoriesSidebarProps) {
-  const listRef = React.useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const [searchValue, setSearchValue] = useState("");
 
-  React.useEffect(() => {
+  const [filteredCategories, setFilteredCategories] = useState<
+    Category[] | undefined
+  >(undefined);
+
+  useEffect(() => {
     if (!selectedCategoryId || !listRef.current || !categories?.length) {
       return;
     }
@@ -86,10 +92,49 @@ export default function CategoriesSidebar({
       window.clearTimeout(t);
     };
   }, [selectedCategoryId, categories?.length, isLoading]);
+
+  useEffect(() => {
+    setFilteredCategories(categories || []);
+  }, [categories]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchValue(value);
+    setFilteredCategories(
+      categories?.filter((category) =>
+        category.categoryName.toLowerCase().includes(value.toLowerCase())
+      ) || []
+    );
+  };
+
+  const handleClear = () => {
+    setSearchValue("");
+    setFilteredCategories(categories || []);
+  };
   return (
-    <div className='w-[350px] flex flex-col relative'>
-      <div className='px-4 py-3 border-b rounded-t-sm bg-white/5 border-white/10'>
-        <h3 className='text-lg font-semibold text-white'>Categories</h3>
+    <div className='w-[350px] h-full flex flex-col relative border-r border-white/10'>
+      <div className='border-b rounded-t-sm  border-white/10'>
+        <div className='relative w-full'>
+          <div className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400'>
+            <Search className='w-5 h-5' />
+          </div>
+          <input
+            className='w-full pl-10 pr-10 py-3.5 bg-slate-800/50  rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-0 focus:ring-blue-500 transition-all'
+            type='text'
+            placeholder='Search categories...'
+            value={searchValue}
+            onChange={handleChange}
+          />
+          {searchValue && (
+            <button
+              onClick={handleClear}
+              className='absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors'
+              title='Clear search'
+            >
+              <X className='w-5 h-5' />
+            </button>
+          )}
+        </div>
       </div>
       <div
         className='relative flex flex-col flex-1 overflow-y-auto'
@@ -99,12 +144,12 @@ export default function CategoriesSidebar({
           <div className='flex items-center justify-center py-12 '>
             <div className='w-8 h-8 border-b-2 border-purple-500 rounded-full animate-spin'></div>
           </div>
-        : !categories?.length ?
+        : !filteredCategories?.length ?
           <div className='px-6 py-12 text-center'>
             <p className='text-gray-400'>No categories available</p>
           </div>
         : <div className='py-2'>
-            {categories.map((category) => (
+            {filteredCategories.map((category) => (
               <button
                 key={category.categoryId}
                 onClick={() => onCategoryClick(category.categoryId)}
@@ -131,7 +176,9 @@ export default function CategoriesSidebar({
         <div className='space-y-1 text-xs text-gray-400'>
           <div className='flex justify-between'>
             <span>Total Categories:</span>
-            <span className='font-bold text-white'>{categories?.length}</span>
+            <span className='font-bold text-white'>
+              {filteredCategories?.length}
+            </span>
           </div>
         </div>
       </div>

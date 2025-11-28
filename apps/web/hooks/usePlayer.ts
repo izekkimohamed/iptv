@@ -5,9 +5,7 @@ export interface UsePlayerReturn {
   playerRef: React.RefObject<MediaPlayerInstance | null>;
   currentTime: number;
   duration: number;
-  volume: number;
   isPlaying: boolean;
-  isMuted: boolean;
   isFullscreen: boolean;
   buffered: number;
   play: () => void;
@@ -23,11 +21,10 @@ export interface UsePlayerReturn {
 
 export function usePlayer(): UsePlayerReturn {
   const playerRef = useRef<MediaPlayerInstance>(null);
+
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [volume, setVolumeState] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [buffered, setBuffered] = useState(0);
 
@@ -38,9 +35,7 @@ export function usePlayer(): UsePlayerReturn {
     const unsubscribe = [
       player.subscribe(({ currentTime }) => setCurrentTime(currentTime)),
       player.subscribe(({ duration }) => setDuration(duration)),
-      player.subscribe(({ volume }) => setVolumeState(volume)),
       player.subscribe(({ paused }) => setIsPlaying(!paused)),
-      player.subscribe(({ muted }) => setIsMuted(muted)),
       player.subscribe(({ fullscreen }) => setIsFullscreen(fullscreen)),
       player.subscribe(({ buffered }) => {
         if (buffered.length > 0) {
@@ -112,9 +107,7 @@ export function usePlayer(): UsePlayerReturn {
     playerRef,
     currentTime,
     duration,
-    volume,
     isPlaying,
-    isMuted,
     isFullscreen,
     buffered,
     play,

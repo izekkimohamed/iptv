@@ -1,5 +1,5 @@
 import Image from "next/image";
-import React from "react";
+import React, { useEffect } from "react";
 import { Button } from "../ui/button";
 
 interface Channel {
@@ -38,13 +38,72 @@ export default function ChannelsSidebar({
   selectedCategory,
   onChannelClick,
 }: ChannelsSidebarProps) {
-  // ref for the scrollable list container (NOT each button)
   const listRef = React.useRef<HTMLDivElement | null>(null);
 
-  // sort by favorite
-  // const sortedCategories = channels?.toSorted((channel) =>
-  //   channel.isFavorite ? -1 : 1
-  // );
+  useEffect(() => {
+    if (!selectedCategoryId || !listRef.current || !channels?.length) {
+      return;
+    }
+
+    const container = listRef.current;
+
+    const scrollToSelected = () => {
+      // try to find by id attribute first
+      let selectedEl = container.querySelector(
+        `[data-channel-id="${selectedChannelId}"]`
+      ) as HTMLElement | null;
+
+      // fallback: maybe the page used streamId in the link
+      if (!selectedEl) {
+        selectedEl = container.querySelector(
+          `[data-channel-streamid="${selectedChannelId}"]`
+        ) as HTMLElement | null;
+      }
+
+      if (!selectedEl) {
+        // Could be timing / element not yet rendered. Try again next frame.
+        // But also log to help debugging if it truly can't be found.
+        requestAnimationFrame(() => {
+          const retryEl = container.querySelector(
+            `[data-channel-id="${selectedChannelId}"],[data-channel-streamid="${selectedChannelId}"]`
+          ) as HTMLElement | null;
+          if (retryEl) {
+            // center the element in the container
+            const offset =
+              retryEl.offsetTop -
+              container.clientHeight / 2 +
+              retryEl.clientHeight / 2;
+            container.scrollTo({
+              top: Math.max(0, offset),
+              behavior: "smooth",
+            });
+          } else {
+            console.warn(
+              `channelsSidebar: couldn't find DOM element for selectedChannelId=${selectedChannelId}. ` +
+                "Check that you pass category.categoryId (not streamId) and that the list has rendered."
+            );
+          }
+        });
+        return;
+      }
+
+      // center the element vertically inside the container
+      const offset =
+        selectedEl.offsetTop -
+        container.clientHeight / 2 +
+        selectedEl.clientHeight / 2;
+      container.scrollTo({ top: Math.max(0, offset), behavior: "smooth" });
+    };
+
+    // run scrolling
+    scrollToSelected();
+    // run once more after a short delay in case layout shifts (images loading etc.)
+    const t = window.setTimeout(scrollToSelected, 120);
+
+    return () => {
+      window.clearTimeout(t);
+    };
+  }, [selectedCategoryId, channels?.length, isLoading]);
 
   return (
     <div className='w-[350px] bg-black/15 backdrop-blur-md border border-white/10 flex flex-col'>

@@ -1,7 +1,6 @@
-import { NestFactory } from "@nestjs/core";
-import { AppModule } from "./app.module";
-import { AuthService } from "@mguay/nestjs-better-auth";
-import { toNodeHandler } from "better-auth/node";
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors(); // Allows all origins, methods, and headers

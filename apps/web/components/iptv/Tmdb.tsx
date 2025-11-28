@@ -8,13 +8,13 @@ function Tmdb({
   name,
   year,
 }: {
-  tmdbId: number;
+  tmdbId: number | null;
   name: string;
   year: number;
 }) {
   const clearName = name.replace(/[^|]*\|/g, "");
   const { data, isLoading } = trpc.movies.getMovieDetails.useQuery({
-    tmdbId: tmdbId ? tmdbId : undefined,
+    tmdbId: tmdbId ? tmdbId : null,
     name: clearName,
     year,
   });

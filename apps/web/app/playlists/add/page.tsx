@@ -279,7 +279,7 @@ export default function Home() {
 
   if (isCreatingPlaylist) {
     return (
-      <div className='overflow-y-auto bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4'>
+      <div className='overflow-y-auto flex items-center justify-center p-4'>
         <div className='bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 max-w-2xl w-full'>
           {/* Header */}
           <div className='text-center mb-8'>

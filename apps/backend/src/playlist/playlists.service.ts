@@ -2,16 +2,16 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
-} from "@nestjs/common";
-import { eq, and } from "drizzle-orm";
-import { NodePgDatabase } from "drizzle-orm/node-postgres";
+} from '@nestjs/common';
+import { eq, and } from 'drizzle-orm';
+import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 
-import { CommonService } from "src/common/common.service";
-import { DATABASE_CONNECTION } from "src/database/database-connection";
-import { playlists } from "./schema";
-import { ChannelsService } from "src/channels/channels.service";
-import { MoviesService } from "src/movies/movies.service";
-import { SeriesService } from "src/series/series.service";
+import { CommonService } from '../common/common.service';
+import { DATABASE_CONNECTION } from '../database/database-connection';
+import { playlists } from './schema';
+import { ChannelsService } from '../channels/channels.service';
+import { MoviesService } from '../movies/movies.service';
+import { SeriesService } from '../series/series.service';
 
 @Injectable()
 export class PlaylistService {
@@ -21,7 +21,7 @@ export class PlaylistService {
     private readonly common: CommonService,
     private readonly channelsService: ChannelsService,
     private readonly moviesService: MoviesService,
-    private readonly seriesService: SeriesService
+    private readonly seriesService: SeriesService,
   ) {}
 
   async createPlaylist(url: string, username: string, password: string) {
@@ -29,21 +29,20 @@ export class PlaylistService {
     const data = await xtream.getProfile();
     if (!data) {
       throw new InternalServerErrorException(
-        "Failed to get profile from xtream"
+        'Failed to get profile from xtream',
       );
     }
-    console.log("data", data);
 
     const playlist = await this.database
       .insert(playlists)
       .values({
         baseUrl: url,
-        expDate: data.exp_date || "",
+        expDate: data.exp_date || '',
         isTrial: data.is_trial,
         password: data.password,
         username: data.username,
         status: data.status,
-        userId: "",
+        userId: '',
         createdAt: new Date().toISOString(),
       })
       .onConflictDoNothing()
@@ -56,32 +55,32 @@ export class PlaylistService {
     url: string,
     username: string,
     password: string,
-    playlistId: number
+    playlistId: number,
   ) {
     return Promise.all([
       await this.channelsService.createChannelsCategories(
         url,
         username,
         password,
-        playlistId
+        playlistId,
       ),
       await this.moviesService.createMovieCategory(
         url,
         username,
         password,
-        playlistId
+        playlistId,
       ),
       await this.seriesService.createSeriesCategories(
         url,
         username,
         password,
-        playlistId
+        playlistId,
       ),
       await this.channelsService.createChannels(
         url,
         username,
         password,
-        playlistId
+        playlistId,
       ),
       await this.moviesService.createMovie(url, username, password, playlistId),
       await this.seriesService.createSerie(url, username, password, playlistId),

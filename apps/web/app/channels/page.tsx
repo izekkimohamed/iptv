@@ -77,7 +77,7 @@ export default function ChannelsPage() {
   return (
     <>
       {/* Categories Sidebar */}
-      <div className='flex overflow-y-auto'>
+      <div className='flex flex-1 overflow-y-auto'>
         <CategoriesSidebar
           categories={categories}
           isLoading={isFetchingCategories}

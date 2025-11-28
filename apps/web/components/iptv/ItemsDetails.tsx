@@ -164,7 +164,7 @@ const ItemsDetails: React.FC<ItemsDetailsProps> = ({
         <div className='absolute inset-0 z-10 bg-black/50' />
       </div>
       {/* Back button */}
-      <div className='absolute z-20 px-4 pt-3 top-2 left-2 '>
+      <div className='absolute z-20  top-1.5 left-1 '>
         <button
           onClick={() => window.history.back()}
           className='flex items-center gap-2 px-4 py-2 text-white transition-all duration-300 border rounded-full cursor-pointer group bg-white/10 hover:bg-white/20 backdrop-blur-md border-white/20 '
@@ -173,25 +173,28 @@ const ItemsDetails: React.FC<ItemsDetailsProps> = ({
           <span className='font-medium'>Back</span>
         </button>
       </div>
-      <div className='relative h-full py-5 overflow-hidden'>
+      <div className='relative h-full pt-1.5 overflow-hidden'>
         {/* Content */}
-        <div className='relative z-20 h-full px-4 py-10 mx-auto overflow-y-auto border max-w-7xl sm:px-6 lg:px-8 bg-black/30 backdrop-blur-lg rounded-2xl border-white/10'>
-          <div className='flex flex-col gap-8 xl:flex-row '>
+        <div className='relative z-20 h-full  mx-auto overflow-y-auto border max-w-7xl bg-black/30 backdrop-blur-lg  border-white/10'>
+          <div className='flex flex-col  gap-8 xl:flex-row '>
             {/* Poster */}
             <div className='relative flex justify-center'>
               <Image
                 src={tmdb?.poster || image}
                 alt={name || "Movie Image"}
-                className='transition-transform duration-500 transform shadow-2xl w-80 rounded-2xl '
+                className='transition-transform duration-500 transform shadow-2xl w-80  '
                 width={300}
                 height={500}
-                style={{ objectFit: "cover", borderRadius: "1rem" }}
+                style={{
+                  objectFit: "cover",
+                  borderBottomRightRadius: "1rem",
+                }}
                 priority={false}
               />
             </div>
 
             {/* Movie Info */}
-            <div className='flex flex-col flex-1 space-y-6'>
+            <div className='flex flex-col py-3 px-2 flex-1 space-y-6'>
               <div className='flex items-start justify-between gap-4'>
                 <h1 className='text-5xl font-extrabold text-transparent uppercase bg-gradient-to-r from-white to-gray-400 bg-clip-text'>
                   {cleanName(name)}
@@ -286,13 +289,13 @@ const ItemsDetails: React.FC<ItemsDetailsProps> = ({
 
           {/* Seasons Section */}
           {seasons && seasons.length > 0 && (
-            <div className='mt-10'>
+            <div className='mt-5 px-4'>
               <h3 className='mb-4 text-2xl font-bold text-white'>
                 Seasons{" "}
                 {sortedEpisodes.length > 0 &&
                   `(${sortedEpisodes.length} episodes)`}
               </h3>
-              <div className='flex flex-wrap gap-3'>
+              <div className='flex flex-wrap gap-3 '>
                 {seasons.map((season) => {
                   const seasonEpisodeCount = filteredEpisodes.filter(
                     (ep) => ep.season === season
@@ -322,11 +325,11 @@ const ItemsDetails: React.FC<ItemsDetailsProps> = ({
 
           {/* Episodes Section */}
           {Array.isArray(filteredEpisodes) && filteredEpisodes.length > 0 && (
-            <div className='mt-10'>
+            <div className='mt-5 px-4'>
               <h3 className='mb-6 text-2xl font-bold text-white'>
                 Season {selectedSeason} Episodes
               </h3>
-              <div className='grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3'>
+              <div className='grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 max-h-[400px] overflow-y-scroll'>
                 {filteredEpisodes &&
                   filteredEpisodes.map((episode) => (
                     <div
@@ -396,7 +399,7 @@ const ItemsDetails: React.FC<ItemsDetailsProps> = ({
 
           {/* No episodes message */}
           {seasons && seasons.length > 0 && sortedEpisodes.length === 0 && (
-            <div className='mt-10 p-8 text-center bg-white/5 rounded-lg border border-white/10'>
+            <div className='mt-5  text-center bg-white/5 rounded-lg border border-white/10'>
               <p className='text-gray-400'>
                 No episodes available for Season {selectedSeason}
               </p>
@@ -405,7 +408,7 @@ const ItemsDetails: React.FC<ItemsDetailsProps> = ({
 
           {/* Cast Carousel */}
           {tmdb?.cast && tmdb.cast.length > 0 && (
-            <div className='mt-10'>
+            <div className='mt-10 px-4'>
               <h3 className='mb-4 text-2xl font-bold text-white'>Cast</h3>
               <div className='flex gap-4 pb-4 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent'>
                 {tmdb.cast.map((actor, idx) => (
@@ -436,7 +439,7 @@ const ItemsDetails: React.FC<ItemsDetailsProps> = ({
 
           {/* Videos Section */}
           {tmdb?.videos && tmdb.videos.length > 0 && (
-            <div className='mt-10'>
+            <div className='mt-10 px-4'>
               <h3 className='mb-4 text-2xl font-bold text-white'>Trailers</h3>
               <div className='grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3'>
                 {tmdb.videos

@@ -2,13 +2,14 @@ import {
   Injectable,
   InternalServerErrorException,
   Inject,
-} from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { Xtream } from "@iptv/xtream-api";
-import { DATABASE_CONNECTION } from "src/database/database-connection";
-import { z } from "zod";
-import { sql } from "drizzle-orm";
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { Xtream } from '@iptv/xtream-api';
+import { DATABASE_CONNECTION } from '../database/database-connection';
+import { z } from 'zod';
+import { ilike, sql } from 'drizzle-orm';
+import { movies } from 'src/movies/schema';
 
 const TmdbCastSchema = z.object({
   name: z.string(),
@@ -43,7 +44,7 @@ const TmdbDetailsResponseSchema = z.object({
       z.object({
         id: z.number(),
         name: z.string(),
-      })
+      }),
     )
     .optional(),
   runtime: z.number().optional(),
@@ -62,11 +63,62 @@ const TmdbDetailsResponseSchema = z.object({
           site: z.string(),
           type: z.string(),
           name: z.string(),
-        })
+        }),
       ),
     })
     .optional(),
 });
+
+interface TMDBGenre {
+  id: number;
+  name: string;
+}
+
+interface TMDBGenreResponse {
+  genres: TMDBGenre[];
+}
+
+interface TMDBMovie {
+  id: number;
+  title: string;
+  overview: string;
+  release_date: string;
+  vote_average: number;
+  vote_count: number;
+  popularity: number;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  genre_ids: number[];
+}
+
+interface TMDBMovieResponse {
+  results: TMDBMovie[];
+}
+interface TMDBGenre {
+  id: number;
+  name: string;
+}
+
+interface TMDBGenreResponse {
+  genres: TMDBGenre[];
+}
+
+interface TMDBSeries {
+  id: number;
+  name: string;
+  overview: string;
+  first_air_date: string;
+  vote_average: number;
+  vote_count: number;
+  popularity: number;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  genre_ids: number[];
+}
+
+interface TMDBSeriesResponse {
+  results: TMDBSeries[];
+}
 
 // Export types if you want to extract them from the schemas
 export type TmdbCast = z.infer<typeof TmdbCastSchema>;
@@ -87,14 +139,14 @@ export {
 @Injectable()
 export class CommonService {
   private readonly tmdbApiKey: string | undefined;
-  private readonly tmdbBaseUrl = "https://api.themoviedb.org/3";
+  private readonly tmdbBaseUrl = 'https://api.themoviedb.org/3';
 
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly database: NodePgDatabase,
-    private readonly configService: ConfigService // inject ConfigService
+    private readonly configService: ConfigService, // inject ConfigService
   ) {
-    this.tmdbApiKey = this.configService.get<string>("TMDB_API_KEY");
+    this.tmdbApiKey = this.configService.get<string>('TMDB_API_KEY');
   }
 
   async fetchApi<T>(url: string): Promise<T> {
@@ -114,7 +166,7 @@ export class CommonService {
     options: {
       chunkSize?: number;
       concurrency?: number;
-      onConflict?: "nothing" | "update";
+      onConflict?: 'nothing' | 'update';
       conflictTarget?: string[];
       updateColumns?: string[];
       onProgress?: (progress: {
@@ -123,12 +175,12 @@ export class CommonService {
         total: number;
         percent: number;
       }) => void;
-    } = {}
+    } = {},
   ) {
     const {
       chunkSize = 5000, // Reduced from 8000 for better memory management
       concurrency = 3, // Increased default for better parallelism
-      onConflict = "nothing",
+      onConflict = 'nothing',
       conflictTarget = [],
       updateColumns = [],
       onProgress,
@@ -141,7 +193,7 @@ export class CommonService {
         inserted: 0,
         failed: 0,
         total: 0,
-        message: "No data to insert.",
+        message: 'No data to insert.',
       };
     }
 
@@ -150,10 +202,6 @@ export class CommonService {
     for (let i = 0; i < data.length; i += chunkSize) {
       chunks.push(data.slice(i, i + chunkSize));
     }
-
-    console.log(
-      `Starting batch insert: ${data.length} records in ${chunks.length} chunks (concurrency: ${concurrency})`
-    );
 
     let index = 0;
     let insertedCount = 0;
@@ -183,7 +231,7 @@ export class CommonService {
     const insertChunk = async (
       chunk: T[],
       chunkIndex: number,
-      retryCount = 0
+      retryCount = 0,
     ): Promise<boolean> => {
       const maxRetries = 2;
 
@@ -191,9 +239,9 @@ export class CommonService {
         await this.database.transaction(async (tx) => {
           let query: any = tx.insert(table).values(chunk);
 
-          if (onConflict === "nothing") {
+          if (onConflict === 'nothing') {
             query = query.onConflictDoNothing();
-          } else if (onConflict === "update" && conflictTarget.length > 0) {
+          } else if (onConflict === 'update' && conflictTarget.length > 0) {
             // Build update object dynamically
             const updateSet: Record<string, any> = {};
             const columnsToUpdate =
@@ -218,10 +266,10 @@ export class CommonService {
       } catch (err) {
         if (retryCount < maxRetries) {
           console.warn(
-            `Chunk ${chunkIndex} failed, retrying (${retryCount + 1}/${maxRetries})...`
+            `Chunk ${chunkIndex} failed, retrying (${retryCount + 1}/${maxRetries})...`,
           );
           await new Promise((resolve) =>
-            setTimeout(resolve, 1000 * (retryCount + 1))
+            setTimeout(resolve, 1000 * (retryCount + 1)),
           ); // Exponential backoff
           return insertChunk(chunk, chunkIndex, retryCount + 1);
         }
@@ -229,7 +277,7 @@ export class CommonService {
         const errorMessage = err instanceof Error ? err.message : String(err);
         console.error(
           `Chunk ${chunkIndex} failed after ${maxRetries} retries:`,
-          errorMessage
+          errorMessage,
         );
 
         failedCount += chunk.length;
@@ -253,9 +301,6 @@ export class CommonService {
 
         // Log progress every 10 chunks
         if ((currentIndex + 1) % 10 === 0) {
-          console.log(
-            `Progress: ${currentIndex + 1}/${chunks.length} chunks processed`
-          );
         }
       }
     };
@@ -266,17 +311,12 @@ export class CommonService {
     // Execute workers in parallel
     await Promise.all(
       Array.from({ length: Math.min(concurrency, chunks.length) }, () =>
-        worker()
-      )
+        worker(),
+      ),
     );
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
     const recordsPerSecond = Math.round(insertedCount / parseFloat(duration));
-
-    console.log(
-      `Batch insert completed in ${duration}s (${recordsPerSecond} records/sec)`
-    );
-    console.log(`Results: ${insertedCount} inserted, ${failedCount} failed`);
 
     return {
       success: failedCount === 0,
@@ -286,17 +326,17 @@ export class CommonService {
       duration: parseFloat(duration),
       recordsPerSecond,
       message:
-        failedCount === 0 ?
-          `${insertedCount} records inserted successfully in ${duration}s.`
-        : `${insertedCount} records inserted, ${failedCount} failed. Check failedChunks for details.`,
+        failedCount === 0
+          ? `${insertedCount} records inserted successfully in ${duration}s.`
+          : `${insertedCount} records inserted, ${failedCount} failed. Check failedChunks for details.`,
       failedChunks: failedChunks.length > 0 ? failedChunks : undefined,
     };
   }
   async getTmdbInfo(
-    type: "movie" | "show",
+    type: 'movie' | 'show',
     tmdbId?: number,
     name?: string,
-    year?: number
+    year?: number,
   ): Promise<{
     id: number;
     title: string;
@@ -313,21 +353,23 @@ export class CommonService {
     if (!tmdbId && !name) return null;
     try {
       if (!this.tmdbApiKey) {
-        throw new Error("TMDB_API_KEY not configured");
+        throw new Error('TMDB_API_KEY not configured');
       }
 
-      const endpoint = type === "movie" ? "movie" : "tv";
+      const endpoint = type === 'movie' ? 'movie' : 'tv';
 
       let id = tmdbId;
       if (!id && name) {
-        const query = name.replace(/[^|]*\|/g, "");
+        const query = name.replace(/[^|]*\|/g, '');
         const yearParam =
-          type === "movie" && year ? `&year=${year}`
-          : type === "show" && year ? `&first_air_date_year=${year}`
-          : "";
+          type === 'movie' && year
+            ? `&year=${year}`
+            : type === 'show' && year
+              ? `&first_air_date_year=${year}`
+              : '';
         const searchUrl = `${this.tmdbBaseUrl}/search/${endpoint}?api_key=${this.tmdbApiKey}&language=en-US&query=${query}${yearParam}`;
         const searchRes = await this.fetchApi<{ results: { id: number }[] }>(
-          searchUrl
+          searchUrl,
         );
         if (!searchRes.results.length) return null;
         id = searchRes.results[0].id;
@@ -339,14 +381,13 @@ export class CommonService {
       const details = await this.fetchApi<TmdbDetailsResponse>(detailsUrl);
 
       const director =
-        details.credits?.crew?.find((c) => c.job === "Director")?.name ?? null;
+        details.credits?.crew?.find((c) => c.job === 'Director')?.name ?? null;
 
       const cast =
         details.credits?.cast?.slice(0, 15).map((c) => ({
           name: c.name,
-          profilePath:
-            c.profile_path ?
-              `https://image.tmdb.org/t/p/w500${c.profile_path}`
+          profilePath: c.profile_path
+            ? `https://image.tmdb.org/t/p/w500${c.profile_path}`
             : null,
         })) ?? [];
 
@@ -361,18 +402,16 @@ export class CommonService {
 
       return {
         id: details.id,
-        title: details.title || details.name || "Untitled",
+        title: details.title || details.name || 'Untitled',
         overview: details.overview,
         genres: details.genres,
         runtime: details.runtime ?? details.episode_run_time?.[0],
         releaseDate: details.release_date || details.first_air_date,
-        poster:
-          details.poster_path ?
-            `https://image.tmdb.org/t/p/w500${details.poster_path}`
+        poster: details.poster_path
+          ? `https://image.tmdb.org/t/p/w500${details.poster_path}`
           : null,
-        backdrop:
-          details.backdrop_path ?
-            `https://image.tmdb.org/t/p/w1280${details.backdrop_path}`
+        backdrop: details.backdrop_path
+          ? `https://image.tmdb.org/t/p/w1280${details.backdrop_path}`
           : null,
         director,
         cast,
@@ -383,12 +422,91 @@ export class CommonService {
     }
   }
 
+  async getTmdbPopularMovies() {
+    if (!this.tmdbApiKey) {
+      throw new Error('TMDB_API_KEY not configured');
+    }
+
+    // Fetch popular movies
+    const movieUrl = `${this.tmdbBaseUrl}/movie/popular?api_key=${this.tmdbApiKey}&language=en-US&page=1`;
+    const movieData = (await this.fetchApi(movieUrl)) as TMDBMovieResponse;
+
+    // Fetch genres to map genre_ids to names
+    const genreUrl = `${this.tmdbBaseUrl}/genre/movie/list?api_key=${this.tmdbApiKey}&language=en-US`;
+    const genreData = (await this.fetchApi(genreUrl)) as TMDBGenreResponse;
+    const genreMap = new Map(genreData.genres.map((g) => [g.id, g.name]));
+
+    // Transform results with full image URLs and genre names
+    const refinedResults = movieData.results.map((movie) => ({
+      id: movie.id,
+      title: movie.title,
+      overview: movie.overview,
+      releaseDate: movie.release_date,
+      voteAverage: movie.vote_average,
+      voteCount: movie.vote_count,
+      popularity: movie.popularity,
+      posterUrl: movie.poster_path
+        ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+        : null,
+      backdropUrl: movie.backdrop_path
+        ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}`
+        : null,
+      genres: movie.genre_ids.map((id) => genreMap.get(id)).filter(Boolean),
+    }));
+    // const trendingMovies = refinedResults; // from previous function
+    // const dbMovies = await Promise.all(
+    //   trendingMovies.map((movie) =>
+    //     this.database
+    //       .select()
+    //       .from(movies)
+    //       .where(ilike(movies.name, `%${movie.title}%`))
+    //       .execute(),
+    //   ),
+    // );
+
+    return refinedResults;
+  }
+  async getTmdbPopularSeries() {
+    if (!this.tmdbApiKey) {
+      throw new Error('TMDB_API_KEY not configured');
+    }
+
+    // Fetch popular series
+    const seriesUrl = `${this.tmdbBaseUrl}/tv/popular?api_key=${this.tmdbApiKey}&language=en-US&page=1`;
+    const seriesData = (await this.fetchApi(seriesUrl)) as TMDBSeriesResponse;
+
+    // Fetch genres to map genre_ids to names
+    const genreUrl = `${this.tmdbBaseUrl}/genre/tv/list?api_key=${this.tmdbApiKey}&language=en-US`;
+    const genreData = (await this.fetchApi(genreUrl)) as TMDBGenreResponse;
+    const genreMap = new Map(genreData.genres.map((g) => [g.id, g.name]));
+
+    // Transform results with full image URLs and genre names
+    const refinedResults = seriesData.results.map((series) => ({
+      id: series.id,
+      name: series.name,
+      overview: series.overview,
+      firstAirDate: series.first_air_date,
+      voteAverage: series.vote_average,
+      voteCount: series.vote_count,
+      popularity: series.popularity,
+      posterUrl: series.poster_path
+        ? `https://image.tmdb.org/t/p/w500${series.poster_path}`
+        : null,
+      backdropUrl: series.backdrop_path
+        ? `https://image.tmdb.org/t/p/w1280${series.backdrop_path}`
+        : null,
+      genres: series.genre_ids.map((id) => genreMap.get(id)).filter(Boolean),
+    }));
+
+    return refinedResults;
+  }
+
   xtream(url: string, username: string, password: string): Xtream {
     return new Xtream({
       url,
       username,
       password,
-      preferredFormat: "m3u8",
+      preferredFormat: 'm3u8',
     });
   }
 }

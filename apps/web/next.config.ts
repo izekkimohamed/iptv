@@ -9,13 +9,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: false,
   distDir: "out",
 
-  // Ensure Next.js uses SSG instead of SSR
-  // https://nextjs.org/docs/pages/building-your-application/deploying/static-exports
   output: "export",
-  // Note: This feature is required to use the Next.js Image component in SSG mode.
-  // See https://nextjs.org/docs/messages/export-image-api for different workarounds.
-
-  // Configure assetPrefix or else the server won't properly resolve your assets.
   assetPrefix: isProd ? undefined : `http://${internalHost}:3000`,
 
   eslint: {
@@ -32,18 +26,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  async rewrites() {
-    return [
-      {
-        source: "/trpc/:path*",
-        destination: `${process.env.TRPC_URL}/:path*`,
-      },
-      {
-        source: "/api/:path*",
-        destination: `${process.env.API_URL}/api/:path*`,
-      },
-    ];
-  },
+
   maxDuration: 300,
 };
 

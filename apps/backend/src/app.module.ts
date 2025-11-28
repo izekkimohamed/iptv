@@ -1,33 +1,27 @@
-import { Module } from "@nestjs/common";
-import { AuthModule } from "./auth/auth.module";
-import { TRPCModule } from "nestjs-trpc";
-import { AppConfigModule } from "./config/config.module";
-import { ConfigModule } from "@nestjs/config";
-import { DatabaseModule } from "./database/database.module";
-import { AppContext } from "./app.context";
-import { AuthService } from "@mguay/nestjs-better-auth";
+import { Module } from '@nestjs/common';
+import { TRPCModule } from 'nestjs-trpc';
+import { ConfigModule } from '@nestjs/config';
+import { DatabaseModule } from './database/database.module';
+import { AppContext } from './app.context';
+import { PlaylistModule } from './playlist/playlists.module';
+import { PlaylistService } from './playlist/playlists.service';
 
-import { PlaylistModule } from "./playlist/playlists.module";
-import { PlaylistService } from "./playlist/playlists.service";
-
-import { CommonModule } from "./common/common.module";
-import { ChannelsModule } from "./channels/channels.module";
-import { MoviesModule } from "./movies/movies.module";
-import { SeriesModule } from "./series/series.module";
-import { channels } from "./channels/schema";
-import { playlists } from "./playlist/schema";
+import { CommonModule } from './common/common.module';
+import { ChannelsModule } from './channels/channels.module';
+import { MoviesModule } from './movies/movies.module';
+import { SeriesModule } from './series/series.module';
+import { HomeModule } from './home/home.module';
+import { AppService } from './app.service';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
-    AppConfigModule,
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: [".env.local"],
     }),
     TRPCModule.forRoot({
-      autoSchemaFile: "../../packages/trpc/src/server",
+      autoSchemaFile: '../../packages/trpc/src/server',
       context: AppContext,
-      schemaFileImports: [playlists, channels],
     }),
     PlaylistModule,
     DatabaseModule,
@@ -35,8 +29,9 @@ import { playlists } from "./playlist/schema";
     ChannelsModule,
     MoviesModule,
     SeriesModule,
+    HomeModule,
   ],
-
-  providers: [AppContext, PlaylistService],
+  controllers: [AppController],
+  providers: [AppService, AppContext, PlaylistService],
 })
 export class AppModule {}

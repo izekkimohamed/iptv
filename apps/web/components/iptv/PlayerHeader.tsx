@@ -23,7 +23,6 @@ export default function PlayerHeader({ selectedChannel }: PlayerHeaderProps) {
   const utils = trpc.useUtils();
   const { mutate: toggleFavorite } = trpc.channels.toggleFavorite.useMutation({
     onSuccess: () => {
-      console.log("favorite toggled");
       utils.channels.getChannels.invalidate();
     },
   });

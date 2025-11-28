@@ -67,7 +67,7 @@ const appRouter = t.router({
       categoryId: z.number(),
       categoryName: z.string(),
       playlistId: z.number(),
-      type: z.enum(["channels", "movies", "series"]),
+      type: z.enum(['channels', 'movies', 'series']),
     }))).query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as any),
     getShortEpg: publicProcedure.input(z.object({
       url: z.string(),
@@ -133,7 +133,7 @@ const appRouter = t.router({
       categoryId: z.number(),
       categoryName: z.string(),
       playlistId: z.number(),
-      type: z.enum(["channels", "movies", "series"]),
+      type: z.enum(['channels', 'movies', 'series']),
     }))).query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as any),
     createMoviesCategories: publicProcedure.input(z.object({
       url: z.string(),
@@ -185,6 +185,45 @@ const appRouter = t.router({
       password: z.string(),
       playlistId: z.number(),
     })).mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as any)
+  }),
+  home: t.router({
+    getHome: publicProcedure.output(z.object({
+      movies: z.array(
+        z.object({
+          id: z.number(),
+          title: z.string(),
+          overview: z.string(),
+          releaseDate: z.string(),
+          voteAverage: z.number(),
+          voteCount: z.number(),
+          popularity: z.number(),
+          posterUrl: z.string().nullable(),
+          backdropUrl: z.string().nullable(),
+          genres: z.array(z.string().optional()),
+        }),
+      ),
+      series: z.array(
+        z.object({
+          id: z.number(),
+          name: z.string(),
+          overview: z.string(),
+          firstAirDate: z.string(),
+          voteAverage: z.number(),
+          voteCount: z.number(),
+          popularity: z.number(),
+          posterUrl: z.string().nullable(),
+          backdropUrl: z.string().nullable(),
+          genres: z.array(z.string().optional()),
+        }),
+      ),
+    })).query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as any),
+    globalSearch: publicProcedure.input(z.object({
+      query: z.string(),
+    })).output(z.object({
+      movies: z.array(zodMovieSchema).nullable(),
+      channels: z.array(zodChannelsSchema).nullable(),
+      series: z.array(zodSerieSchema).nullable(),
+    })).query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as any)
   })
 });
 export type AppRouter = typeof appRouter;

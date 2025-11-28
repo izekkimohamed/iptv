@@ -1,10 +1,10 @@
-import { AuthModule as NestAuthModule } from "@mguay/nestjs-better-auth";
-import { Module } from "@nestjs/common";
-import { ConfigModule } from "@nestjs/config";
-import { betterAuth } from "better-auth";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { DATABASE_CONNECTION } from "src/database/database-connection";
+import { AuthModule as NestAuthModule } from '@mguay/nestjs-better-auth';
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { betterAuth } from 'better-auth';
+import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { DATABASE_CONNECTION } from '../database/database-connection';
 
 @Module({
   imports: [
@@ -12,7 +12,7 @@ import { DATABASE_CONNECTION } from "src/database/database-connection";
     NestAuthModule.forRootAsync({
       useFactory: (db: NodePgDatabase) => ({
         auth: betterAuth({
-          database: drizzleAdapter(db, { provider: "pg" }),
+          database: drizzleAdapter(db, { provider: 'pg' }),
           socialProviders: {
             google: {
               clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -21,7 +21,7 @@ import { DATABASE_CONNECTION } from "src/database/database-connection";
           },
           emailAndPassword: { enabled: false }, // Google only
           secret: process.env.BETTER_AUTH_SECRET!,
-          trustedOrigins: ["http://localhost:3000"],
+          trustedOrigins: ['http://localhost:3000'],
         }),
       }),
       inject: [DATABASE_CONNECTION],

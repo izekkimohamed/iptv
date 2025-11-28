@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "web",
+  "productName": "Med",
   "version": "0.1.0",
   "identifier": "com.med-iptv.dev",
   "build": {
@@ -18,8 +18,16 @@
         "decorations": false,
         "fullscreen": true,
         "resizable": false,
-
-        "maximized": true
+        "maximized": true,
+        "visible": false
+      },
+      {
+        "width": 1920,
+        "height": 1080,
+        "decorations": false,
+        "fullscreen": true,
+        "url": "splashscreen.html",
+        "label": "splashscreen"
       }
     ],
     "security": {
@@ -28,7 +36,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": "nsis",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

@@ -1,8 +1,8 @@
-import { Module } from "@nestjs/common";
-import { SeriesService } from "./series.service";
-import { SeriesRouter } from "./series.router";
-import { DatabaseModule } from "src/database/database.module";
-import { CommonModule } from "src/common/common.module";
+import { Module } from '@nestjs/common';
+import { SeriesService } from './series.service';
+import { SeriesRouter } from './series.router';
+import { DatabaseModule } from '../database/database.module';
+import { CommonModule } from '../common/common.module';
 
 @Module({
   imports: [DatabaseModule, CommonModule],

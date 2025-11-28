@@ -2,26 +2,26 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
-} from "@nestjs/common";
-import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { CommonService } from "src/common/common.service";
-import { DATABASE_CONNECTION } from "src/database/database-connection";
-import { categories } from "src/playlist/schema";
-import { channels } from "./schema";
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+} from '@nestjs/common';
+import { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { CommonService } from '../common/common.service';
+import { DATABASE_CONNECTION } from '../database/database-connection';
+import { categories } from '../playlist/schema';
+import { channels } from './schema';
+import { and, asc, desc, eq, sql } from 'drizzle-orm';
 
 @Injectable()
 export class ChannelsService {
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly database: NodePgDatabase,
-    private readonly common: CommonService
+    private readonly common: CommonService,
   ) {}
   async createChannels(
     url: string,
     username: string,
     password: string,
-    playlist: number
+    playlist: number,
   ) {
     const xtream = this.common.xtream(url, username, password);
     const channelsData = await xtream.getChannels();
@@ -40,14 +40,14 @@ export class ChannelsService {
       })
       .from(categories);
     const missingCategoryIds = Array.from(uniqueCategoryIds).filter(
-      (id) => !existingCategories.map((cat) => cat.selected).includes(id)
+      (id) => !existingCategories.map((cat) => cat.selected).includes(id),
     );
     //create the missing categories in the db
     if (missingCategoryIds.length > 0) {
       const newCategories: (typeof categories.$inferInsert)[] =
         missingCategoryIds.map((id) => ({
           playlistId: playlist,
-          type: "channels",
+          type: 'channels',
           categoryName: `category ${id}`,
           categoryId: id,
         }));
@@ -59,35 +59,33 @@ export class ChannelsService {
         name: channel.name,
         streamType: channel.stream_type,
         streamId: channel.stream_id,
-        streamIcon: channel.stream_icon || "",
+        streamIcon: channel.stream_icon || '',
         playlistId: playlist,
         isFavorite: false,
-        url: channel.url || "",
-      })
+        url: channel.url || '',
+      }),
     );
     await this.common.batchInsert(channels, tempChannels, {
       chunkSize: 3000,
       concurrency: 5,
-      onProgress: (progress) => {
-        console.log(`${progress.percent}% complete`);
-      },
+      onProgress: (progress) => {},
     });
   }
   async createChannelsCategories(
     url: string,
     username: string,
     password: string,
-    playlist: number
+    playlist: number,
   ) {
     const xtream = this.common.xtream(url, username, password);
     const data = await xtream.getChannelCategories();
     const tempCategories: (typeof categories.$inferInsert)[] = data.map(
       (category) => ({
         playlistId: playlist,
-        type: "channels",
+        type: 'channels',
         categoryName: category.category_name,
         categoryId: +category.category_id,
-      })
+      }),
     );
     if (!tempCategories.length) return [];
 
@@ -105,7 +103,7 @@ export class ChannelsService {
   async getChannels(
     playlist: number,
     categoryId?: number,
-    favorites?: boolean
+    favorites?: boolean,
   ) {
     if (categoryId) {
       return await this.database
@@ -114,8 +112,8 @@ export class ChannelsService {
         .where(
           and(
             eq(channels.playlistId, playlist),
-            eq(channels.categoryId, categoryId)
-          )
+            eq(channels.categoryId, categoryId),
+          ),
         )
         .orderBy(desc(channels.isFavorite), asc(channels.id));
     } else if (favorites) {
@@ -123,7 +121,7 @@ export class ChannelsService {
         .select()
         .from(channels)
         .where(
-          and(eq(channels.playlistId, playlist), eq(channels.isFavorite, true))
+          and(eq(channels.playlistId, playlist), eq(channels.isFavorite, true)),
         )
         .orderBy(asc(channels.id));
     }
@@ -135,8 +133,8 @@ export class ChannelsService {
       .where(
         and(
           eq(categories.playlistId, playlist),
-          eq(categories.type, "channels")
-        )
+          eq(categories.type, 'channels'),
+        ),
       )
       .orderBy(asc(categories.id));
   }
@@ -144,7 +142,7 @@ export class ChannelsService {
     url: string,
     username: string,
     password: string,
-    channelId: number
+    channelId: number,
   ) {
     const xtream = this.common.xtream(url, username, password);
     const epgData = await xtream.getShortEPG({
@@ -159,7 +157,7 @@ export class ChannelsService {
       .from(channels)
       .where(eq(channels.id, channelId));
     if (channel.length === 0) {
-      throw new InternalServerErrorException("Channel not found");
+      throw new InternalServerErrorException('Channel not found');
     }
     const updatedChannel = await this.database
       .update(channels)
@@ -167,7 +165,7 @@ export class ChannelsService {
       .where(eq(channels.id, channelId))
       .returning();
     if (updatedChannel.length === 0) {
-      throw new InternalServerErrorException("Error updating channel");
+      throw new InternalServerErrorException('Error updating channel');
     }
     return updatedChannel[0];
   }

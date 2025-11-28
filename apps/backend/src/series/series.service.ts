@@ -1,18 +1,18 @@
-import { XtreamShowInfo, XtreamShowListing } from "@iptv/xtream-api";
-import { Inject, Injectable } from "@nestjs/common";
-import { and, asc, eq, sql } from "drizzle-orm";
-import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { CommonService } from "src/common/common.service";
-import { DATABASE_CONNECTION } from "src/database/database-connection";
-import { categories } from "src/playlist/schema";
-import { series } from "./schema";
+import { XtreamShowInfo, XtreamShowListing } from '@iptv/xtream-api';
+import { Inject, Injectable } from '@nestjs/common';
+import { and, asc, eq, sql } from 'drizzle-orm';
+import { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { CommonService } from '../common/common.service';
+import { DATABASE_CONNECTION } from '../database/database-connection';
+import { categories } from '../playlist/schema';
+import { series } from './schema';
 
 @Injectable()
 export class SeriesService {
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly database: NodePgDatabase,
-    private readonly common: CommonService
+    private readonly common: CommonService,
   ) {}
 
   async getSeriesCategories(playlistId: number) {
@@ -23,8 +23,8 @@ export class SeriesService {
       .where(
         and(
           eq(categories.playlistId, playlistId),
-          eq(categories.type, "series")
-        )
+          eq(categories.type, 'series'),
+        ),
       )
       .orderBy(asc(categories.id));
   }
@@ -36,8 +36,8 @@ export class SeriesService {
       .where(
         and(
           eq(series.playlistId, playlistId),
-          eq(series.categoryId, categoryId)
-        )
+          eq(series.categoryId, categoryId),
+        ),
       )
       .orderBy(asc(series.id));
   }
@@ -45,25 +45,25 @@ export class SeriesService {
     url: string,
     username: string,
     password: string,
-    serieId: number
+    serieId: number,
   ) {
     const res = await fetch(
-      `${url}/player_api.php?username=${username}&password=${password}&action=get_series_info&series_id=${serieId}`
+      `${url}/player_api.php?username=${username}&password=${password}&action=get_series_info&series_id=${serieId}`,
     );
     const data = await res.json();
     if (!data) {
       throw new Error(
-        `Failed to get serie details from Xtream API: ${data.message}`
+        `Failed to get serie details from Xtream API: ${data.message}`,
       );
     }
     const seasons = Object.keys(data.episodes).map((season) => Number(season));
     data.seasons = seasons;
     // fetch tmdb details
     const details = await this.common.getTmdbInfo(
-      "show",
+      'show',
       data.info.tmdb_id,
       data.info.name,
-      new Date(data.info.first_aired).getFullYear()
+      new Date(data.info.first_aired).getFullYear(),
     );
     return { ...data, tmdb: details };
   }
@@ -71,7 +71,7 @@ export class SeriesService {
     url: string,
     username: string,
     password: string,
-    playlistId: number
+    playlistId: number,
   ) {
     const xtream = this.common.xtream(url, username, password);
     const seriesData = await xtream.getShows();
@@ -90,14 +90,14 @@ export class SeriesService {
       })
       .from(categories);
     const missingCategoryIds = Array.from(uniqueCategoryIds).filter(
-      (id) => !existingCategories.map((cat) => cat.selected).includes(id)
+      (id) => !existingCategories.map((cat) => cat.selected).includes(id),
     );
     //create the missing categories in the db
     if (missingCategoryIds.length > 0) {
       const newCategories: (typeof categories.$inferInsert)[] =
         missingCategoryIds.map((id) => ({
           playlistId: playlistId,
-          type: "series",
+          type: 'series',
           categoryName: `category ${id}`,
           categoryId: id,
         }));
@@ -106,31 +106,30 @@ export class SeriesService {
     const seriesChunk: (typeof series.$inferInsert)[] = seriesData.map(
       (serie) => ({
         seriesId: serie.series_id,
-        name: serie.name ?? "",
-        cast: serie.cast ?? "",
-        director: serie.director ?? "",
-        genre: serie.genre ?? "",
-        releaseDate: serie.release_date ?? "",
-        lastModified: serie.last_modified ?? "",
-        rating: serie.rating?.toString() ?? "0",
-        backdropPath:
-          Array.isArray(serie.backdrop_path) ? serie.backdrop_path[0] : "",
-        youtubeTrailer: serie.youtube_trailer ?? "",
-        episodeRunTime: serie.episode_run_time ?? "",
+        name: serie.name ?? '',
+        cast: serie.cast ?? '',
+        director: serie.director ?? '',
+        genre: serie.genre ?? '',
+        releaseDate: serie.release_date ?? '',
+        lastModified: serie.last_modified ?? '',
+        rating: serie.rating?.toString() ?? '0',
+        backdropPath: Array.isArray(serie.backdrop_path)
+          ? serie.backdrop_path[0]
+          : '',
+        youtubeTrailer: serie.youtube_trailer ?? '',
+        episodeRunTime: serie.episode_run_time ?? '',
         categoryId: +serie.category_id,
         playlistId,
-        cover: serie.cover ?? "",
-        plot: serie.plot ?? "",
-        genere: serie.genre ?? "",
-      })
+        cover: serie.cover ?? '',
+        plot: serie.plot ?? '',
+        genere: serie.genre ?? '',
+      }),
     );
 
     await this.common.batchInsert(series, seriesChunk, {
       chunkSize: 3000,
       concurrency: 5,
-      onProgress: (progress) => {
-        console.log(`${progress.percent}% complete`);
-      },
+      onProgress: (progress) => {},
     });
   }
 
@@ -138,17 +137,17 @@ export class SeriesService {
     url: string,
     username: string,
     password: string,
-    playlist: number
+    playlist: number,
   ) {
     const xtream = this.common.xtream(url, username, password);
     const data = await xtream.getShowCategories();
     const tempCategories: (typeof categories.$inferInsert)[] = data.map(
       (category) => ({
         playlistId: playlist,
-        type: "series",
+        type: 'series',
         categoryName: category.category_name,
         categoryId: +category.category_id,
-      })
+      }),
     );
     if (!tempCategories.length) return [];
     return await this.database

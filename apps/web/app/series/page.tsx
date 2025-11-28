@@ -57,7 +57,7 @@ export default function SeriesPage() {
     router.push(`?${params.toString()}`);
   };
   return (
-    <div className='flex overflow-y-auto'>
+    <div className='flex flex-1 overflow-y-auto'>
       <CategoriesSidebar
         categories={categories}
         isLoading={isLoading}
@@ -86,7 +86,7 @@ export default function SeriesPage() {
             episodes={serie.episodes}
           />
         )}
-        <div className='grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-3 '>
+        <div className='grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-3'>
           {series &&
             !isFetchingSeries &&
             !isFetchingSerie &&
