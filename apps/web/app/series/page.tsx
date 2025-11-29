@@ -8,6 +8,7 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { trpc } from "@/lib/trpc";
 import { usePlaylistStore } from "@/store/appStore";
 import { useRouter, useSearchParams } from "next/navigation";
+import { List, RowComponentProps } from "react-window";
 
 export default function SeriesPage() {
   const router = useRouter();
@@ -64,7 +65,7 @@ export default function SeriesPage() {
         selectedCategoryId={selectedCategoryId}
         onCategoryClick={handleCategoryClick}
       />
-      <div className='flex-1 overflow-y-auto'>
+      <div className='flex-1 overflow-y-auto '>
         {!selectedCategoryId && !serieId && (
           <EmptyState
             icon='📺'
@@ -86,23 +87,55 @@ export default function SeriesPage() {
             episodes={serie.episodes}
           />
         )}
-        <div className='grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-3'>
-          {series &&
-            !isFetchingSeries &&
-            !isFetchingSerie &&
-            !serieId &&
-            series.map((item) => (
-              <ItemsList
-                key={item.seriesId}
-                streamId={item.seriesId}
-                title={item.name!}
-                image={item.cover!}
-                onMovieClick={() => handleserieClick(item.seriesId)}
-                rating={item.rating!}
-              />
-            ))}
-        </div>
+
+        {series && !isFetchingSeries && !isFetchingSerie && !serieId && (
+          <div className='p-3'>
+            <List
+              className='grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-3 '
+              rowComponent={RowComponent}
+              rowCount={series.length}
+              rowHeight={0.3}
+              rowProps={{ series, handleserieClick }}
+            />
+          </div>
+        )}
       </div>
     </div>
+  );
+}
+
+function RowComponent({
+  index,
+  series,
+  handleserieClick,
+}: RowComponentProps<{
+  series: Array<{
+    id: number;
+    seriesId: number;
+    name: string | null;
+    cover: string | null;
+    plot: string | null;
+    cast: string | null;
+    director: string | null;
+    genere: string | null;
+    releaseDate: string | null;
+    lastModified: string | null;
+    rating: string | null;
+    backdropPath: string | null;
+    youtubeTrailer: string | null;
+    episodeRunTime: string | null;
+    categoryId: number;
+    playlistId: number;
+  }>;
+  handleserieClick: (serieId: number) => void;
+}>) {
+  return (
+    <ItemsList
+      image={series[index].cover || ""}
+      title={series[index].name || ""}
+      rating={series[index].rating || ""}
+      streamId={series[index].seriesId}
+      onMovieClick={() => handleserieClick(series[index].seriesId)}
+    />
   );
 }

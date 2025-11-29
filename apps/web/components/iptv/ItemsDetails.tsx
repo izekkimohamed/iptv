@@ -116,7 +116,10 @@ const ItemsDetails: React.FC<ItemsDetailsProps> = ({
   };
 
   const cleanName = (name: string) => {
-    return name.replace(/[^|]*\|/g, "");
+    return name
+      .replace(/^[A-Z]{2}\s*-\s*/i, "")
+      .replace(/\([^)]*\)/g, "")
+      .trim();
   };
 
   // Filter episodes by selected season
@@ -173,28 +176,24 @@ const ItemsDetails: React.FC<ItemsDetailsProps> = ({
           <span className='font-medium'>Back</span>
         </button>
       </div>
-      <div className='relative h-full pt-1.5 overflow-hidden'>
+      <div className='relative h-full pt-1.5 overflow-hidden '>
         {/* Content */}
-        <div className='relative z-20 h-full  mx-auto overflow-y-auto border max-w-7xl bg-black/30 backdrop-blur-lg  border-white/10'>
+        <div className='relative z-20 h-full rounded-md p-5 mx-auto overflow-y-auto border max-w-7xl bg-black/30 backdrop-blur-lg  border-white/10'>
           <div className='flex flex-col  gap-8 xl:flex-row '>
             {/* Poster */}
             <div className='relative flex justify-center'>
               <Image
                 src={tmdb?.poster || image}
                 alt={name || "Movie Image"}
-                className='transition-transform duration-500 transform shadow-2xl w-80  '
+                className='transition-transform duration-500 transform shadow-2xl w-80 border border-white/15 rounded-md '
                 width={300}
                 height={500}
-                style={{
-                  objectFit: "cover",
-                  borderBottomRightRadius: "1rem",
-                }}
                 priority={false}
               />
             </div>
 
             {/* Movie Info */}
-            <div className='flex flex-col py-3 px-2 flex-1 space-y-6'>
+            <div className='flex flex-col flex-1 space-y-6'>
               <div className='flex items-start justify-between gap-4'>
                 <h1 className='text-5xl font-extrabold text-transparent uppercase bg-gradient-to-r from-white to-gray-400 bg-clip-text'>
                   {cleanName(name)}
@@ -286,117 +285,132 @@ const ItemsDetails: React.FC<ItemsDetailsProps> = ({
               </div>
             </div>
           </div>
-
-          {/* Seasons Section */}
           {seasons && seasons.length > 0 && (
-            <div className='mt-5 px-4'>
-              <h3 className='mb-4 text-2xl font-bold text-white'>
-                Seasons{" "}
-                {sortedEpisodes.length > 0 &&
-                  `(${sortedEpisodes.length} episodes)`}
-              </h3>
-              <div className='flex flex-wrap gap-3 '>
-                {seasons.map((season) => {
-                  const seasonEpisodeCount = filteredEpisodes.filter(
-                    (ep) => ep.season === season
-                  ).length;
-                  return (
-                    <button
-                      key={season}
-                      onClick={() => setSelectedSeason(season)}
-                      className={`px-5 py-2.5 text-white transition-all rounded-lg cursor-pointer backdrop-blur-md border ${
-                        selectedSeason === season ?
-                          "bg-blue-600 hover:bg-blue-700 border-blue-500"
-                        : "bg-white/10 hover:bg-white/20 border-white/20"
-                      }`}
-                    >
-                      <span className='font-semibold'>Season {season}</span>
-                      {seasonEpisodeCount > 0 && (
-                        <span className='ml-2 text-sm opacity-80'>
-                          ({seasonEpisodeCount} eps)
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Episodes Section */}
-          {Array.isArray(filteredEpisodes) && filteredEpisodes.length > 0 && (
-            <div className='mt-5 px-4'>
-              <h3 className='mb-6 text-2xl font-bold text-white'>
-                Season {selectedSeason} Episodes
-              </h3>
-              <div className='grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 max-h-[400px] overflow-y-scroll'>
-                {filteredEpisodes &&
-                  filteredEpisodes.map((episode) => (
-                    <div
-                      key={episode.id}
-                      className='relative p-4 transition-all border rounded-lg cursor-pointer group bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-white/5'
-                      onClick={() => setPlayingEpisode(episode)}
-                    >
-                      <div className={episode.info?.movie_image ? "mt-4" : ""}>
-                        <div className='flex items-start justify-between mb-2'>
-                          <h4 className='flex-1 font-semibold text-white'>
-                            <span className='text-blue-400'>
-                              E{episode.episode_num}:
-                            </span>{" "}
-                            {episode.title ||
-                              episode.info?.name ||
-                              `Episode ${episode.episode_num}`}
-                          </h4>
-                          {episode.info?.rating > 0 && (
-                            <span className='flex items-center px-2 py-1 ml-2 text-xs text-yellow-400 bg-yellow-400/20 rounded'>
-                              ⭐{" "}
-                              {parseFloat(
-                                episode.info.rating.toString()
-                              ).toFixed(1)}
-                            </span>
-                          )}
-                        </div>
-
-                        {episode.info?.plot && (
-                          <p className='mb-3 text-sm text-gray-300 line-clamp-3'>
-                            {episode.info.plot}
-                          </p>
+            <div className='flex border border-white/15 p-2 rounded-md gap-4 mt-3'>
+              {/* Seasons Section */}
+              <div className='flex-1 max-w-[200px] border-r border-white/15 pr-2'>
+                <div className='flex flex-col gap-3 '>
+                  {seasons.map((season) => {
+                    const seasonEpisodeCount = filteredEpisodes.filter(
+                      (ep) => ep.season === season
+                    ).length;
+                    return (
+                      <button
+                        key={season}
+                        onClick={() => setSelectedSeason(season)}
+                        className={`px-2 py-3 text-white transition-all rounded-lg cursor-pointer backdrop-blur-md border ${
+                          selectedSeason === season ?
+                            "bg-blue-600 hover:bg-blue-700 border-blue-500"
+                          : "bg-white/10 hover:bg-white/20 border-white/20"
+                        }`}
+                      >
+                        <span className='font-semibold'>Season {season}</span>
+                        {seasonEpisodeCount > 0 && (
+                          <span className='ml-2 text-sm opacity-80'>
+                            ({seasonEpisodeCount} eps)
+                          </span>
                         )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-                        <div className='flex items-center gap-3 text-xs text-gray-400'>
-                          {episode.info?.releasedate && (
-                            <span className='flex items-center gap-1'>
-                              <Calendar size={12} />
-                              {formatDate(episode.info.releasedate)}
-                            </span>
-                          )}
-                          {formatDuration(
-                            episode.info?.duration ||
-                              episode.info?.duration_secs
-                          ) && (
-                            <span className='flex items-center gap-1'>
-                              <Clock size={12} />
-                              {formatDuration(
-                                episode.info?.duration ||
-                                  episode.info?.duration_secs
+              {/* Episodes Section */}
+              {Array.isArray(filteredEpisodes) &&
+                filteredEpisodes.length > 0 && (
+                  <div className='flex-1'>
+                    <div className='grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 max-h-[550px] overflow-y-scroll'>
+                      {filteredEpisodes &&
+                        filteredEpisodes.map((episode) => (
+                          <div
+                            key={episode.id}
+                            className='relative p-4 transition-all border rounded-lg cursor-pointer group bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-white/5'
+                            onClick={() => setPlayingEpisode(episode)}
+                          >
+                            <Image
+                              src={
+                                episode.info?.movie_image ||
+                                tmdb?.poster ||
+                                image
+                              }
+                              alt={
+                                episode.title ||
+                                episode.info?.name ||
+                                `Episode ${episode.episode_num}`
+                              }
+                              className='w-full h-40 mb-4 rounded-md object-cover'
+                              width={300}
+                              height={200}
+                            />
+                            <div
+                              className={
+                                episode.info?.movie_image ? "mt-4" : ""
+                              }
+                            >
+                              <div className='flex items-start justify-between mb-2'>
+                                <h4 className='flex-1 font-semibold text-white'>
+                                  <span className='text-blue-400'>
+                                    E{episode.episode_num}:
+                                  </span>{" "}
+                                  {episode.title ||
+                                    episode.info?.name ||
+                                    `Episode ${episode.episode_num}`}
+                                </h4>
+                                {episode.info?.rating > 0 && (
+                                  <span className='flex items-center px-2 py-1 ml-2 text-xs text-yellow-400 bg-yellow-400/20 rounded'>
+                                    ⭐{" "}
+                                    {parseFloat(
+                                      episode.info.rating.toString()
+                                    ).toFixed(1)}
+                                  </span>
+                                )}
+                              </div>
+
+                              {episode.info?.plot && (
+                                <p className='mb-3 text-sm text-gray-300 line-clamp-3'>
+                                  {episode.info.plot}
+                                </p>
                               )}
-                            </span>
-                          )}
-                        </div>
-                      </div>
 
-                      {/* Play overlay on hover */}
-                      <div className='absolute inset-0 flex items-center justify-center transition-opacity opacity-0 pointer-events-none group-hover:opacity-100'>
-                        {!episode.info?.movie_image && (
-                          <PlayCircle size={32} className='text-white/80' />
-                        )}
-                      </div>
+                              <div className='flex items-center gap-3 text-xs text-gray-400'>
+                                {episode.info?.releasedate && (
+                                  <span className='flex items-center gap-1'>
+                                    <Calendar size={12} />
+                                    {formatDate(episode.info.releasedate)}
+                                  </span>
+                                )}
+                                {formatDuration(
+                                  episode.info?.duration ||
+                                    episode.info?.duration_secs
+                                ) && (
+                                  <span className='flex items-center gap-1'>
+                                    <Clock size={12} />
+                                    {formatDuration(
+                                      episode.info?.duration ||
+                                        episode.info?.duration_secs
+                                    )}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Play overlay on hover */}
+                            <div className='absolute inset-0 flex items-center justify-center transition-opacity opacity-0 pointer-events-none group-hover:opacity-100'>
+                              {!episode.info?.movie_image && (
+                                <PlayCircle
+                                  size={32}
+                                  className='text-white/80'
+                                />
+                              )}
+                            </div>
+                          </div>
+                        ))}
                     </div>
-                  ))}
-              </div>
+                  </div>
+                )}
             </div>
           )}
-
           {/* No episodes message */}
           {seasons && seasons.length > 0 && sortedEpisodes.length === 0 && (
             <div className='mt-5  text-center bg-white/5 rounded-lg border border-white/10'>
@@ -408,7 +422,7 @@ const ItemsDetails: React.FC<ItemsDetailsProps> = ({
 
           {/* Cast Carousel */}
           {tmdb?.cast && tmdb.cast.length > 0 && (
-            <div className='mt-10 px-4'>
+            <div className='mt-10'>
               <h3 className='mb-4 text-2xl font-bold text-white'>Cast</h3>
               <div className='flex gap-4 pb-4 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent'>
                 {tmdb.cast.map((actor, idx) => (
@@ -439,7 +453,7 @@ const ItemsDetails: React.FC<ItemsDetailsProps> = ({
 
           {/* Videos Section */}
           {tmdb?.videos && tmdb.videos.length > 0 && (
-            <div className='mt-10 px-4'>
+            <div className='mt-10'>
               <h3 className='mb-4 text-2xl font-bold text-white'>Trailers</h3>
               <div className='grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3'>
                 {tmdb.videos

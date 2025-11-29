@@ -6,6 +6,13 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { trpc } from "@/lib/trpc";
 import { usePlaylistStore } from "@/store/appStore";
 import { useRouter, useSearchParams } from "next/navigation";
+import {
+  Grid,
+  List,
+  RowComponentProps,
+  useDynamicRowHeight,
+} from "react-window";
+import AutoSizer from "react-virtualized-auto-sizer";
 
 import ItemsList from "@/components/iptv/ItemsList";
 import ItemsDetails from "@/components/iptv/ItemsDetails";
@@ -52,6 +59,10 @@ export default function ChannelsPage() {
         enabled: !!movieId,
       }
     );
+
+  const rowHeight = useDynamicRowHeight({
+    defaultRowHeight: 250,
+  });
 
   // Event handlers
   const handleCategoryClick = (categoryId: number) => {
@@ -109,23 +120,49 @@ export default function ChannelsPage() {
             tmdb={movie.tmdb}
           />
         )}
-        <div className='grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-3 '>
-          {movies &&
-            !isFetchingMovies &&
-            !isFetchingMovie &&
-            !movieId &&
-            movies.map((item) => (
-              <ItemsList
-                key={item.streamId}
-                streamId={item.streamId}
-                title={item.name}
-                image={item.streamIcon}
-                onMovieClick={() => handleMovieClick(item.streamId)}
-                rating={item.rating}
-              />
-            ))}
-        </div>
+        {movies && !isFetchingMovies && !isFetchingMovie && !movieId && (
+          <div className='p-3'>
+            <List
+              className='grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-3 '
+              rowComponent={RowComponent}
+              rowCount={movies.length}
+              rowHeight={0.3}
+              rowProps={{ movies, handleMovieClick }}
+            />
+          </div>
+        )}
       </div>
     </div>
+  );
+}
+
+function RowComponent({
+  index,
+  movies,
+  handleMovieClick,
+}: RowComponentProps<{
+  movies: Array<{
+    id: number;
+    streamId: number;
+    name: string;
+    streamType: string;
+    streamIcon: string;
+    rating: string;
+    added: string;
+    categoryId: number;
+    playlistId: number;
+    containerExtension: string;
+    url: string;
+  }>;
+  handleMovieClick: (movieId: number) => void;
+}>) {
+  return (
+    <ItemsList
+      image={movies[index].streamIcon}
+      title={movies[index].name}
+      rating={movies[index].rating}
+      streamId={movies[index].streamId}
+      onMovieClick={() => handleMovieClick(movies[index].streamId)}
+    />
   );
 }

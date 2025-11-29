@@ -9,12 +9,18 @@ import EmptyState from "@/components/ui/EmptyState";
 import { trpc } from "@/lib/trpc";
 import { usePlaylistStore } from "@/store/appStore";
 import { useRouter, useSearchParams } from "next/navigation";
+import { usePlayerStore } from "@/store/player-store";
+import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 
 export default function ChannelsPage() {
   const router = useRouter();
+
   const searchParams = useSearchParams();
   const selectedCategoryId = searchParams.get("categoryId");
   const selectedChannelId = searchParams.get("channelId");
+  const { setSrc, setPoster, setTitle, src, poster, title, clearPlayer } =
+    usePlayerStore();
 
   // Data queries
   const { selectedPlaylist: playlist } = usePlaylistStore();
@@ -62,6 +68,17 @@ export default function ChannelsPage() {
   const selectedChannel = channels?.find(
     (chan) => chan.id.toString() === selectedChannelId
   );
+  // Update player when selectedChannel changes
+  useEffect(() => {
+    if (selectedChannel) {
+      setSrc(selectedChannel.url);
+      setPoster(selectedChannel.streamIcon || "");
+      setTitle(selectedChannel.name);
+    }
+  }, [selectedChannel, setSrc, setPoster, setTitle]);
+
+  // Check if player has content (either from store or selected channel)
+  const hasPlayerContent = !!src || !!selectedChannel;
 
   if (!playlist) {
     return (
@@ -102,32 +119,33 @@ export default function ChannelsPage() {
 
           {/* Player Content */}
           <div className='flex-1 overflow-y-auto'>
-            {selectedChannel ?
+            {hasPlayerContent ?
               <div className='h-full flex flex-col'>
                 {/* Video Player Area */}
                 <div className='h-1/2'>
-                  {/* <VideoPlayer src={selectedChannel?.url} /> */}
                   <VideoPlayer
-                    src={selectedChannel?.url.replace(".ts", ".m3u8")}
-                    poster={selectedChannel?.streamIcon}
-                    title={selectedChannel?.name}
                     autoPlay
+                    src={src}
+                    poster={poster}
+                    title={title}
                   />
                 </div>
 
                 {/* Channel Info */}
-                <div className='h-1/2 '>
-                  <ChannelInfoPanel
-                    selectedChannel={selectedChannel}
-                    playlistProps={{
-                      url: playlist?.baseUrl,
-                      username: playlist?.username,
-                      password: playlist?.password,
-                    }}
-                  />
+                <div className='h-1/2'>
+                  {selectedChannel && (
+                    <ChannelInfoPanel
+                      selectedChannel={selectedChannel}
+                      playlistProps={{
+                        url: playlist?.baseUrl,
+                        username: playlist?.username,
+                        password: playlist?.password,
+                      }}
+                    />
+                  )}
                 </div>
               </div>
-            : <div className='flex-1 flex items-center justify-center h-full backdrop-blur-md bg-black/10'>
+            : <div className='flex-1 flex items-center justify-center h-full backdrop-blur-md'>
                 <div className='text-center'>
                   <div className='text-6xl mb-4 opacity-50'>🎬</div>
                   <h4 className='text-xl font-semibold text-white mb-2'>

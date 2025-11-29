@@ -360,7 +360,10 @@ export class CommonService {
 
       let id = tmdbId;
       if (!id && name) {
-        const query = name.replace(/[^|]*\|/g, '');
+        const query = name
+          .replace(/^[A-Z]{2}\s*-\s*/i, '')
+          .replace(/\([^)]*\)/g, '')
+          .trim();
         const yearParam =
           type === 'movie' && year
             ? `&year=${year}`

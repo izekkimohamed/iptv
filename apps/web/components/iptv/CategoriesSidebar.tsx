@@ -119,7 +119,7 @@ export default function CategoriesSidebar({
             <Search className='w-5 h-5' />
           </div>
           <input
-            className='w-full pl-10 pr-10 py-3.5 bg-slate-800/50  rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-0 focus:ring-blue-500 transition-all'
+            className='w-full pl-10 pr-10 py-3.5  rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-0 focus:ring-blue-500 transition-all'
             type='text'
             placeholder='Search categories...'
             value={searchValue}

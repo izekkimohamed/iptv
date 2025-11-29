@@ -106,7 +106,7 @@ export default function ChannelsSidebar({
   }, [selectedCategoryId, channels?.length, isLoading]);
 
   return (
-    <div className='w-[350px] bg-black/15 backdrop-blur-md border border-white/10 flex flex-col'>
+    <div className='w-[350px]  backdrop-blur-md border border-white/10 flex flex-col'>
       <div className='p-3 flex items-center justify-between border-b border-white/10'>
         <h2 className='text-xl font-bold text-white'>Channels</h2>
         {selectedCategory ?

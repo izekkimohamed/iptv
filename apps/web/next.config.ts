@@ -26,8 +26,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-
-  maxDuration: 300,
 };
 
 export default nextConfig;

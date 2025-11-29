@@ -23,13 +23,13 @@ interface VideoPlayerProps {
 }
 
 export function VideoPlayer({
-  src,
-  poster,
-  title = "Video",
   autoPlay = false,
   loop = false,
   onEnded,
   onTimeUpdate,
+  src,
+  poster,
+  title,
 }: VideoPlayerProps) {
   const player = usePlayer();
   const {
@@ -73,7 +73,9 @@ export function VideoPlayer({
       player.playerRef.current?.exitFullscreen();
     }
   }, [fullScreen, player.playerRef]);
-
+  if (!src) {
+    return null;
+  }
   return (
     <div className={`relative w-full h-full`}>
       <MediaPlayer

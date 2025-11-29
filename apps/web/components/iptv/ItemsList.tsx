@@ -19,13 +19,16 @@ const ItemsList: React.FC<MovieListProps> = ({
   onMovieClick,
 }) => {
   const cleanName = (name: string) => {
-    return name.replace(/^\|[A-Z]{2}\|\s*/, "");
+    return name
+      .replace(/^[A-Z]{2}\s*-\s*/i, "")
+      .replace(/\([^)]*\)/g, "")
+      .trim();
   };
   return (
     <div
       key={streamId}
       onClick={onMovieClick}
-      className='bg-white/10 backdrop-blur-md rounded-xl overflow-hidden border border-white/20 hover:bg-white/15 transition-all duration-300 transform hover:scale-105 cursor-pointer group  relative h-[400]'
+      className='bg-white/10 backdrop-blur-md rounded-xl overflow-hidden border border-white/20 hover:bg-white/15 transition-all duration-300 transform hover:scale-105 cursor-pointer group  relative h-[400] p-5'
     >
       {(
         (image && image.endsWith(".png")) ||
@@ -38,8 +41,8 @@ const ItemsList: React.FC<MovieListProps> = ({
           fill
           sizes='(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'
           style={{ objectFit: "cover" }}
-          priority={false}
           className='w-auto h-auto transition-opacity group-hover:opacity-90'
+          priority={false}
         />
       : <div className='absolute inset-0 flex items-center justify-center bg-black/50 backdrop-filter backdrop-blur-sm'>
           <p className='flex flex-col items-center text-sm font-semibold text-center text-white line-clamp-2'>
