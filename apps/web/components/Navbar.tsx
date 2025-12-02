@@ -106,9 +106,9 @@ export default function NavBar() {
   };
 
   return (
-    <header className='sticky top-0 z-50 border-b border-white/10 bg-gradient-to-r from-slate-950/95 via-blue-950/95 to-slate-950/95 backdrop-blur-xl'>
+    <header className='sticky top-0 z-50  border-b border-white/10'>
       <div className='px-4 mx-auto max-w-[90vw] sm:px-6 lg:px-8'>
-        <div className='flex items-center justify-between h-16 gap-4'>
+        <div className='flex items-center justify-between h-20  gap-4'>
           {/* Logo */}
           <Link href={"/"} className='flex items-center flex-shrink-0'>
             <div className='flex items-center justify-center w-9 h-9 mr-3 rounded-lg bg-gradient-to-br from-[#e94560] to-[#f39c12] shadow-lg shadow-orange-500/20'>
@@ -120,10 +120,10 @@ export default function NavBar() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className='items-center hidden space-x-1 md:flex flex-1 ml-8'>
+          <nav className='items-center justify-center hidden space-x-1 md:flex flex-1 ml-8'>
             {navItems.map((item) => (
               <Link key={item.href} href={item.href}>
-                <span className='px-3 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200'>
+                <span className='px-3 py-2 text-lg font-medium text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200'>
                   <span className='mr-1'>{item.icon}</span>
                   {item.label}
                 </span>
@@ -132,30 +132,29 @@ export default function NavBar() {
           </nav>
 
           {/* Center - Playlist Selector & Refresh */}
-          <div className='flex items-center gap-3 flex-shrink-0'>
+          <div className='flex items-center gap-4 flex-shrink-0'>
             <div className='relative group'>
               <Select
                 disabled={!playlists || playlists.length === 0}
                 onValueChange={(e) => handlePlaylistSelect(e)}
               >
                 <SelectTrigger
-                  className='w-[160px] md:w-[180px] bg-gradient-to-r from-blue-900/20 to-purple-900/20 rounded-lg text-white border border-blue-500/30 hover:border-blue-500/60 hover:bg-blue-900/30 transition-all duration-200 focus:ring-2 focus:ring-blue-500/50'
+                  className='w-[160px] md:w-[180px] rounded-lg text-white border border-white/10 hover:border-white/20 hover:bg-white/10 transition-all duration-200 focus:ring-2 focus:ring-white/20 cursor-pointer'
                   value={selectedPlaylist?.username || "Select"}
                 >
                   <SelectValue
                     placeholder={selectedPlaylist?.username || "Playlist"}
                   />
                 </SelectTrigger>
-                <SelectContent className='text-white bg-slate-900 border border-blue-500/30 rounded-lg shadow-xl'>
+                <SelectContent className='text-white bg-black/10 backdrop-blur-lg border border-white/10 rounded-lg shadow-xl'>
                   {playlists &&
                     playlists.map((playlist) => (
                       <SelectItem
                         key={playlist.id}
                         value={playlist.id.toString()}
-                        className='cursor-pointer hover:bg-blue-600/30 focus:bg-blue-600/50 transition-colors'
+                        className='cursor-pointer transition-colors'
                       >
                         <div className='flex items-center gap-2'>
-                          <span className='w-2 h-2 bg-green-500 rounded-full' />
                           {playlist.username}
                         </div>
                       </SelectItem>
@@ -165,7 +164,7 @@ export default function NavBar() {
             </div>
 
             <button
-              className='p-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30 hover:border-blue-500/60 hover:bg-blue-500/30 rounded-lg transition-all duration-200 disabled:opacity-50 group'
+              className='p-2 border border-white/10 rounded-lg transition-all duration-200 disabled:opacity-50 group cursor-pointer hover:border-white/20 hover:bg-white/10 flex items-center justify-center'
               disabled={isPending}
               onClick={() => {
                 if (selectedPlaylist) {
@@ -181,7 +180,7 @@ export default function NavBar() {
             >
               <RefreshCcw
                 className={cn(
-                  "w-5 h-5 text-blue-300 group-hover:text-blue-200 transition-colors",
+                  "w-5 h-5 text-slate-300 group-hover:text-slate-200 transition-colors",
                   isPending && "animate-spin"
                 )}
               />
@@ -191,7 +190,7 @@ export default function NavBar() {
           {/* Right Side - Time & Controls */}
           <div className='flex items-center gap-3 ml-auto -mr-[6rem] flex-shrink-0'>
             {/* Time Display */}
-            <div className='hidden sm:block px-3 py-1 bg-white/5 rounded-lg border border-white/10'>
+            <div className='hidden sm:block px-4 py-2.5 rounded-lg border border-white/10'>
               <div className='text-xs text-gray-400 font-mono'>{time}</div>
             </div>
 

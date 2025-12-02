@@ -1,10 +1,10 @@
-import { Input, Mutation, Query, Router } from "nestjs-trpc";
-import { MoviesService } from "./movies.service";
-import * as z from "zod";
-import { zodCategoriesSchema } from "../playlist/schema";
-import { MovieOutputSchema, zodMoviesList } from "./schema";
+import { Input, Mutation, Query, Router } from 'nestjs-trpc';
+import { MoviesService } from './movies.service';
+import * as z from 'zod';
+import { zodCategoriesSchema } from '../playlist/schema';
+import { MovieOutputSchema, zodMoviesList } from './schema';
 
-@Router({ alias: "movies" })
+@Router({ alias: 'movies' })
 export class MoviesRouter {
   constructor(private readonly moviesService: MoviesService) {}
   @Query({
@@ -15,8 +15,8 @@ export class MoviesRouter {
     output: zodMoviesList,
   })
   async getMovies(
-    @Input("playlistId") playlistId: number,
-    @Input("categoryId") categoryId: number
+    @Input('playlistId') playlistId: number,
+    @Input('categoryId') categoryId: number,
   ) {
     return this.moviesService.getMovies(playlistId, categoryId);
   }
@@ -31,13 +31,28 @@ export class MoviesRouter {
     // output: MovieOutputSchema,
   })
   async getMovie(
-    @Input("url") url: string,
-    @Input("username") uername: string,
-    @Input("password") password: string,
-    @Input("movieId") movieId: number
+    @Input('url') url: string,
+    @Input('username') uername: string,
+    @Input('password') password: string,
+    @Input('movieId') movieId: number,
   ) {
     return this.moviesService.getMovie(url, uername, password, movieId);
   }
+
+  @Query({
+    input: z.object({
+      tmdbId: z.number(),
+      playlistId: z.number(),
+    }),
+    // output: MovieOutputSchema,
+  })
+  async getTmdbMovieDetails(
+    @Input('tmdbId') tmdbId: number,
+    @Input('playlistId') playlistId: number,
+  ) {
+    return this.moviesService.getTmdbMovieDetails(tmdbId, playlistId);
+  }
+
   @Query({
     input: z.object({
       tmdbId: z.number().nullable(),
@@ -77,9 +92,9 @@ export class MoviesRouter {
     // }),
   })
   async getMovieDetails(
-    @Input("tmdbId") tmdbId?: number,
-    @Input("name") name?: string,
-    @Input("year") year?: number
+    @Input('tmdbId') tmdbId?: number,
+    @Input('name') name?: string,
+    @Input('year') year?: number,
   ) {
     return this.moviesService.getMovieDetails(tmdbId, name, year);
   }
@@ -93,10 +108,10 @@ export class MoviesRouter {
     }),
   })
   async createMovie(
-    @Input("url") url: string,
-    @Input("username") username: string,
-    @Input("password") password: string,
-    @Input("playlistId") playlistId: number
+    @Input('url') url: string,
+    @Input('username') username: string,
+    @Input('password') password: string,
+    @Input('playlistId') playlistId: number,
   ) {
     return this.moviesService.createMovie(url, username, password, playlistId);
   }
@@ -107,7 +122,7 @@ export class MoviesRouter {
     }),
     output: z.array(zodCategoriesSchema),
   })
-  async getMoviesCategories(@Input("playlistId") playlistId: number) {
+  async getMoviesCategories(@Input('playlistId') playlistId: number) {
     return this.moviesService.getMovieCategories(playlistId);
   }
   @Mutation({
@@ -119,16 +134,16 @@ export class MoviesRouter {
     }),
   })
   async createMoviesCategories(
-    @Input("url") url: string,
-    @Input("username") username: string,
-    @Input("password") password: string,
-    @Input("playlistId") playlistId: number
+    @Input('url') url: string,
+    @Input('username') username: string,
+    @Input('password') password: string,
+    @Input('playlistId') playlistId: number,
   ) {
     return this.moviesService.createMovieCategory(
       url,
       username,
       password,
-      playlistId
+      playlistId,
     );
   }
 }

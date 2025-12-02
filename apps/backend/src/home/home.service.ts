@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { ilike } from 'drizzle-orm';
+import { and, eq, ilike } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { channels } from 'src/channels/schema';
 import { CommonService } from 'src/common/common.service';
@@ -24,22 +24,37 @@ export class HomeService {
       series: series,
     };
   }
-  async globalSearch(query: string) {
+  async globalSearch(query: string, playlistId: number) {
     const [movieResults, seriesResults, channelsResults] = await Promise.all([
       await this.db
         .select()
         .from(movies)
-        .where(ilike(movies.name, `%${query}%`))
+        .where(
+          and(
+            ilike(movies.name, `%${query}%`),
+            eq(movies.playlistId, playlistId),
+          ),
+        )
         .execute(),
       await this.db
         .select()
         .from(series)
-        .where(ilike(series.name, `%${query}%`))
+        .where(
+          and(
+            ilike(series.name, `%${query}%`),
+            eq(series.playlistId, playlistId),
+          ),
+        )
         .execute(),
       await this.db
         .select()
         .from(channels)
-        .where(ilike(channels.name, `%${query}%`))
+        .where(
+          and(
+            ilike(channels.name, `%${query}%`),
+            eq(channels.playlistId, playlistId),
+          ),
+        )
         .execute(),
     ]);
     return {

@@ -115,6 +115,10 @@ const appRouter = t.router({
       password: z.string(),
       movieId: z.number(),
     })).query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as any),
+    getTmdbMovieDetails: publicProcedure.input(z.object({
+      tmdbId: z.number(),
+      playlistId: z.number(),
+    })).query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as any),
     getMovieDetails: publicProcedure.input(z.object({
       tmdbId: z.number().nullable(),
       name: z.string().nullable(),
@@ -219,6 +223,7 @@ const appRouter = t.router({
     })).query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as any),
     globalSearch: publicProcedure.input(z.object({
       query: z.string(),
+      playlistId: z.number(),
     })).output(z.object({
       movies: z.array(zodMovieSchema).nullable(),
       channels: z.array(zodChannelsSchema).nullable(),

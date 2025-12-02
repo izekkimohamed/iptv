@@ -9,8 +9,22 @@ import { CommonService } from '../common/common.service';
 import { DATABASE_CONNECTION } from '../database/database-connection';
 import { movies } from './schema';
 import { categories } from '../playlist/schema';
-import { and, asc, eq, sql } from 'drizzle-orm';
+import { and, asc, eq, ilike, like, sql } from 'drizzle-orm';
 
+function parseYear(value?: string | number | null): number | null {
+  if (!value) return null;
+
+  const str = String(value);
+
+  // If value is like "2019"
+  if (/^\d{4}$/.test(str)) {
+    return Number(str);
+  }
+
+  const d = new Date(str);
+  const year = d.getFullYear();
+  return isNaN(year) ? null : year;
+}
 const importJobs = new Map<
   string,
   {
@@ -227,6 +241,56 @@ export class MoviesService {
       ...data,
       tmdb: details,
     };
+  }
+
+  async getTmdbMovieDetails(tmdbId: number, playlistId: number) {
+    const tmdbDetails = await this.common.getTmdbInfo('movie', tmdbId);
+
+    if (!tmdbDetails) {
+      return { tmdb: null, dbMovies: [] };
+    }
+
+    const dbMovies = await this.database
+      .select()
+      .from(movies)
+      .where(
+        and(
+          ilike(movies.name, `%${tmdbDetails.title}%`),
+          eq(movies.playlistId, playlistId),
+        ),
+      )
+      .execute();
+
+    if (dbMovies.length === 0) {
+      return { tmdb: tmdbDetails, dbMovies: [] };
+    }
+
+    const tmdbYear = parseYear(tmdbDetails.releaseDate);
+    let matchedMovies: typeof dbMovies = [];
+
+    for (const movie of dbMovies) {
+      const baseUrl = movie.url.split('/movie')[0];
+      const username = movie.url.split('/')[4];
+      const password = movie.url.split('/')[5];
+
+      const res = await fetch(
+        `${baseUrl}/player_api.php?username=${username}&password=${password}&action=get_vod_info&vod_id=${movie.streamId}`,
+      );
+
+      const movieInfo = await res.json();
+
+      const movieYear = parseYear(movieInfo.info?.releasedate);
+
+      // ❌ Skip movie if the release date is invalid/missing
+      if (!movieYear) continue;
+
+      // strict year match
+      if (tmdbYear && movieYear === tmdbYear) {
+        matchedMovies.push(movie);
+      }
+    }
+
+    return { tmdb: tmdbDetails, dbMovies: matchedMovies };
   }
 
   async getMovieCategories(playlistId: number) {

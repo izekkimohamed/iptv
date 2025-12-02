@@ -46,12 +46,6 @@ export default function SeriesPage() {
       }
     );
 
-  const handleCategoryClick = (categoryId: number) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("categoryId", categoryId.toString());
-    params.delete("serieId");
-    router.push(`?${params.toString()}`);
-  };
   const handleserieClick = (serieId: number) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("serieId", serieId.toString());
@@ -63,7 +57,7 @@ export default function SeriesPage() {
         categories={categories}
         isLoading={isLoading}
         selectedCategoryId={selectedCategoryId}
-        onCategoryClick={handleCategoryClick}
+        categoryType='series'
       />
       <div className='flex-1 overflow-y-auto '>
         {!selectedCategoryId && !serieId && (
@@ -85,6 +79,7 @@ export default function SeriesPage() {
             tmdb={serie.tmdb}
             seasons={serie.seasons}
             episodes={serie.episodes}
+            stream_id={1}
           />
         )}
 

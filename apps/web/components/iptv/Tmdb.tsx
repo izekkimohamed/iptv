@@ -74,7 +74,7 @@ function Tmdb({
               key={i}
               target='_blank'
               title={t.name}
-              className=' min-w-[200px] aspect-video relative rounded-2xl overflow-hidden transform hover:scale-105 transition-all duration-300 backdrop-blur-sm'
+              className=' min-w-[200px] aspect-video relative rounded-2xl overflow-hidden transform hover:scale-105 transition-all duration-300'
             >
               <div className='absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center flex-col'>
                 <div className='relative flex flex-col justify-center items-center gap-1'>

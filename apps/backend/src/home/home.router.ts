@@ -92,10 +92,14 @@ export class HomeRouter {
   @Query({
     input: z.object({
       query: z.string(),
+      playlistId: z.number(),
     }),
     output: GlobalSearchResponseSchema,
   })
-  async globalSearch(@Input('query') query: string) {
-    return this.homeService.globalSearch(query);
+  async globalSearch(
+    @Input('query') query: string,
+    @Input('playlistId') playlistId: number,
+  ) {
+    return this.homeService.globalSearch(query, playlistId);
   }
 }

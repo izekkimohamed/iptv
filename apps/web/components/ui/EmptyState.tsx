@@ -15,7 +15,7 @@ export default function EmptyState({
 }: EmptyStateProps) {
   const containerClasses =
     fullScreen ?
-      "h-screen  flex items-center justify-center"
+      "h-full  flex items-center justify-center bg-gradient-to-b from-slate-900/40 to-slate-950"
     : "text-center py-12 px-6";
 
   return (

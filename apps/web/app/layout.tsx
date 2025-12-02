@@ -52,7 +52,7 @@ export default function RootLayout({
       <Providers>
         <body className={`${jetBrainsMono.className} font-mono antialiased`}>
           {/* linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); */}
-          <div className='flex flex-col h-screen font-mono bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460] text-slate-200'>
+          <div className='flex flex-col h-screen font-mono bg-gradient-to-b from-slate-900 to-slate-950'>
             <div>
               <NavBar />
             </div>

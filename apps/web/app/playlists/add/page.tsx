@@ -280,7 +280,7 @@ export default function Home() {
   if (isCreatingPlaylist) {
     return (
       <div className='overflow-y-auto flex items-center justify-center p-4'>
-        <div className='bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 max-w-2xl w-full'>
+        <div className='rounded-2xl p-8 border border-white/20 max-w-2xl w-full'>
           {/* Header */}
           <div className='text-center mb-8'>
             <div className='w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4'>

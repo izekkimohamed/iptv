@@ -3,12 +3,23 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useDebounce } from "@/hooks/useDebounce";
 import { trpc } from "@/lib/trpc";
 import { usePlaylistStore } from "@/store/appStore";
-import { Play, Search, X, Sparkles, Zap } from "lucide-react";
+import {
+  useWatchedMoviesStore,
+  useWatchedSeriesStore,
+} from "@/store/watchedStore";
+import { Play, Search, X, Sparkles, Zap, Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
 type FilterType = "all" | "channels" | "movies" | "series";
+
+const filters = [
+  { id: "all", label: "All", icon: "🎯" },
+  { id: "channels", label: "Channels", icon: "📺" },
+  { id: "movies", label: "Movies", icon: "🎬" },
+  { id: "series", label: "Series", icon: "📺" },
+] as const;
 
 export default function IPTVHomePage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -16,6 +27,8 @@ export default function IPTVHomePage() {
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
   const { selectedPlaylist: playlist } = usePlaylistStore();
+  const { movies, removeItem } = useWatchedMoviesStore();
+  const { series, removeItem: removeSeriesItem } = useWatchedSeriesStore();
   const { data: favoriteChannels } = trpc.channels.getChannels.useQuery(
     {
       favorites: true,
@@ -29,16 +42,9 @@ export default function IPTVHomePage() {
   const { data: trendingMovies } = trpc.home.getHome.useQuery();
   const { data: globalSearchResults, isLoading: isGlobalSearchLoading } =
     trpc.home.globalSearch.useQuery(
-      { query: debouncedSearchQuery },
+      { query: debouncedSearchQuery, playlistId: playlist?.id || 0 },
       { enabled: debouncedSearchQuery.trim().length > 0 }
     );
-
-  const filters = [
-    { id: "all", label: "All", icon: "🎯" },
-    { id: "channels", label: "Channels", icon: "📺" },
-    { id: "movies", label: "Movies", icon: "🎬" },
-    { id: "series", label: "Series", icon: "📺" },
-  ] as const;
 
   const getFilteredResults = () => {
     if (!globalSearchResults) return { channels: [], movies: [], series: [] };
@@ -68,14 +74,14 @@ export default function IPTVHomePage() {
   // Home Page
   if (!searchQuery.trim().length) {
     return (
-      <div className='h-screen flex flex-col overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950/50 to-slate-950'>
+      <div className='h-screen flex flex-col overflow-hidden '>
         {/* Header - Fixed */}
-        <div className='flex-shrink-0 py-4 border-b border-white/10 bg-gradient-to-r from-slate-950/80 via-blue-950/40 to-slate-950/80 backdrop-blur-xl'>
+        <div className='flex-shrink-0 py-6 border-b border-white/5 '>
           <div className='max-w-2xl mx-auto px-4'>
             <div className='relative group'>
-              <div className='absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 rounded-full blur opacity-60 group-hover:opacity-100 transition duration-500 animate-pulse' />
-              <div className='relative bg-slate-900/50 backdrop-blur-xl rounded-full px-6 py-3 flex items-center gap-4 border border-blue-500/20 group-hover:border-blue-500/50 transition-all duration-300'>
-                <Search className='w-5 h-5 text-blue-400 flex-shrink-0' />
+              <div className='absolute inset-0 bg-slate-950/50 rounded-full blur opacity-60 group-hover:opacity-100 transition duration-500 animate-pulse' />
+              <div className='relative rounded-full px-6 py-3 flex items-center gap-4 border border-blue-500/20 group-hover:border-blue-500/50 transition-all duration-300'>
+                <Search className='w-10 h-5 text-blue-400 flex-shrink-0' />
                 <input
                   type='text'
                   placeholder='Search channels, movies, series...'
@@ -88,7 +94,7 @@ export default function IPTVHomePage() {
                     onClick={() => setSearchQuery("")}
                     className='text-gray-400 hover:text-blue-400 transition-colors flex-shrink-0'
                   >
-                    <X className='w-5 h-5' />
+                    <X className='w-10 h-5' />
                   </button>
                 )}
               </div>
@@ -97,16 +103,16 @@ export default function IPTVHomePage() {
         </div>
 
         {/* Scrollable Content */}
-        <div className='flex-1 overflow-y-auto scrollbar-hide'>
-          <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-16'>
+        <div className='flex-1 overflow-y-auto '>
+          <div className='max-w-[90vw] mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-16'>
             {/* Favorite Channels */}
             {favoriteChannels && favoriteChannels.length > 0 && (
               <section className='space-y-6'>
                 <div className='flex items-center gap-4'>
                   <div className='relative'>
-                    <div className='absolute inset-0 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl blur opacity-50 group-hover:opacity-75 transition' />
-                    <div className='relative p-3 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-xl border border-yellow-500/30'>
-                      <span className='text-2xl'>⭐</span>
+                    <div className='absolute inset-0 bg-gradient-to-r from-yellow-1000 to-orange-500 rounded-xl blur opacity-50 group-hover:opacity-75 transition' />
+                    <div className='relative p-3 bg-gradient-to-r  from-yellow-300/30 to-orange-300/30 rounded-xl border border-amber-400'>
+                      <Star className='w-10 h-10 text-white  stroke-white' />
                     </div>
                   </div>
                   <div>
@@ -119,46 +125,181 @@ export default function IPTVHomePage() {
                   </div>
                 </div>
 
-                <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4'>
+                <div className='flex overflow-x-auto gap-4 p-4  rounded-xl border border-white/10 '>
                   {favoriteChannels?.map((channel) => (
                     <Link
                       href={`/channels?categoryId=${channel.categoryId}&channelId=${channel.id}`}
                       key={channel.id}
                       className='group'
                     >
-                      <div className='relative rounded-xl overflow-hidden aspect-square bg-slate-800 cursor-pointer border border-white/5 hover:border-white/20 transition-all duration-300'>
-                        <Image
-                          className='object-cover w-full h-full group-hover:scale-110 transition-transform duration-300'
-                          fill
-                          src={channel.streamIcon || "/icon.png"}
-                          alt={channel.name}
-                          onError={(e) => {
-                            e.currentTarget.src = "/icon.png";
-                          }}
-                        />
-                        <div className='absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-3'>
-                          <div className='p-2 bg-blue-600 rounded-full'>
-                            <Play className='w-4 h-4 text-white fill-white' />
+                      <div className='w-[150px] flex-shrink-0'>
+                        <div className='relative rounded-xl overflow-hidden aspect-square bg-slate-800 cursor-pointer border border-white/5 hover:border-white/20 transition-all duration-300'>
+                          <Image
+                            className='w-full h-full group-hover:scale-110 transition-transform duration-300'
+                            fill
+                            src={channel.streamIcon || "/icon.png"}
+                            alt={channel.name}
+                            onError={(e) => {
+                              e.currentTarget.src = "/icon.png";
+                            }}
+                          />
+                          <div className='absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center '>
+                            <div className='p-2 bg-blue-600/80 rounded-full'>
+                              <Play className='w-10 h-10 text-white fill-white' />
+                            </div>
                           </div>
                         </div>
+                        <p className='mt-2 text-white font-semibold text-center text-xs truncate group-hover:text-blue-400 transition-colors'>
+                          {channel.name}
+                        </p>
                       </div>
-                      <p className='mt-2 text-white font-semibold text-xs truncate group-hover:text-blue-400 transition-colors'>
-                        {channel.name}
-                      </p>
                     </Link>
                   ))}
                 </div>
               </section>
             )}
+            {/* continue Watching Movies Section */}
+            {movies.length > 0 && (
+              <>
+                <h2 className='text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent'>
+                  Continue Watching Movies
+                </h2>
+                <div className='flex overflow-x-auto gap-4 p-4 rounded-xl border border-white/10 '>
+                  {movies.map((item) => {
+                    const progress =
+                      item.position && item.duration ?
+                        item.position / item.duration
+                      : 0;
+
+                    return (
+                      <Link
+                        key={item.id}
+                        href={`movies?categoryId=${item.categoryId}&movieId=${item.id}&play=true`}
+                        className='relative group'
+                      >
+                        <div className='w-[200px] flex-shrink-0 '>
+                          <div className='relative rounded-lg overflow-hidden bg-slate-800 cursor-pointer border border-white/5 hover:border-white/20 transition-all duration-300'>
+                            {/* Thumbnail */}
+                            <div className='relative h-[300px] overflow-hidden'>
+                              <Image
+                                className='object-cover w-full h-full group-hover:scale-110 transition-transform duration-300'
+                                fill
+                                src={item.poster || "/icon.png"}
+                                alt={item.title || "Untitled"}
+                              />
+                            </div>
+
+                            {/* Progress Bar */}
+                            {progress > 0 && (
+                              <div className='absolute bottom-0 left-0 w-full h-1 bg-slate-700'>
+                                <div
+                                  className='h-full bg-blue-500 transition-all duration-300 rounded'
+                                  style={{
+                                    width: `${Math.min(progress * 100, 100)}%`,
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Title */}
+                          <p className='mt-2 text-white font-semibold text-center text-xs truncate group-hover:text-blue-400 transition-colors'>
+                            {item.title}
+                          </p>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            removeItem(item.id);
+                          }}
+                          className='absolute top-2 right-2 bg-slate-950 text-white rounded-full p-1 hover:bg-slate-900 border border-white/10 cursor-pointer transition'
+                        >
+                          <X className='w-4 h-4' />
+                        </button>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+            {/* continue Watching Series Section */}
+            {series.length > 0 && (
+              <>
+                <h2 className='text-3xl font-bold bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent'>
+                  Continue Watching Series
+                </h2>
+                <div className='flex overflow-x-auto gap-4 p-4 rounded-xl border border-white/10 '>
+                  {series.map((item) => {
+                    const progress =
+                      item.position && item.duration ?
+                        item.position / item.duration
+                      : 0;
+
+                    return (
+                      <Link
+                        key={item.id}
+                        href={`series?categoryId=${item.categoryId}&serieId=${item.id}&resumeSeries=true&poster=${item.poster}&title=${item.title}&src=${item.src}&seasonId=${item.seasonId}&episodeNumber=${item.episodeNumber}`}
+                        className='relative group'
+                      >
+                        <div className='w-[200px] flex-shrink-0 '>
+                          <div className='relative rounded-lg overflow-hidden bg-slate-800 cursor-pointer border border-white/5 hover:border-white/20 transition-all duration-300'>
+                            {/* Thumbnail */}
+                            <div className='relative h-[300px] overflow-hidden'>
+                              <Image
+                                className='object-cover w-full h-full group-hover:scale-110 transition-transform duration-300'
+                                fill
+                                src={item.poster || "/icon.png"}
+                                alt={item.title || "Untitled"}
+                              />
+                            </div>
+
+                            {/* Progress Bar */}
+                            {progress > 0 && (
+                              <div className='absolute bottom-0 left-0 w-full h-1 bg-slate-700'>
+                                <div
+                                  className='h-full bg-blue-500 transition-all duration-300 rounded'
+                                  style={{
+                                    width: `${Math.min(progress * 100, 100)}%`,
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Title */}
+                          <p className='mt-2 text-white font-semibold text-center text-xs truncate group-hover:text-blue-400 transition-colors'>
+                            {item.title}
+                          </p>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            removeSeriesItem(item.id);
+                          }}
+                          className='absolute top-2 right-2 bg-slate-950 text-white rounded-full p-1 hover:bg-slate-900 border border-white/10 cursor-pointer transition'
+                        >
+                          <X className='w-4 h-4' />
+                        </button>
+                        {/* add overlay to show the season and episode */}
+                        <div className='absolute top-2 left-2 bg-black bg-opacity-50 text-white text-xs rounded px-2 py-1'>
+                          S{item.seasonId}E{item.episodeNumber}
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </>
+            )}
 
             {/* Movies Section */}
             {trendingMovies?.movies && trendingMovies.movies.length > 0 && (
               <section className='space-y-6'>
+                {/* Title Header (No Change) */}
                 <div className='flex items-center gap-4'>
                   <div className='relative'>
                     <div className='absolute inset-0 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl blur opacity-50 group-hover:opacity-75 transition' />
                     <div className='relative p-3 bg-gradient-to-r from-red-500/20 to-pink-500/20 rounded-xl border border-red-500/30'>
-                      <Play className='w-5 h-5 text-white' />
+                      <Play className='w-10 h-10 text-white' />
                     </div>
                   </div>
                   <div>
@@ -171,11 +312,17 @@ export default function IPTVHomePage() {
                   </div>
                 </div>
 
-                <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4'>
+                {/* Movies List - MODIFIED FOR HORIZONTAL SCROLL */}
+                <div className='flex overflow-x-auto gap-4 p-4  rounded-xl border border-white/10 '>
                   {trendingMovies?.movies?.slice(0, 12).map((movie) => (
-                    <div key={movie.id} className='group'>
+                    // Add a fixed-width wrapper for each item
+                    <Link
+                      href={`movies/movie?movieId=${movie.id}`}
+                      key={movie.id}
+                      className='group w-[250px] flex-shrink-0'
+                    >
                       <div className='relative rounded-lg overflow-hidden bg-slate-800 cursor-pointer border border-white/5 hover:border-white/20 transition-all duration-300'>
-                        <div className='relative aspect-[2/3] overflow-hidden'>
+                        <div className='relative h-[400px]  overflow-hidden'>
                           <Image
                             className='object-cover w-full h-full group-hover:scale-110 transition-transform duration-300'
                             fill
@@ -184,7 +331,7 @@ export default function IPTVHomePage() {
                           />
                           <div className='absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center'>
                             <div className='p-2 bg-blue-600 rounded-full'>
-                              <Play className='w-5 h-5 text-white fill-white' />
+                              <Play className='w-10 h-10 text-white fill-white' />
                             </div>
                           </div>
                         </div>
@@ -197,7 +344,7 @@ export default function IPTVHomePage() {
                           </p>
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </section>
@@ -206,11 +353,12 @@ export default function IPTVHomePage() {
             {/* Series Section */}
             {trendingMovies?.series && trendingMovies.series.length > 0 && (
               <section className='space-y-6 pb-8'>
+                {/* Title Header (No Change) */}
                 <div className='flex items-center gap-4'>
                   <div className='relative'>
                     <div className='absolute inset-0 bg-gradient-to-r from-green-500 to-blue-500 rounded-xl blur opacity-50 group-hover:opacity-75 transition' />
                     <div className='relative p-3 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-xl border border-green-500/30'>
-                      <Play className='w-5 h-5 text-white' />
+                      <Play className='w-10 h-10 text-white' />
                     </div>
                   </div>
                   <div>
@@ -223,11 +371,13 @@ export default function IPTVHomePage() {
                   </div>
                 </div>
 
-                <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4'>
+                {/* Series List - MODIFIED FOR HORIZONTAL SCROLL */}
+                <div className='flex overflow-x-auto gap-4 p-4  rounded-xl border border-white/10 '>
                   {trendingMovies?.series?.slice(0, 12).map((s) => (
-                    <div key={s.id} className='group'>
+                    // Add a fixed-width wrapper for each item
+                    <div key={s.id} className='group w-[250px] flex-shrink-0'>
                       <div className='relative rounded-lg overflow-hidden bg-slate-800 cursor-pointer border border-white/5 hover:border-white/20 transition-all duration-300'>
-                        <div className='relative aspect-[2/3] overflow-hidden'>
+                        <div className='relative h-[400px] overflow-hidden'>
                           <Image
                             className='object-cover w-full h-full group-hover:scale-110 transition-transform duration-300'
                             fill
@@ -236,7 +386,7 @@ export default function IPTVHomePage() {
                           />
                           <div className='absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center'>
                             <div className='p-2 bg-blue-600 rounded-full'>
-                              <Play className='w-5 h-5 text-white fill-white' />
+                              <Play className='w-10 h-10 text-white fill-white' />
                             </div>
                           </div>
                         </div>
@@ -262,14 +412,14 @@ export default function IPTVHomePage() {
 
   // Search Results Page
   return (
-    <div className='h-screen flex flex-col overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950/50 to-slate-950'>
+    <div className='h-screen flex flex-col overflow-hidden '>
       {/* Header - Fixed */}
-      <div className='flex-shrink-0 py-4 border-b border-white/10 bg-gradient-to-r from-slate-950/80 via-blue-950/40 to-slate-950/80 backdrop-blur-xl'>
+      <div className='flex-shrink-0 py-6 border-b border-white/5 '>
         <div className='max-w-2xl mx-auto px-4'>
           <div className='relative group'>
-            <div className='absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 rounded-full blur opacity-60 group-hover:opacity-100 transition duration-500 animate-pulse' />
-            <div className='relative bg-slate-900/50 backdrop-blur-xl rounded-full px-6 py-3 flex items-center gap-4 border border-blue-500/20 group-hover:border-blue-500/50 transition-all duration-300'>
-              <Search className='w-5 h-5 text-blue-400 flex-shrink-0' />
+            <div className='absolute inset-0 bg-slate-950/50 rounded-full blur opacity-60 group-hover:opacity-100 transition duration-500 animate-pulse' />
+            <div className='relative  rounded-full px-6 py-3 flex items-center gap-4 border border-blue-500/20 group-hover:border-blue-500/50 transition-all duration-300'>
+              <Search className='w-10 h-5 text-blue-400 flex-shrink-0' />
               <input
                 type='text'
                 placeholder='Search channels, movies, series...'
@@ -282,7 +432,7 @@ export default function IPTVHomePage() {
                   onClick={() => setSearchQuery("")}
                   className='text-gray-400 hover:text-blue-400 transition-colors flex-shrink-0'
                 >
-                  <X className='w-5 h-5' />
+                  <X className='w-10 h-5' />
                 </button>
               )}
             </div>
@@ -291,13 +441,13 @@ export default function IPTVHomePage() {
       </div>
 
       {/* Scrollable Content */}
-      <div className='flex-1 overflow-y-auto scrollbar-hide'>
-        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10'>
+      <div className='flex-1 overflow-y-auto '>
+        <div className='max-w-[90vw] mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10'>
           {/* Search Header */}
           <div className='flex items-center justify-between gap-4'>
             <div className='flex-1'>
               <div className='flex items-center gap-2 mb-2'>
-                <Sparkles className='w-5 h-5 text-blue-400' />
+                <Sparkles className='w-10 h-5 text-blue-400' />
                 <span className='text-sm font-semibold text-blue-400'>
                   SEARCH RESULTS
                 </span>
@@ -368,7 +518,7 @@ export default function IPTVHomePage() {
                 <div className='flex items-center justify-between'>
                   <div className='flex items-center gap-3'>
                     <div className='p-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-lg border border-purple-500/30'>
-                      <Play className='w-5 h-5 text-purple-300' />
+                      <Play className='w-10 h-5 text-purple-300' />
                     </div>
                     <h3 className='text-2xl font-bold text-white'>
                       Channels{" "}
@@ -399,7 +549,7 @@ export default function IPTVHomePage() {
                           />
                           <div className='absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center'>
                             <div className='p-3 bg-blue-600 rounded-full'>
-                              <Play className='w-5 h-5 text-white fill-white' />
+                              <Play className='w-10 h-5 text-white fill-white' />
                             </div>
                           </div>
                           <div className='absolute top-2 right-2 px-2 py-1 bg-red-600 rounded-full'>
@@ -427,7 +577,7 @@ export default function IPTVHomePage() {
                 <div className='flex items-center justify-between'>
                   <div className='flex items-center gap-3'>
                     <div className='p-2 bg-gradient-to-r from-red-500/20 to-pink-500/20 rounded-lg border border-red-500/30'>
-                      <Play className='w-5 h-5 text-red-300' />
+                      <Play className='w-10 h-5 text-red-300' />
                     </div>
                     <h3 className='text-2xl font-bold text-white'>
                       Movies{" "}
@@ -458,7 +608,7 @@ export default function IPTVHomePage() {
                           />
                           <div className='absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center'>
                             <div className='p-3 bg-blue-600 rounded-full'>
-                              <Play className='w-5 h-5 text-white fill-white' />
+                              <Play className='w-10 h-5 text-white fill-white' />
                             </div>
                           </div>
                         </div>
@@ -483,7 +633,7 @@ export default function IPTVHomePage() {
                 <div className='flex items-center justify-between'>
                   <div className='flex items-center gap-3'>
                     <div className='p-2 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-lg border border-green-500/30'>
-                      <Play className='w-5 h-5 text-green-300' />
+                      <Play className='w-10 h-5 text-green-300' />
                     </div>
                     <h3 className='text-2xl font-bold text-white'>
                       Series{" "}
@@ -514,7 +664,7 @@ export default function IPTVHomePage() {
                           />
                           <div className='absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center'>
                             <div className='p-3 bg-blue-600 rounded-full'>
-                              <Play className='w-5 h-5 text-white fill-white' />
+                              <Play className='w-10 h-5 text-white fill-white' />
                             </div>
                           </div>
                         </div>

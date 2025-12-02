@@ -80,9 +80,9 @@ export default function SophisticatedLoginForm() {
     formData.url && formData.username && formData.password && !urlError;
 
   return (
-    <div className='font-mono backdrop-blur-md border border-white/20 rounded-2xl p-8 shadow-2xl max-w-md mx-auto w-full'>
+    <div className='font-mono border border-white/10 rounded-2xl p-8 shadow-2xl max-w-md mx-auto w-full'>
       <div className='text-center mb-8'>
-        <div className='mx-auto h-12 w-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mb-4'>
+        <div className='mx-auto h-12 w-12  rounded-full flex items-center justify-center mb-4'>
           <svg
             className='h-6 w-6 text-white'
             fill='none'
@@ -126,10 +126,10 @@ export default function SophisticatedLoginForm() {
                 onChange={handleChange}
                 onBlur={handleUrlBlur}
                 className={`appearance-none relative block w-full px-4 py-3 pr-12 border rounded-xl text-white placeholder-gray-400
-                 backdrop-blur-sm transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent ${
+                 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent ${
                    urlError && urlTouched ?
                      "border-red-400 focus:border-red-400 focus:ring-red-400"
-                   : "border-gray-600 focus:border-purple-400 focus:ring-purple-400"
+                   : "border-gray-600 focus:border-blue-950 focus:ring-blue-950"
                  }`}
                 placeholder='https://api.example.com'
               />
@@ -176,7 +176,7 @@ export default function SophisticatedLoginForm() {
               type='text'
               value={formData.username}
               onChange={handleChange}
-              className='appearance-none relative block w-full px-4 py-3 border border-gray-600 rounded-xl text-white placeholder-gray-400 backdrop-blur-sm transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent focus:border-purple-400 focus:ring-purple-400'
+              className='appearance-none relative block w-full px-4 py-3 border border-gray-600 rounded-xl text-white placeholder-gray-400 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent focus:border-blue-950 focus:ring-blue-950'
               placeholder='Enter your username'
             />
           </div>
@@ -197,7 +197,7 @@ export default function SophisticatedLoginForm() {
               type='text'
               value={formData.password}
               onChange={handleChange}
-              className='appearance-none relative block w-full px-4 py-3 pr-12 border border-gray-600 rounded-xl text-white placeholder-gray-400 backdrop-blur-sm transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent focus:border-purple-400 focus:ring-purple-400'
+              className='appearance-none relative block w-full px-4 py-3 pr-12 border border-gray-600 rounded-xl text-white placeholder-gray-400  transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent focus:border-blue-950 focus:ring-blue-950'
               placeholder='Enter your password'
             />
             <button
@@ -248,10 +248,10 @@ export default function SophisticatedLoginForm() {
           type='button'
           onClick={handleSubmit}
           disabled={!isFormValid || isPending}
-          className={`group relative w-full flex items-center justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-400 ${
+          className={`group relative w-full flex items-center justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-950 ${
             isFormValid && !isPending ?
-              "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-purple-500/25 cursor-pointer"
-            : "bg-gray-600 cursor-not-allowed"
+              "bg-gradient-to-r focus:border-blue-950 focus:ring-blue-950 from-blue-950 to-blue-950 shadow-lg hover:shadow-blue-500/25 cursor-pointer"
+            : "bg-gray-600  cursor-not-allowed"
           }`}
         >
           {isPending ?

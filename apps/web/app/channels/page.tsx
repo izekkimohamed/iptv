@@ -99,7 +99,7 @@ export default function ChannelsPage() {
           categories={categories}
           isLoading={isFetchingCategories}
           selectedCategoryId={selectedCategoryId}
-          onCategoryClick={handleCategoryClick}
+          categoryType='channels'
         />
 
         {/* Channels Sidebar */}
@@ -124,6 +124,10 @@ export default function ChannelsPage() {
                 {/* Video Player Area */}
                 <div className='h-1/2'>
                   <VideoPlayer
+                    id={selectedChannel ? selectedChannel.id : 0}
+                    categoryId={
+                      selectedCategory ? selectedCategory.categoryId : 0
+                    }
                     autoPlay
                     src={src}
                     poster={poster}
@@ -145,7 +149,7 @@ export default function ChannelsPage() {
                   )}
                 </div>
               </div>
-            : <div className='flex-1 flex items-center justify-center h-full backdrop-blur-md'>
+            : <div className='flex-1 flex items-center justify-center h-full'>
                 <div className='text-center'>
                   <div className='text-6xl mb-4 opacity-50'>🎬</div>
                   <h4 className='text-xl font-semibold text-white mb-2'>

@@ -27,7 +27,7 @@ export default function PlayerHeader({ selectedChannel }: PlayerHeaderProps) {
     },
   });
   return (
-    <div className='bg-black/20 backdrop-blur-md border border-white/10 '>
+    <div className='border-x border-white/10 '>
       <div className='flex items-center justify-between'>
         {selectedChannel && (
           <>

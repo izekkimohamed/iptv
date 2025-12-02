@@ -73,7 +73,7 @@ export default function ChannelInfoPanel({
   }
 
   return (
-    <div className='flex-1 bg-black/20 backdrop-blur-md border-t border-white/10 p-6 flex flex-col h-full overflow-y-auto'>
+    <div className='flex-1 bg-black/20 border-t border-white/10 p-6 flex flex-col h-full overflow-y-auto'>
       <h5 className='text-sm font-medium text-gray-400 mb-4'>
         Now & Next on {selectedChannel.name}
       </h5>

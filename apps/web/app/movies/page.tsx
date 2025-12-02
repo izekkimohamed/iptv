@@ -6,18 +6,12 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { trpc } from "@/lib/trpc";
 import { usePlaylistStore } from "@/store/appStore";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  Grid,
-  List,
-  RowComponentProps,
-  useDynamicRowHeight,
-} from "react-window";
-import AutoSizer from "react-virtualized-auto-sizer";
+import { List, RowComponentProps } from "react-window";
 
 import ItemsList from "@/components/iptv/ItemsList";
 import ItemsDetails from "@/components/iptv/ItemsDetails";
 
-export default function ChannelsPage() {
+export default function MoviesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const selectedCategoryId = searchParams.get("categoryId");
@@ -25,16 +19,6 @@ export default function ChannelsPage() {
   // Search functionality to be implemented
 
   const { selectedPlaylist: playlist } = usePlaylistStore();
-
-  const { data: categories, isLoading: isFetchingCategories } =
-    trpc.movies.getMoviesCategories.useQuery(
-      {
-        playlistId: playlist?.id || 0,
-      },
-      {
-        enabled: !!playlist,
-      }
-    );
 
   const { data: movies, isLoading: isFetchingMovies } =
     trpc.movies.getMovies.useQuery(
@@ -60,17 +44,7 @@ export default function ChannelsPage() {
       }
     );
 
-  const rowHeight = useDynamicRowHeight({
-    defaultRowHeight: 250,
-  });
-
   // Event handlers
-  const handleCategoryClick = (categoryId: number) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("categoryId", categoryId.toString());
-    params.delete("movieId");
-    router.push(`?${params.toString()}`);
-  };
 
   const handleMovieClick = (movieId: number) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -90,15 +64,8 @@ export default function ChannelsPage() {
   }
 
   return (
-    <div className='flex flex-1 overflow-y-auto'>
-      <CategoriesSidebar
-        categories={categories}
-        isLoading={isFetchingCategories}
-        selectedCategoryId={selectedCategoryId}
-        onCategoryClick={handleCategoryClick}
-      />
-
-      <div className='flex-1 overflow-y-auto'>
+    <>
+      <div className='flex-1 overflow-y-auto bg-gradient-to-b from-slate-900/40 to-slate-950'>
         {!selectedCategoryId && !movieId && (
           <EmptyState
             icon='📺'
@@ -121,7 +88,7 @@ export default function ChannelsPage() {
           />
         )}
         {movies && !isFetchingMovies && !isFetchingMovie && !movieId && (
-          <div className='p-3'>
+          <div className='p-3 bg-gradient-to-b from-slate-900/40 to-slate-950'>
             <List
               className='grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-3 '
               rowComponent={RowComponent}
@@ -132,7 +99,7 @@ export default function ChannelsPage() {
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }
 

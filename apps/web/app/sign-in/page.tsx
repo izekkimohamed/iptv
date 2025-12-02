@@ -17,7 +17,7 @@ export default function SignInPage() {
   };
   return (
     <div className='min-h-screen flex items-center justify-center p-6'>
-      <div className='max-w-md w-full bg-black/20 backdrop-blur-md shadow-2xl rounded-2xl p-8 py-20'>
+      <div className='max-w-md w-full shadow-2xl rounded-2xl p-8 py-20'>
         <header className='text-center mb-6 space-y-1'>
           <h1 className='text-2xl font-semibold text-white'>
             Welcome SteamMax
