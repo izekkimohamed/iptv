@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -120,17 +120,51 @@
     overscroll-behavior: none;
   }
   body {
+    --video-border: 1px solid transparent !important;
+    /* In your global CSS file */
+    .vds-player .vds-icon {
+      width: 24px;
+      height: 24px;
+    }
     .custom-scrollbar::-webkit-scrollbar {
       width: 6px;
     }
-    [data-isfullscreen="true"] video {
-      object-fit: fill !important;
+    [data-isfullscreen='true'] video {
       height: 100% !important;
     }
-    [data-isfullscreen="false"] video {
+    [data-isfullscreen='false'] video {
+      height: 100% !important;
+    }
+    [data-aspect-ratio='4:3'] video {
       object-fit: contain !important;
-      height: 100% !important;
     }
+    [data-aspect-ratio='1:1'] video {
+      object-fit: cover !important;
+    }
+    [data-aspect-ratio='16:9'] video {
+      object-fit: fill !important;
+    }
+    [data-is-paused='true'] video {
+      cursor: pointer;
+      transform: scale(1.1);
+      filter: grayscale(100%);
+    }
+    /* [data-show-controls='false'] div {
+      pointer-events: none;
+      display: none !important;
+      opacity: 0;
+      visibility: hidden;
+    } */
+    [data-media-player] [data-layout='video'] div {
+      border: none !important;
+    }
+    .media-captions {
+      font-size: 16px;
+      color: white;
+      background-color: rgba(0, 0, 0, 0.8);
+      padding: 8px;
+    }
+
     /* Custom Scrollbar Styles */
 
     /* Webkit browsers (Chrome, Safari, Edge) */

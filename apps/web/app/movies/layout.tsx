@@ -1,9 +1,9 @@
-"use client";
-import CategoriesSidebar from "@/components/iptv/CategoriesSidebar";
-import { trpc } from "@/lib/trpc";
-import { usePlaylistStore } from "@/store/appStore";
-import { useRouter, useSearchParams } from "next/navigation";
-import React from "react";
+'use client';
+import CategoriesSidebar from '@/components/commen/CategoriesSidebar';
+import { trpc } from '@/lib/trpc';
+import { usePlaylistStore } from '@/store/appStore';
+import { useRouter, useSearchParams } from 'next/navigation';
+import React from 'react';
 
 export default function Layout({
   children,
@@ -13,7 +13,7 @@ export default function Layout({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const selectedCategoryId = searchParams.get("categoryId");
+  const selectedCategoryId = searchParams.get('categoryId');
 
   const { selectedPlaylist: playlist } = usePlaylistStore();
 
@@ -24,21 +24,21 @@ export default function Layout({
       },
       {
         enabled: !!playlist,
-      }
+      },
     );
   const handleCategoryClick = (categoryId: number) => {
     const params = new URLSearchParams(searchParams.toString());
-    params.set("categoryId", categoryId.toString());
-    params.delete("movieId");
+    params.set('categoryId', categoryId.toString());
+    params.delete('movieId');
     router.replace(`/movies?${params.toString()}`);
   };
   return (
-    <div className='flex flex-1 overflow-y-auto'>
+    <div className="flex flex-1 overflow-y-auto">
       <CategoriesSidebar
         categories={categories}
         isLoading={isFetchingCategories}
         selectedCategoryId={selectedCategoryId}
-        categoryType='movies'
+        categoryType="movies"
       />
       {children}
     </div>

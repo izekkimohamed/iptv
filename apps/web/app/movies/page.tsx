@@ -1,63 +1,63 @@
-"use client";
+'use client';
 
-import CategoriesSidebar from "@/components/iptv/CategoriesSidebar";
-import EmptyState from "@/components/ui/EmptyState";
-import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { trpc } from "@/lib/trpc";
-import { usePlaylistStore } from "@/store/appStore";
-import { useRouter, useSearchParams } from "next/navigation";
-import { List, RowComponentProps } from "react-window";
+import { trpc } from '@/lib/trpc';
+import { usePlaylistStore } from '@/store/appStore';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { List, RowComponentProps } from 'react-window';
 
-import ItemsList from "@/components/iptv/ItemsList";
-import ItemsDetails from "@/components/iptv/ItemsDetails";
+import ItemsDetails from '@/components/iptv/ItemsDetails';
+import ItemsList from '@/components/iptv/ItemsList';
+import EmptyState from '@/components/ui/EmptyState';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 export default function MoviesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const selectedCategoryId = searchParams.get("categoryId");
-  const movieId = searchParams.get("movieId");
-  // Search functionality to be implemented
+  const selectedCategoryId = searchParams.get('categoryId');
+  const movieId = searchParams.get('movieId');
 
   const { selectedPlaylist: playlist } = usePlaylistStore();
 
-  const { data: movies, isLoading: isFetchingMovies } =
-    trpc.movies.getMovies.useQuery(
-      {
-        categoryId: parseInt(selectedCategoryId || "0"),
-        playlistId: playlist?.id || 0,
-      },
-      {
-        enabled: !!selectedCategoryId,
-      }
-    );
+  const { data: movies, isLoading: isFetchingMovies } = trpc.movies.getMovies.useQuery(
+    {
+      categoryId: parseInt(selectedCategoryId || '0'),
+      playlistId: playlist?.id || 0,
+    },
+    {
+      enabled: !!selectedCategoryId,
+    },
+  );
 
-  const { data: movie, isLoading: isFetchingMovie } =
-    trpc.movies.getMovie.useQuery(
-      {
-        movieId: parseInt(movieId || "0"),
-        url: playlist?.baseUrl || "",
-        username: playlist?.username || "",
-        password: playlist?.password || "",
-      },
-      {
-        enabled: !!movieId,
-      }
-    );
+  const {
+    data: movie,
+    isLoading: isFetchingMovie,
+    error: movieError,
+  } = trpc.movies.getMovie.useQuery(
+    {
+      movieId: parseInt(movieId || '0'),
+      url: playlist?.baseUrl || '',
+      username: playlist?.username || '',
+      password: playlist?.password || '',
+    },
+    {
+      enabled: !!movieId,
+    },
+  );
 
   // Event handlers
 
   const handleMovieClick = (movieId: number) => {
     const params = new URLSearchParams(searchParams.toString());
-    params.set("movieId", movieId.toString());
+    params.set('movieId', movieId.toString());
     router.push(`?${params.toString()}`);
   };
 
   if (!playlist) {
     return (
       <EmptyState
-        icon='📺'
-        title='No Playlists Found'
-        description='Please add a playlist to view channels'
+        icon="📺"
+        title="No Playlists Found"
+        description="Please add a playlist to view channels"
         fullScreen
       />
     );
@@ -65,21 +65,29 @@ export default function MoviesPage() {
 
   return (
     <>
-      <div className='flex-1 overflow-y-auto bg-gradient-to-b from-slate-900/40 to-slate-950'>
+      <div className="flex-1 min-h-full overflow-y-auto">
+        {movieError && (
+          <EmptyState
+            icon="📺"
+            title="No Movies Found"
+            description="Please try again later"
+            fullScreen
+            goBack
+          />
+        )}
         {!selectedCategoryId && !movieId && (
           <EmptyState
-            icon='📺'
-            title='No Categories Found'
-            description='Please select a category to view movies'
+            icon="📺"
+            title="No Categories Found"
+            description="Please select a category to view movies"
             fullScreen
           />
         )}
-        {isFetchingMovies || (isFetchingMovie && <LoadingSpinner />)}
+        {isFetchingMovies || (isFetchingMovie && <LoadingSpinner fullScreen />)}
         {movieId && movie && (
           <ItemsDetails
             image={movie.info.movie_image}
             rating={movie.info.rating}
-            releasedate={movie.info.releasedate}
             description={movie.info.plot}
             stream_id={movie.movie_data.stream_id}
             name={movie.movie_data.name}
@@ -88,9 +96,9 @@ export default function MoviesPage() {
           />
         )}
         {movies && !isFetchingMovies && !isFetchingMovie && !movieId && (
-          <div className='p-3 bg-gradient-to-b from-slate-900/40 to-slate-950'>
+          <div className="p-5 bg-gradient-to-b from-slate-900/40 to-slate-950 min-h-full">
             <List
-              className='grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-3 '
+              className="grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-3 "
               rowComponent={RowComponent}
               rowCount={movies.length}
               rowHeight={0.3}

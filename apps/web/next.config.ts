@@ -1,15 +1,15 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
-const isProd = process.env.NODE_ENV === "production";
+const isProd = process.env.NODE_ENV === 'production';
 
-const internalHost = process.env.TAURI_DEV_HOST || "localhost";
+const internalHost = process.env.TAURI_DEV_HOST || 'localhost';
 
 const nextConfig: NextConfig = {
   /* config options here */
   reactStrictMode: false,
-  distDir: "out",
+  distDir: 'out',
 
-  output: "export",
+  output: 'export',
   assetPrefix: isProd ? undefined : `http://${internalHost}:3000`,
 
   eslint: {
@@ -22,7 +22,7 @@ const nextConfig: NextConfig = {
     unoptimized: true,
     remotePatterns: [
       {
-        hostname: "**",
+        hostname: '**',
       },
     ],
   },

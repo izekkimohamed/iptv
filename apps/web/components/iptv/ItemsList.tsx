@@ -1,8 +1,8 @@
-import { Film, Play, Star } from "lucide-react";
-import Image from "next/image";
-import React from "react";
+import { cleanName } from '@/lib/utils';
+import { Film, Play, TrendingUp } from 'lucide-react';
+import Image from 'next/image';
 
-interface MovieListProps {
+interface ItemsListProps {
   streamId: number;
   title: string;
   image: string;
@@ -10,112 +10,118 @@ interface MovieListProps {
   onMovieClick: () => void;
 }
 
-const ItemsList: React.FC<MovieListProps> = ({
-  image,
-  title,
-  rating,
-  streamId,
-  onMovieClick,
-}) => {
-  const cleanName = (name: string) => {
-    return name
-      .replace(/^[A-Z]{2}\s*-\s*/i, "")
-      .replace(/\([^)]*\)/g, "")
-      .trim();
-  };
-
+function ItemsList(props: ItemsListProps) {
+  const { image, title, rating, streamId, onMovieClick } = props;
   const ratingValue = Number(rating).toFixed(1);
-  const ratingPercentage = (Number(ratingValue) / 10) * 100;
+  const ratingNum = Number(ratingValue);
+
+  // Determine rating tier
+  const isHighRated = ratingNum >= 8;
+  const isMediumRated = ratingNum >= 6 && ratingNum < 8;
 
   return (
     <div
       key={streamId}
       onClick={onMovieClick}
-      className='relative h-[320px] rounded-xl overflow-hidden cursor-pointer group bg-slate-900/40 border border-white/10 hover:border-blue-500/50 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/20'
+      className="relative h-[320px] rounded-lg overflow-hidden cursor-pointer group border border-slate-700 hover:border-amber-500 transition-all duration-300 hover:scale-105 hover:shadow-[0_16px_40px_-8px_rgba(245,158,11,0.3)]"
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onMovieClick();
+        }
+      }}
     >
       {/* Background Image */}
-      {(
-        image &&
-        (image.endsWith(".png") ||
-          image.endsWith(".jpg") ||
-          image.endsWith(".jpeg"))
-      ) ?
+      {image && (image.endsWith('.png') || image.endsWith('.jpg') || image.endsWith('.jpeg')) ? (
         <>
           <Image
             src={image}
             alt={cleanName(title)}
             fill
-            sizes='(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'
-            style={{ objectFit: "fill" }}
-            className='w-full h-full transition-all duration-300 group-hover:scale-110 group-hover:brightness-75'
+            className="transition-all duration-500 group-hover:scale-105"
             priority={false}
             onError={(e) => {
-              e.currentTarget.src = "./icon.png";
+              e.currentTarget.src = './icon.png';
+              e.currentTarget.height = 0;
+              e.currentTarget.width = 0;
+              e.currentTarget.style.display = 'none';
+              e.currentTarget.style.visibility = 'hidden';
             }}
           />
-          <div className='absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300' />
+          {/* Dark overlay */}
+          <div className="h-full flex flex-col gap-1 justify-center items-center text-center text-slate-50 bg-gradient-to-br from-slate-800 to-slate-900">
+            <Film className="w-14 h-14 text-slate-600 mx-auto" />
+            {cleanName(title)}
+          </div>
         </>
-      : <div className='absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900'>
-          <div className='text-center space-y-2'>
-            <Film className='w-12 h-12 text-gray-400 mx-auto' />
-            <p className='text-xs font-semibold text-gray-300 line-clamp-3 px-2'>
-              {cleanName(title)}
-            </p>
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center text-center text-slate-50 bg-gradient-to-br from-slate-800 to-slate-900">
+          <div className="text-center space-y-3">
+            <Film className="w-14 h-14 text-slate-600 mx-auto" />
+            <p className="text-xs truncate  px-3">{cleanName(title)}</p>
           </div>
         </div>
-      }
+      )}
 
       {/* Play Button - Center Overlay */}
-      <div className='absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 z-20'>
-        <div className='p-4 rounded-full bg-blue-600 hover:bg-blue-700 shadow-2xl shadow-blue-500/50 transform group-hover:scale-110 transition-transform duration-300'>
-          <Play className='w-6 h-6 text-white fill-white' />
+      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 z-20">
+        <div className="p-4 rounded-full bg-amber-500 shadow-lg shadow-amber-600/40 transform scale-75 group-hover:scale-100 transition-transform duration-300">
+          <Play className="w-7 h-7 text-white fill-white ml-0.5" />
         </div>
       </div>
 
-      {/* Rating Badge - Top Right */}
-      <div className='absolute top-3 right-3 z-10 bg-black/70 rounded-full p-1 w-10 h-10 flex items-center justify-center'>
-        <div className='relative'>
-          <svg className='w-12 h-12 transform -rotate-90' viewBox='0 0 100 100'>
-            <circle
-              cx='50'
-              cy='50'
-              r='45'
-              fill='none'
-              stroke='rgba(255,255,255,0.2)'
-              strokeWidth='8'
-            />
-            <circle
-              cx='50'
-              cy='50'
-              r='45'
-              fill='none'
-              stroke={`hsl(${
-                ratingPercentage > 50 ? 120
-                : ratingPercentage > 30 ? 45
-                : 0
-              }, 100%, 50%)`}
-              strokeWidth='6'
-              strokeLinecap='round'
-              strokeDasharray={`${2.83 * ratingPercentage} 283`}
-              className='transition-all duration-300'
-            />
-          </svg>
-          <div className='absolute inset-0 flex items-center justify-center'>
-            <span className='text-xs font-bold text-white'>{ratingValue}</span>
+      {/* Top Right Badges */}
+      <div className="absolute top-3 right-3 z-30 flex flex-col gap-2 items-end">
+        {/* Rating Badge */}
+        <div
+          className={`flex items-center justify-center w-12 h-12 rounded-full border-2 shadow-md backdrop-blur-sm ${
+            isHighRated
+              ? 'bg-emerald-950 border-emerald-600'
+              : isMediumRated
+                ? 'bg-amber-950 border-amber-600'
+                : 'bg-slate-900 border-slate-700'
+          }`}
+        >
+          <div className="text-center">
+            <div className="text-xs font-bold text-white">{ratingValue}</div>
+            <div
+              className={`text-[9px] font-semibold ${
+                isHighRated
+                  ? 'text-emerald-400'
+                  : isMediumRated
+                    ? 'text-amber-400'
+                    : 'text-slate-500'
+              }`}
+            >
+              /10
+            </div>
           </div>
         </div>
+
+        {/* Quality Indicator */}
+        {isHighRated && (
+          <div className="bg-emerald-600 text-white text-xs font-bold px-2.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-md border border-emerald-500/30">
+            <TrendingUp className="w-3.5 h-3.5" />
+            <span>Top</span>
+          </div>
+        )}
       </div>
 
       {/* Content - Bottom Section */}
-      <div className='absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/60 to-transparent transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300'>
-        <div className='space-y-3'>
-          <h3 className='text-sm font-bold text-white line-clamp-2 leading-tight'>
+      <div className="absolute bottom-0 left-0 right-0 p-4 bg-black/50 backdrop-blur-sm transform translate-y-1 group-hover:translate-y-0 transition-all duration-300 border-t border-white/5">
+        <div className="space-y-2">
+          <h3 className="text-sm text-center font-bold text-white line-clamp-2 leading-snug group-hover:text-amber-200 truncate transition-colors">
             {cleanName(title)}
           </h3>
         </div>
       </div>
+
+      {/* Border shine on hover */}
+      <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-20 transition-opacity duration-300 border border-white rounded-lg" />
     </div>
   );
-};
+}
 
 export default ItemsList;
