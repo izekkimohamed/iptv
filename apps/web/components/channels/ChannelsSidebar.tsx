@@ -28,7 +28,7 @@ export default function ChannelsSidebar(props: ChannelsSidebarProps) {
   });
 
   return (
-    <div className="w-[400px] h-full flex flex-col border-r border-white/10 backdrop-blur-sm">
+    <div className="max-w-[400px] h-full flex flex-col border-r border-white/10 backdrop-blur-sm">
       {/* Header */}
       <div className="px-4 py-4 border-b border-white/10 flex items-center justify-between">
         <h2 className="text-lg font-semibold tracking-tight text-white/90">Channels</h2>
@@ -64,22 +64,21 @@ export default function ChannelsSidebar(props: ChannelsSidebarProps) {
                   key={channel.id}
                   data-channel-id={channel.id}
                   className={`
-                    group flex items-center justify-between px-3 py-2 rounded-lg border transition-all
+                    group grid items-center grid-cols-[65px_1fr_auto] gap-3 px-3 py-2 rounded-lg border transition-all
                     ${
                       isSelected
-                        ? 'border-amber-500/40 shadow-md shadow-amber-500/10 text-amber-100'
+                        ? 'border-amber-500/40 shadow-md bg-amber-500/10 backdrop-blur-sm shadow-amber-500/10 text-amber-100'
                         : 'border-transparent hover:border-white/10 hover:bg-white/5 text-gray-300 hover:text-white'
                     }
                   `}
                 >
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex items-center gap-3 w-[65px] h-[50px] relative rounded-md overflow-hidden bg-white/10 ">
                     {channel.streamIcon ? (
                       <Image
-                        width={40}
-                        height={40}
+                        fill
                         src={channel.streamIcon}
                         alt={channel.name}
-                        className="rounded-sm"
+                        className="object-center object-contain p-1 scale-110"
                         onError={(e) => (e.currentTarget.style.display = 'none')}
                       />
                     ) : (
@@ -87,9 +86,8 @@ export default function ChannelsSidebar(props: ChannelsSidebarProps) {
                         <span className="text-lg">📺</span>
                       </div>
                     )}
-
-                    <span className="truncate font-medium">{channel.name}</span>
                   </div>
+                  <span className="text-wrap font-medium line-clamp-2">{channel.name}</span>
 
                   {channel.isFavorite && (
                     <span className="text-amber-400 text-lg">

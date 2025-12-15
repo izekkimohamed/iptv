@@ -1,8 +1,8 @@
 'use client';
 import { TrailerModal } from '@/components/commen/TrailerModels';
-import { VideoPlayerModal } from '@/components/commen/VideoModels';
 import { Button } from '@/components/ui/button';
 import { trpc } from '@/lib/trpc';
+import { VideoPlayerModal } from '@/src/shared/components/common/VideoPlayerModal';
 import { usePlaylistStore } from '@/store/appStore';
 import {
   Calendar,

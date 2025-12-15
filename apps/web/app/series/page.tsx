@@ -1,14 +1,14 @@
 'use client';
 
 import CategoriesSidebar from '@/components/commen/CategoriesSidebar';
-import ItemsDetails from '@/components/iptv/ItemsDetails';
 import ItemsList from '@/components/iptv/ItemsList';
 import EmptyState from '@/components/ui/EmptyState';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import SeriesDetails from '@/features/series/components/SeriesDetails';
 import { trpc } from '@/lib/trpc';
+import VirtualGrid from '@/src/shared/components/common/VirtualGrid';
 import { usePlaylistStore } from '@/store/appStore';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { List, RowComponentProps } from 'react-window';
 
 export default function SeriesPage() {
   const router = useRouter();
@@ -80,7 +80,7 @@ export default function SeriesPage() {
         )}
         {isFetchingSeries || (isFetchingSerie && <LoadingSpinner fullScreen />)}
         {serieId && serie && (
-          <ItemsDetails
+          <SeriesDetails
             image={serie.info.cover}
             rating={serie.info.rating}
             description={serie.info.plot}
@@ -94,52 +94,28 @@ export default function SeriesPage() {
 
         {series && !isFetchingSeries && !isFetchingSerie && !serieId && (
           <div className="bg-gradient-to-b from-slate-900/40 to-slate-950 min-h-full">
-            <List
-              className="p-5 grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-3 "
-              rowComponent={RowComponent}
-              rowCount={series.length}
-              rowHeight={0.3}
-              rowProps={{ series, handleserieClick }}
-            />
+            <div className="">
+              <VirtualGrid
+                className="h-full p-5"
+                items={series}
+                renderItem={(serie) => (
+                  <ItemsList
+                    image={serie.cover || ''}
+                    title={serie.name || ''}
+                    rating={serie.rating || ''}
+                    streamId={serie.seriesId}
+                    onMovieClick={() => handleserieClick(serie.seriesId)}
+                    itemType="series"
+                  />
+                )}
+                minItemWidth={230}
+                estimateItemHeight={360}
+                gapClassName="gap-3"
+              />
+            </div>
           </div>
         )}
       </div>
     </div>
-  );
-}
-
-function RowComponent({
-  index,
-  series,
-  handleserieClick,
-}: RowComponentProps<{
-  series: Array<{
-    id: number;
-    seriesId: number;
-    name: string | null;
-    cover: string | null;
-    plot: string | null;
-    cast: string | null;
-    director: string | null;
-    genere: string | null;
-    releaseDate: string | null;
-    lastModified: string | null;
-    rating: string | null;
-    backdropPath: string | null;
-    youtubeTrailer: string | null;
-    episodeRunTime: string | null;
-    categoryId: number;
-    playlistId: number;
-  }>;
-  handleserieClick: (serieId: number) => void;
-}>) {
-  return (
-    <ItemsList
-      image={series[index].cover || ''}
-      title={series[index].name || ''}
-      rating={series[index].rating || ''}
-      streamId={series[index].seriesId}
-      onMovieClick={() => handleserieClick(series[index].seriesId)}
-    />
   );
 }

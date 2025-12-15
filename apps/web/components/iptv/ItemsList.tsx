@@ -1,6 +1,9 @@
 import { cleanName } from '@/lib/utils';
+import { usePlaylistStore } from '@/store/appStore';
+import { useWatchedMoviesStore, useWatchedSeriesStore } from '@/store/watchedStore';
 import { Film, Play, TrendingUp } from 'lucide-react';
 import Image from 'next/image';
+import { useState } from 'react';
 
 interface ItemsListProps {
   streamId: number;
@@ -8,12 +11,28 @@ interface ItemsListProps {
   image: string;
   rating: string;
   onMovieClick: () => void;
+  itemType?: 'movie' | 'series';
 }
 
 function ItemsList(props: ItemsListProps) {
-  const { image, title, rating, streamId, onMovieClick } = props;
+  const { image, title, rating, streamId, onMovieClick, itemType } = props;
   const ratingValue = Number(rating).toFixed(1);
   const ratingNum = Number(ratingValue);
+  const [loaded, setLoaded] = useState(false);
+  const { selectedPlaylist } = usePlaylistStore();
+  const { getProgress: getMovieProgress } = useWatchedMoviesStore();
+  const { getProgress: getSeriesProgress } = useWatchedSeriesStore();
+  const type = itemType;
+  const progressPct =
+    type === 'movie'
+      ? (() => {
+          const item = getMovieProgress(streamId, selectedPlaylist?.id || 0);
+          if (!item || !item.duration) return 0;
+          return Math.min(item.position / item.duration, 1);
+        })()
+      : type === 'series'
+        ? Math.min(getSeriesProgress(streamId, selectedPlaylist?.id || 0) || 0, 1)
+        : 0;
 
   // Determine rating tier
   const isHighRated = ratingNum >= 8;
@@ -42,6 +61,7 @@ function ItemsList(props: ItemsListProps) {
             fill
             className="transition-all duration-500 group-hover:scale-105"
             priority={false}
+            onLoad={() => setLoaded(true)}
             onError={(e) => {
               e.currentTarget.src = './icon.png';
               e.currentTarget.height = 0;
@@ -50,6 +70,9 @@ function ItemsList(props: ItemsListProps) {
               e.currentTarget.style.visibility = 'hidden';
             }}
           />
+          {!loaded && (
+            <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-slate-800 to-slate-900" />
+          )}
           {/* Dark overlay */}
           <div className="h-full flex flex-col gap-1 justify-center items-center text-center text-slate-50 bg-gradient-to-br from-slate-800 to-slate-900">
             <Film className="w-14 h-14 text-slate-600 mx-auto" />
@@ -71,6 +94,19 @@ function ItemsList(props: ItemsListProps) {
           <Play className="w-7 h-7 text-white fill-white ml-0.5" />
         </div>
       </div>
+
+      {/* Progress Bar */}
+      {progressPct > 0 && (
+        <div className="absolute bottom-0 left-0 w-full h-1.5 bg-slate-800/80 z-30">
+          <div
+            className="h-full bg-amber-500 shadow-[inset_0_0_6px_rgba(245,158,11,0.3)]"
+            style={{
+              width: `${Math.min(progressPct * 100, 100)}%`,
+              transition: 'width 0.3s ease-out',
+            }}
+          />
+        </div>
+      )}
 
       {/* Top Right Badges */}
       <div className="absolute top-3 right-3 z-30 flex flex-col gap-2 items-end">

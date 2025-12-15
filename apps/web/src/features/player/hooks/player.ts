@@ -9,6 +9,8 @@ export interface UsePlayerReturn {
   isFullscreen: boolean;
   buffered: number;
   isLoading: boolean;
+  playbackRate: number;
+  isPiP: boolean;
   play: () => void;
   pause: () => void;
   togglePlay: () => void;
@@ -18,6 +20,8 @@ export interface UsePlayerReturn {
   toggleFullscreen: () => void;
   forward: (seconds: number) => void;
   backward: (seconds: number) => void;
+  setPlaybackRate: (rate: number) => void;
+  togglePiP: () => void;
 }
 
 export function usePlayer(): UsePlayerReturn {
@@ -30,10 +34,10 @@ export function usePlayer(): UsePlayerReturn {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [buffered, setBuffered] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [playbackRate, setPlaybackRateState] = useState(1);
+  const [isPiP, setIsPiP] = useState(false);
 
-  // Setup subscriptions to a player instance
   const setupSubscriptions = useCallback((player: MediaPlayerInstance | null) => {
-    // Clean up old subscriptions
     unsubscribeRef.current.forEach((fn) => fn?.());
     unsubscribeRef.current = [];
 
@@ -51,23 +55,22 @@ export function usePlayer(): UsePlayerReturn {
           }
         }),
         player.subscribe(({ bufferedEnd }) => setIsLoading(bufferedEnd === 0)),
+        player.subscribe(({ playbackRate }) => setPlaybackRateState(playbackRate ?? 1)),
+        player.subscribe(({ pictureInPicture }) => setIsPiP(pictureInPicture ?? false)),
       ];
     } catch (error) {
       console.error('Failed to setup player subscriptions:', error);
     }
   }, []);
 
-  // Watch for player ref changes using a polling approach
   useEffect(() => {
     const checkInterval = setInterval(() => {
       const currentPlayer = playerRef.current;
-      // If we have a new player or the player changed, setup subscriptions
       if (currentPlayer) {
         setupSubscriptions(currentPlayer);
       }
     }, 100);
 
-    // Also setup on mount
     setupSubscriptions(playerRef.current);
 
     return () => {
@@ -139,6 +142,22 @@ export function usePlayer(): UsePlayerReturn {
     }
   }, []);
 
+  const setPlaybackRate = useCallback((rate: number) => {
+    if (playerRef.current) {
+      playerRef.current.playbackRate = Math.max(0.25, Math.min(3, rate));
+    }
+  }, []);
+
+  const togglePiP = useCallback(() => {
+    if (playerRef.current) {
+      if (playerRef.current.state.pictureInPicture) {
+        playerRef.current.exitPictureInPicture();
+      } else {
+        playerRef.current.enterPictureInPicture();
+      }
+    }
+  }, []);
+
   return {
     playerRef,
     currentTime,
@@ -147,6 +166,8 @@ export function usePlayer(): UsePlayerReturn {
     isFullscreen,
     buffered,
     isLoading,
+    playbackRate,
+    isPiP,
     play,
     pause,
     togglePlay,
@@ -156,5 +177,7 @@ export function usePlayer(): UsePlayerReturn {
     toggleFullscreen,
     forward,
     backward,
+    setPlaybackRate,
+    togglePiP,
   };
 }

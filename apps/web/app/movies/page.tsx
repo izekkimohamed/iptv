@@ -1,14 +1,14 @@
 'use client';
 
 import { trpc } from '@/lib/trpc';
+import VirtualGrid from '@/src/shared/components/common/VirtualGrid';
 import { usePlaylistStore } from '@/store/appStore';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { List, RowComponentProps } from 'react-window';
 
-import ItemsDetails from '@/components/iptv/ItemsDetails';
 import ItemsList from '@/components/iptv/ItemsList';
 import EmptyState from '@/components/ui/EmptyState';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import MovieDetails from '@/features/movies/components/MovieDetails';
 
 export default function MoviesPage() {
   const router = useRouter();
@@ -85,7 +85,7 @@ export default function MoviesPage() {
         )}
         {isFetchingMovies || (isFetchingMovie && <LoadingSpinner fullScreen />)}
         {movieId && movie && (
-          <ItemsDetails
+          <MovieDetails
             image={movie.info.movie_image}
             rating={movie.info.rating}
             description={movie.info.plot}
@@ -96,48 +96,27 @@ export default function MoviesPage() {
           />
         )}
         {movies && !isFetchingMovies && !isFetchingMovie && !movieId && (
-          <div className="p-5 bg-gradient-to-b from-slate-900/40 to-slate-950 min-h-full">
-            <List
-              className="grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-3 "
-              rowComponent={RowComponent}
-              rowCount={movies.length}
-              rowHeight={0.3}
-              rowProps={{ movies, handleMovieClick }}
+          <div className="bg-gradient-to-b from-slate-900/40 to-slate-950 min-h-full">
+            <VirtualGrid
+              className="h-full p-5 "
+              items={movies}
+              renderItem={(movie) => (
+                <ItemsList
+                  image={movie.streamIcon}
+                  title={movie.name}
+                  rating={movie.rating}
+                  streamId={movie.streamId}
+                  onMovieClick={() => handleMovieClick(movie.streamId)}
+                  itemType="movie"
+                />
+              )}
+              minItemWidth={230}
+              estimateItemHeight={360}
+              gapClassName="gap-3"
             />
           </div>
         )}
       </div>
     </>
-  );
-}
-
-function RowComponent({
-  index,
-  movies,
-  handleMovieClick,
-}: RowComponentProps<{
-  movies: Array<{
-    id: number;
-    streamId: number;
-    name: string;
-    streamType: string;
-    streamIcon: string;
-    rating: string;
-    added: string;
-    categoryId: number;
-    playlistId: number;
-    containerExtension: string;
-    url: string;
-  }>;
-  handleMovieClick: (movieId: number) => void;
-}>) {
-  return (
-    <ItemsList
-      image={movies[index].streamIcon}
-      title={movies[index].name}
-      rating={movies[index].rating}
-      streamId={movies[index].streamId}
-      onMovieClick={() => handleMovieClick(movies[index].streamId)}
-    />
   );
 }

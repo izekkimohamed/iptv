@@ -3,12 +3,12 @@ import ChannelInfoPanel from '@/components/channels/ChannelInfoPanel';
 import ChannelsSidebar from '@/components/channels/ChannelsSidebar';
 import PlayerHeader from '@/components/iptv/PlayerHeader';
 import EmptyState from '@/components/ui/EmptyState';
-import VideoPlayer from '@/components/videoPlayer';
+import VideoPlayer from '@/features/player/components/VideoPlayer';
 import { trpc } from '@/lib/trpc';
 import { usePlaylistStore } from '@/store/appStore';
 import { usePlayerStore } from '@/store/player-store';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
 export default function ChannelsPage() {
   const router = useRouter();
@@ -31,11 +31,39 @@ export default function ChannelsPage() {
     },
   );
 
-  const handleChannelClick = (channelId: number) => {
+  const selectedIndex = useMemo(() => {
+    if (!channels || !selectedChannelId) return -1;
+    return channels.findIndex((c) => c.id.toString() === selectedChannelId);
+  }, [channels, selectedChannelId]);
+
+  const hasPrev = selectedIndex > 0;
+  const hasNext = !!channels && selectedIndex >= 0 && selectedIndex < channels.length - 1;
+
+  const playPrevChannel = () => {
+    if (!channels || selectedIndex < 0) return;
+    const prevIndex = selectedIndex - 1;
+    if (prevIndex < 0) return;
+    const target = channels[prevIndex];
     const params = new URLSearchParams(searchParams.toString());
-    params.set('channelId', channelId.toString());
+    params.set('channelId', target.id.toString());
     router.push(`?${params.toString()}`);
   };
+
+  const playNextChannel = () => {
+    if (!channels || selectedIndex < 0) return;
+    const nextIndex = selectedIndex + 1;
+    if (nextIndex >= channels.length) return;
+    const target = channels[nextIndex];
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('channelId', target.id.toString());
+    router.push(`?${params.toString()}`);
+  };
+
+  // const handleChannelClick = (channelId: number) => {
+  //   const params = new URLSearchParams(searchParams.toString());
+  //   params.set('channelId', channelId.toString());
+  //   router.push(`?${params.toString()}`);
+  // };
 
   const selectedChannel = channels?.find((chan) => chan.id.toString() === selectedChannelId);
   // Update player when selectedChannel changes
@@ -84,7 +112,11 @@ export default function ChannelsPage() {
                   movieId={null}
                   serieId={null}
                   categoryId={null}
-                  toitalEpisodes={0}
+                  totalEpisodes={0}
+                  hasNext={hasNext}
+                  hasPrev={hasPrev}
+                  playNext={playNextChannel}
+                  playPrev={playPrevChannel}
                 />
               </div>
 

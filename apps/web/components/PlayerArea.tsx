@@ -1,7 +1,7 @@
+import VideoPlayer from '@/features/player/components/VideoPlayer';
 import { usePlaylistStore } from '@/store/appStore';
 import ChannelInfoPanel from './channels/ChannelInfoPanel';
 import PlayerHeader from './iptv/PlayerHeader';
-import VideoPlayer from './videoPlayer';
 
 interface SelectedChannel {
   id: number;
@@ -38,10 +38,10 @@ function PlayerArea({ selectedChannel }: { selectedChannel: SelectedChannel | un
                 poster={selectedChannel?.streamIcon}
                 title={selectedChannel?.name}
                 autoPlay
-                toitalEpisodes={0}
+                totalEpisodes={0}
                 serieId={null}
                 movieId={null}
-                categoryId={''}
+                categoryId={null}
               />
             </div>
 

@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { cleanName, cn } from '@/lib/utils';
 import { formatTime } from '@vidstack/react';
@@ -15,8 +16,7 @@ import {
   VolumeX,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Button } from './ui/button';
-import { AspectRatio } from './videoPlayer';
+import { AspectRatio } from './VideoPlayer';
 
 interface CustomControlsProps {
   currentTime: number;
@@ -27,6 +27,7 @@ interface CustomControlsProps {
   volume: number;
   isMuted: boolean;
   aspectRatio: AspectRatio;
+  playbackRate?: number;
   title: string;
   onPlayPause: () => void;
   onSeek: (time: number) => void;
@@ -38,6 +39,9 @@ interface CustomControlsProps {
   hasNext?: boolean;
   hasPrev?: boolean;
   onToggleAspectRatio?: () => void;
+  onRateIncrease?: () => void;
+  onRateDecrease?: () => void;
+  onTogglePiP?: () => void;
 }
 
 const aspectRatioIcon = {
@@ -65,7 +69,12 @@ export function CustomControls({
   onToggleAspectRatio,
   aspectRatio,
   title,
+  playbackRate,
+  onRateIncrease,
+  onRateDecrease,
+  onTogglePiP,
 }: CustomControlsProps) {
+  const [showHelp, setShowHelp] = useState(false);
   const [isDraggingSlider, setIsDraggingSlider] = useState(false);
   const [isControlsVisible, setIsControlsVisible] = useState(true);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -80,7 +89,7 @@ export function CustomControls({
     if (isFullscreen && isPlaying && !isDraggingSlider) {
       hideTimeoutRef.current = setTimeout(() => {
         setIsControlsVisible(false);
-      }, 3000); // 3 seconds delay
+      }, 3000);
     }
   };
 
@@ -120,7 +129,6 @@ export function CustomControls({
       className={`absolute bottom-0 left-0 flex flex-col gap-3 w-full px-4 py-3 bg-gradient-to-t from-black/80 to-transparent transition-opacity duration-300 z-10`}
       style={{
         opacity: isControlsVisible ? 1 : 0,
-
         pointerEvents: isControlsVisible || isDraggingSlider ? 'auto' : 'none',
       }}
     >
@@ -203,7 +211,7 @@ export function CustomControls({
                 'p-2 bg-transparent hover:bg-amber-400/30 rounded-lg transition-colors',
                 !hasPrev && 'cursor-not-allowed',
               )}
-              title="Next Episode"
+              title="Next"
             >
               <SkipBack className="w-5 h-5 text-white fill-white" />
             </Button>
@@ -217,7 +225,7 @@ export function CustomControls({
                 'p-2 bg-transparent hover:bg-amber-400/30 rounded-lg transition-colors',
                 !hasNext && 'cursor-not-allowed',
               )}
-              title="Next Episode"
+              title="Next"
             >
               <SkipForward className="w-5 h-5 text-white  fill-white" />
             </Button>
@@ -238,6 +246,45 @@ export function CustomControls({
               {aspectRatioIcon[aspectRatio]}
             </Button>
           )}
+          {onTogglePiP && (
+            <Button
+              size={'sm'}
+              onClick={onTogglePiP}
+              className="px-3 py-2 bg-transparent hover:bg-amber-400/30 rounded-lg transition-colors text-white"
+              title="Picture-in-Picture"
+            >
+              PiP
+            </Button>
+          )}
+          <Button
+            size={'sm'}
+            onClick={() => setShowHelp((s) => !s)}
+            className="px-3 py-2 bg-transparent hover:bg-amber-400/30 rounded-lg transition-colors text-white"
+            title="Shortcuts Help"
+          >
+            ?
+          </Button>
+          {(onRateIncrease || onRateDecrease) && (
+            <div className="flex items-center gap-2">
+              <Button
+                size={'sm'}
+                onClick={onRateDecrease}
+                className="px-3 py-2 bg-transparent hover:bg-amber-400/30 rounded-lg transition-colors text-white"
+                title="Decrease Speed"
+              >
+                −
+              </Button>
+              <span className="text-white text-sm">{(playbackRate ?? 1).toFixed(2)}x</span>
+              <Button
+                size={'sm'}
+                onClick={onRateIncrease}
+                className="px-3 py-2 bg-transparent hover:bg-amber-400/30 rounded-lg transition-colors text-white"
+                title="Increase Speed"
+              >
+                +
+              </Button>
+            </div>
+          )}
           <Button
             size={'icon-lg'}
             onClick={onToggleFullscreen}
@@ -252,6 +299,19 @@ export function CustomControls({
           </Button>
         </div>
       </div>
+      {showHelp && (
+        <div className="absolute right-4 bottom-20 bg-black/80 backdrop-blur-md border border-white/10 rounded-lg p-3 text-white text-xs space-y-1 max-w-xs">
+          <div className="font-semibold text-amber-300 mb-1">Shortcuts</div>
+          <div>Space: Play/Pause</div>
+          <div>M: Mute/Unmute</div>
+          <div>F: Fullscreen</div>
+          <div>P: Picture-in-Picture</div>
+          <div>+: Increase Speed</div>
+          <div>-: Decrease Speed</div>
+          <div>←/→: Seek 5s</div>
+          <div>N/B: Next/Prev Episode (Series)</div>
+        </div>
+      )}
     </div>
   );
 }

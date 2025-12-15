@@ -1,8 +1,8 @@
+import { Button } from '@/components/ui/button';
+import { VideoPlayer } from '@/features/player/components/VideoPlayer';
 import { VideoPlayerModalProps } from '@/lib/types';
 import { X } from 'lucide-react';
 import { FC } from 'react';
-import { Button } from '../ui/button';
-import { VideoPlayer } from '../videoPlayer';
 
 type EnhancedProps = VideoPlayerModalProps & {
   totalEpisodes: number;
@@ -51,7 +51,6 @@ export const VideoPlayerModal: FC<EnhancedProps> = ({
           </Button>
         </div>
 
-        {/* Video Player Container */}
         <div className="relative bg-black/80 backdrop-blur-md">
           <VideoPlayer
             src={src}
@@ -64,8 +63,8 @@ export const VideoPlayerModal: FC<EnhancedProps> = ({
             categoryId={categoryId}
             serieId={serieId}
             movieId={movieId}
-            playNextEpisode={onNextEpisode}
-            playPrevEpisode={onPrevEpisode}
+            playNext={onNextEpisode}
+            playPrev={onPrevEpisode}
             hasNext={hasNext}
             hasPrev={hasPrev}
           />

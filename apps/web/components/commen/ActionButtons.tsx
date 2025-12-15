@@ -11,22 +11,26 @@ interface EpisodeToPlay {
 
 interface UpdatedActionButtonsProps extends ActionButtonsProps {
   episodeToPlay?: EpisodeToPlay | null;
+  isMovieResume?: boolean;
 }
 
 export const ActionButtons: FC<UpdatedActionButtonsProps> = ({
   hasSeasons,
-  onPlayMovie,
   hasTrailer,
-  onPlayTrailer,
   episodeToPlay,
+  isMovieResume,
+  onPlayMovie,
+  onPlayTrailer,
 }) => {
   const getPlayButtonLabel = () => {
-    if (!hasSeasons) return 'Watch Movie';
+    if (!hasSeasons && isMovieResume) return 'Resume Movie';
+    if (!hasSeasons && !isMovieResume) return 'Watch Movie';
+
     if (!episodeToPlay) return 'Watch Series';
     if (episodeToPlay.isResume) {
       return `Resume S${episodeToPlay.seasonId}E${episodeToPlay.episodeNumber}`;
     }
-    return `Start S${episodeToPlay.seasonId}E${episodeToPlay.episodeNumber}`;
+    return `Start Watching`;
   };
 
   return (

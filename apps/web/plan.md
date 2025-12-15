@@ -1,44 +1,70 @@
-# IPTV App Refactoring Plan
+# Web App Refactor Plan
 
-This document outlines a plan for refactoring the IPTV application to improve its quality, maintainability, and performance.
+## Goals
 
-## 1. Code Quality and Consistency
+- Adopt a feature-first, domain-driven structure for the Next.js App Router.
+- Simplify imports and colocation of feature code.
+- Remove auth; app runs locally and stores state client-side.
+- Prepare for a clean Next.js API migration later.
 
-- [*] **Linting and Formatting:** Set up and enforce strict linting and formatting rules using ESLint and Prettier.
-- [ ] **Type Safety:** Enhance type safety by ensuring all parts of the application have proper TypeScript coverage.
-- [ ] **Code Style:** Document and enforce a consistent code style for naming conventions, component structure, and file organization.
+## Folder Structure
 
-## 2. Component Structure and Reusability
+- `app/`
+  - `layout.tsx`, `page.tsx`
+  - `channels/` (`page.tsx`, `layout.tsx`)
+  - `movies/` (`page.tsx`, `movie/page.tsx`, `layout.tsx`)
+  - `series/` (`page.tsx`)
+  - `playlists/add/page.tsx`
+- `src/`
+  - `features/`
+    - `home/` (`components`, `hooks`)
+    - `playlists/` (`components`, `hooks`, `services`)
+    - `channels/` (`components`, `hooks`)
+    - `movies/` (`components`, `hooks`)
+    - `series/` (`components`, `hooks`)
+    - `player/` (`components`, `hooks`)
+  - `shared/`
+    - `ui/` (button, select, sheet, slider, Controls, EmptyState, LoadingSpinner)
+    - `components/` (generic cross-feature)
+    - `hooks/` (useDebounce, useAutoScrollToSelected)
+    - `lib/` (utils, type helpers)
+    - `api/` (`trpc.ts`, `session.ts`)
+    - `state/` (`playlist`, `player`, `watched`)
+    - `types/` (Channel, Movie, Series, Playlist)
+    - `providers/` (`TrpcProvider`, root `Providers`)
+  - `config/` (env accessors, constants)
+  - `styles/` (globals.css)
+  - `tests/` (unit/integration)
+- `public/` (assets)
+- `src-tauri/` (unchanged)
 
-- [ ] **Component Audit:** Review all existing components and identify large, complex components that can be broken down into smaller, more manageable ones.
-- [ ] **Reusable Logic:** Abstract reusable logic from components into custom hooks (e.g., data fetching, state manipulation).
-- [ ] **Component Library:** Organize UI components into a structured library with clear documentation and usage examples.
+## Cleanup & Migration Todos
 
-## 3. State Management
+- Set TS path aliases for `@/features/*` and `@/shared/*`.
+- Rename `components/commen` to `src/shared/components/common`.
+- Remove duplicate `components/HomeSearch.tsx`; keep `features/home/components/HomeSearch.tsx`.
+- Move UI primitives from `components/ui/*` to `src/shared/ui/*`.
+- Move domain components:
+  - Channels → `src/features/channels/components/*`
+  - Movies → `src/features/movies/components/*` (ItemsList, ItemsDetails, TMDB blocks)
+  - Series → `src/features/series/components/*`
+  - Player → `src/features/player/components/*` and `hooks/*`
+- Move shared hooks to `src/shared/hooks/*`; keep feature-specific hooks under each feature.
+- Split `lib/*`:
+  - `utils.ts` → `src/shared/lib/utils.ts`
+  - `trpc.ts` → `src/shared/api/trpc.ts`
+- Move Zustand stores to `src/shared/state/*` (playlist, player, watched).
+- Update imports to use aliases; remove deep relative paths.
+- Keep `app/*` routes thin; import from `src/features/*`.
+- Add basic tests for player and stores.
 
-- [ ] **State Audit:** Review the usage of Zustand stores to ensure a clear and efficient state management strategy.
-- [ ] **State Colocation:** Where appropriate, move state closer to the components that use it to reduce global state complexity.
-- [ ] **Minimize Re-renders:** Optimize state updates to prevent unnecessary re-renders and improve UI performance.
+## Auth Removal
 
-## 4. API Layer and Data Fetching
+- Delete auth-specific providers and hooks (AuthProvider, auth-client).
+- Remove `app/sign-in/page.tsx` route and all references.
+- Ensure no guarded logic depends on server sessions; rely on local state only.
 
-- [ ] **Data Fetching Hooks:** Create dedicated hooks for fetching data from the IPTV provider and TMDB to encapsulate data fetching, caching, and error handling logic.
-- [ ] **API Service Layer:** Refactor the API interaction logic into a dedicated service layer to separate it from the UI.
-- [ ] **Error Handling:** Implement a robust and consistent error handling strategy for all API interactions.
+## Notes
 
-## 5. Testing
-
-- [ ] **Unit Tests:** Add unit tests for critical components, custom hooks, and utility functions using a testing framework like Jest or Vitest.
-- [ ] **Integration Tests:** Set up integration tests to verify the interaction between different parts of the application.
-- [ ] **End-to-End Tests:** Create end-to-end tests to simulate user flows and ensure the application works as expected from the user's perspective.
-
-## 6. Performance Optimization
-
-- [ ] **Bundle Size Analysis:** Analyze the application's bundle size and identify opportunities for optimization.
-- [ ] **Code Splitting and Lazy Loading:** Implement code splitting and lazy loading for routes and components to improve initial load times.
-- [ ] **Memoization:** Use `React.memo`, `useMemo`, and `useCallback` to prevent unnecessary re-renders of components.
-
-## 7. Project Structure and Organization
-
-- [ ] **File and Folder Structure:** Review and refactor the project's file and folder structure to ensure it is logical, scalable, and easy to navigate.
-- [ ] **Dependency Audit:** Review all project dependencies, remove unused ones, and update outdated packages.
+- TRPC client remains, pointing to local or future Next.js API.
+- Bulk ingestion/updates will move to Next.js API later; UI remains unchanged.

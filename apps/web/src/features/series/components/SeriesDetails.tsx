@@ -1,60 +1,59 @@
-import { useMoviePlayback, useStreamingUrls, useTrailerPlayback } from '@/hooks/useDetails';
+import { ActionButtons } from '@/components/commen/ActionButtons';
+import { CastSection } from '@/components/commen/CastSection';
+import { EpisodesSection } from '@/components/commen/EpisodesSection';
+import { HeaderSection } from '@/components/commen/HeaderSection';
+import { TrailerModal } from '@/components/commen/TrailerModels';
+import { TrailersSection } from '@/components/commen/TrailersSEction';
+import { Button } from '@/components/ui/button';
+import { useTrailerPlayback } from '@/hooks/useDetails';
 import { ItemsDetailsProps } from '@/lib/types';
 import { usePlaylistStore } from '@/store/appStore';
 import { useWatchedSeriesStore } from '@/store/watchedStore';
 import { ChevronLeft } from 'lucide-react';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
-import { FC, useMemo, useRef } from 'react';
-import { ActionButtons } from '../commen/ActionButtons';
-import { CastSection } from '../commen/CastSection';
-import { EpisodesSection } from '../commen/EpisodesSection';
-import { HeaderSection } from '../commen/HeaderSection';
-import { TrailerModal } from '../commen/TrailerModels';
-import { TrailersSection } from '../commen/TrailersSEction';
-import { VideoPlayerModal } from '../commen/VideoModels';
-import { Button } from '../ui/button';
+import { useMemo, useRef } from 'react';
 
-const ItemsDetails: FC<ItemsDetailsProps> = (props) => {
-  const {
-    container_extension,
-    description,
-    image,
-    name,
-    rating,
-    stream_id,
-    seasons,
-    episodes,
-    tmdb,
-  } = props;
+type SeriesDetailsProps = Omit<ItemsDetailsProps, 'container_extension'> & {
+  seasons: NonNullable<ItemsDetailsProps['seasons']>;
+  episodes: NonNullable<ItemsDetailsProps['episodes']>;
+};
 
+export default function SeriesDetails({
+  description,
+  image,
+  name,
+  rating,
+  stream_id,
+  seasons,
+  episodes,
+  tmdb,
+}: SeriesDetailsProps) {
   const searchParams = useSearchParams();
-  const movieId = searchParams.get('movieId');
   const serieId = searchParams.get('serieId');
-  const categoryId = searchParams.get('categoryId');
   const urlSeasonId = searchParams.get('seasonId');
   const urlEpisodeNumber = searchParams.get('episodeNumber');
 
   const { selectedPlaylist } = usePlaylistStore();
-  const { series: watchedSeries, getEpisodeProgress } = useWatchedSeriesStore();
+  const { series: watchedSeries } = useWatchedSeriesStore();
   const episodesSectionRef = useRef<any>(null);
 
-  // Determine if this is a series
-  const isSeries = !!serieId;
+  if (!selectedPlaylist) return null;
 
-  // Get episode details to play
+  const { trailer, handleTrailerClick, handlePlayTrailer, handleCloseTrailer } = useTrailerPlayback(
+    tmdb?.videos,
+  );
+
   const episodeToPlay = useMemo(() => {
-    if (!isSeries || !serieId) return null;
+    if (!serieId) return null;
 
     const serieIdNum = parseInt(serieId);
     const urlSeasonIdNum = urlSeasonId ? parseInt(urlSeasonId) : 1;
     const urlEpisodeNum = urlEpisodeNumber ? parseInt(urlEpisodeNumber) : 1;
 
-    // Check if series exists in watched store
     const watchedSerieItem = watchedSeries.find((s) => s.id === serieIdNum);
 
     if (watchedSerieItem && watchedSerieItem.episodes.length > 0) {
-      // Get the last watched episode
       const lastEpisode = watchedSerieItem.episodes[watchedSerieItem.episodes.length - 1];
       return {
         seasonId: lastEpisode.seasonId,
@@ -62,58 +61,33 @@ const ItemsDetails: FC<ItemsDetailsProps> = (props) => {
         isResume: true,
       };
     } else {
-      // Start from the first episode or URL params
       return {
         seasonId: urlSeasonIdNum,
         episodeNumber: urlEpisodeNum,
         isResume: false,
       };
     }
-  }, [isSeries, serieId, urlSeasonId, urlEpisodeNumber, watchedSeries]);
+  }, [serieId, urlSeasonId, urlEpisodeNumber, watchedSeries]);
 
-  // Return early if no playlist is selected
-  if (!selectedPlaylist) {
-    return null;
-  }
-
-  // Initialize all custom hooks
-  const {
-    playing,
-    handlePlayMovie: handlePlayMovieBase,
-    handleCloseMovie,
-  } = useMoviePlayback(searchParams.get('play') === 'true');
-  const { trailer, handleTrailerClick, handlePlayTrailer, handleCloseTrailer } = useTrailerPlayback(
-    tmdb?.videos,
-  );
-
-  const { srcUrl } = useStreamingUrls(selectedPlaylist, stream_id, container_extension);
-
-  // Smart play handler that determines movie or episode
   const handlePlayMovie = () => {
-    if (isSeries && episodeToPlay && episodes) {
-      // For series, find the episode and trigger playback through the ref
+    if (episodeToPlay) {
       const episode = episodes[episodeToPlay.seasonId]?.find(
         (ep) => ep.episode_num === episodeToPlay.episodeNumber,
       );
       if (episode && episodesSectionRef.current) {
         episodesSectionRef.current.playEpisode(episode);
-        // Smooth scroll to episodes section
-        const episodesSection = document.querySelector('[data-episodes-section]');
-        if (episodesSection) {
+        const el = document.querySelector('[data-episodes-section]');
+        if (el) {
           setTimeout(() => {
-            episodesSection.scrollIntoView({ behavior: 'smooth' });
+            el.scrollIntoView({ behavior: 'smooth' });
           }, 100);
         }
       }
-    } else {
-      // For movies, use the regular movie playback
-      handlePlayMovieBase();
     }
   };
 
   return (
     <div className="relative h-full">
-      {/* Background with gradient overlay */}
       <div
         className="absolute inset-0 bg-center bg-no-repeat bg-cover"
         style={{
@@ -125,7 +99,6 @@ const ItemsDetails: FC<ItemsDetailsProps> = (props) => {
 
       <div className="relative h-full overflow-hidden">
         <div className="h-full overflow-y-auto border-t border-white/10">
-          {/* Back button */}
           <div className="sticky z-10 top-0 p-3 left-0 bg-black/10 backdrop-blur-md">
             <Button
               onClick={() => window.history.back()}
@@ -136,15 +109,13 @@ const ItemsDetails: FC<ItemsDetailsProps> = (props) => {
               <span className="font-semibold text-sm">Back</span>
             </Button>
           </div>
-          {/* Main Content */}
           <div className="max-w-7xl mx-auto pt-12">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
-              {/* Poster */}
               <div className="lg:col-span-1 flex justify-center lg:justify-start">
                 <div className="relative group">
                   <Image
                     src={tmdb?.poster || image}
-                    alt={name || 'Movie Image'}
+                    alt={name || 'Series Image'}
                     className="relative rounded-lg shadow-2xl border border-white/10"
                     width={400}
                     height={600}
@@ -153,7 +124,6 @@ const ItemsDetails: FC<ItemsDetailsProps> = (props) => {
                 </div>
               </div>
 
-              {/* Movie Info */}
               <div className="lg:col-span-2 flex flex-col space-y-6">
                 <HeaderSection
                   name={name}
@@ -163,7 +133,6 @@ const ItemsDetails: FC<ItemsDetailsProps> = (props) => {
                   genres={tmdb?.genres}
                 />
 
-                {/* Synopsis */}
                 <div className="space-y-2">
                   <h3 className="text-lg font-semibold text-white">Synopsis</h3>
                   <p className="text-gray-300 leading-relaxed line-clamp-4">
@@ -171,7 +140,6 @@ const ItemsDetails: FC<ItemsDetailsProps> = (props) => {
                   </p>
                 </div>
 
-                {/* Director */}
                 {tmdb?.director && (
                   <div className="space-y-2">
                     <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">
@@ -197,7 +165,7 @@ const ItemsDetails: FC<ItemsDetailsProps> = (props) => {
               episodes={episodes}
               tmdbPoster={tmdb?.poster || undefined}
               fallbackImage={image}
-              containerExtension={container_extension!}
+              containerExtension={'mp4'}
               streamId={stream_id}
               image={image}
               tmdb={tmdb}
@@ -209,23 +177,7 @@ const ItemsDetails: FC<ItemsDetailsProps> = (props) => {
         </div>
       </div>
 
-      {/* Modals */}
-      <VideoPlayerModal
-        isOpen={playing}
-        onClose={handleCloseMovie}
-        src={srcUrl}
-        poster={image}
-        title={name}
-        autoPlay
-        categoryId={categoryId}
-        serieId={serieId}
-        movieId={movieId}
-        totalEpisodes={0}
-      />
-
       <TrailerModal isOpen={!!trailer} onClose={handleCloseTrailer} trailerId={trailer} />
     </div>
   );
-};
-
-export default ItemsDetails;
+}

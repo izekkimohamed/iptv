@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { forwardRef, useEffect, useImperativeHandle, useMemo } from 'react';
 import { Button } from '../ui/button';
 import { EpisodeCard } from './EpisodeCard';
-import { VideoPlayerModal } from './VideoModels';
+import { VideoPlayerModal } from '@/shared/components/common/VideoPlayerModal';
 
 interface EpisodesSectionHandle {
   playEpisode: (episode: any) => void;

@@ -1,6 +1,8 @@
 'use client';
 
-import { usePlayer } from '@/hooks/usePlayer';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { Button } from '@/components/ui/button';
+import { usePlayer } from '@/features/player/hooks/player';
 import { cn, getVideoType } from '@/lib/utils';
 import { usePlaylistStore } from '@/store/appStore';
 import { usePlayerStore } from '@/store/player-store';
@@ -12,8 +14,6 @@ import { AlertTriangle, Pause, Play } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CustomControls } from './CustomControls';
-import LoadingSpinner from './ui/LoadingSpinner';
-import { Button } from './ui/button';
 
 interface VideoPlayerProps {
   src: string;
@@ -31,8 +31,8 @@ interface VideoPlayerProps {
   categoryId: string | null;
   onEnded?: () => void;
   onTimeUpdate?: (time: number) => void;
-  playNextEpisode?: () => void;
-  playPrevEpisode?: () => void;
+  playNext?: () => void;
+  playPrev?: () => void;
   hasNext?: boolean;
   hasPrev?: boolean;
 }
@@ -60,27 +60,36 @@ export function VideoPlayer({
   movieId,
   serieId,
   categoryId,
-  playNextEpisode,
-  playPrevEpisode,
+  playNext,
+  playPrev,
   hasNext,
   hasPrev,
 }: VideoPlayerProps) {
   const mediaType = usePathname();
   const player = usePlayer();
   const { selectedPlaylist } = usePlaylistStore();
-  const { volume, isMuted, setMutated, setVolume, fullScreen, toggleFullScreen } = usePlayerStore();
+  const {
+    volume,
+    isMuted,
+    setMutated,
+    setVolume,
+    fullScreen,
+    toggleFullScreen,
+    preferredRate,
+    preferredAspectRatio,
+    setPreferredRate,
+    setPreferredAspectRatio,
+  } = usePlayerStore();
   const { movies, saveProgress, removeItem } = useWatchedMoviesStore();
   const { saveProgress: saveProgressSeries, getEpisodeProgress } = useWatchedSeriesStore();
 
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>('16:9');
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio>(preferredAspectRatio);
   const [playbackError, setPlaybackError] = useState<PlayerError>(null);
 
-  // Refs to track current values for cleanup
   const saveProgressRef = useRef<() => void>(() => {});
 
   const videoType = getVideoType(src);
 
-  // Save movie progress
   const saveMovieProgress = useCallback(() => {
     if (!player.playerRef.current) return;
 
@@ -88,13 +97,11 @@ export function VideoPlayer({
     const duration = player.playerRef.current.duration;
     const movieItem = movies.find((item) => item.id.toString() === movieId);
 
-    // Remove from continue watching if finished (within last 5 seconds)
     if (duration > 0 && currentTime >= duration - 5 && movieItem) {
       removeItem(movieItem.id, selectedPlaylist?.id || 0);
       return;
     }
 
-    // Don't save if invalid duration
     if (duration <= 0 || currentTime <= 0) return;
 
     saveProgress({
@@ -119,7 +126,6 @@ export function VideoPlayer({
     removeItem,
   ]);
 
-  // Save series episode progress
   const saveEpisodeProgress = useCallback(() => {
     if (!player.playerRef.current) return;
 
@@ -128,7 +134,6 @@ export function VideoPlayer({
     const episodeNum = episodeNumber || 0;
     const seriesIdNum = parseInt(serieId || '0');
 
-    // Don't save if invalid data
     if (duration <= 0 || currentTime <= 0 || !seriesIdNum) return;
 
     saveProgressSeries(
@@ -161,7 +166,6 @@ export function VideoPlayer({
     src,
   ]);
 
-  // Update ref whenever save functions change
   useEffect(() => {
     if (mediaType === '/movies' || mediaType === '/movies/movie') {
       saveProgressRef.current = saveMovieProgress;
@@ -170,32 +174,55 @@ export function VideoPlayer({
     }
   }, [mediaType, saveMovieProgress, saveEpisodeProgress]);
 
-  // Handle play next with progress save
+  // const handlePlayNext = useCallback(() => {
+  //   if (!hasNext || !playNext) return;
+  //   saveEpisodeProgress();
+  //   playNext();
+  // }, [hasNext, playNext, saveEpisodeProgress]);
+
+  // const handlePlayPrev = useCallback(() => {
+  //   if (!hasPrev || !playPrev) return;
+  //   saveEpisodeProgress();
+  //   playPrev();
+  // }, [hasPrev, playPrev, saveEpisodeProgress]);
+
   const handlePlayNext = useCallback(() => {
-    if (!hasNext || !playNextEpisode) return;
+    if (!hasNext || !playNext) return;
     saveEpisodeProgress();
-    playNextEpisode();
-  }, [hasNext, playNextEpisode, saveEpisodeProgress]);
+    // Store current fullscreen state before navigating
+    const wasFullscreen = player.playerRef.current?.state.fullscreen ?? fullScreen;
+    playNext();
+    // Re-enter fullscreen after navigation
+    setTimeout(() => {
+      if (wasFullscreen && player.playerRef.current) {
+        player.playerRef.current.enterFullscreen();
+      }
+    }, 100);
+  }, [hasNext, playNext, saveEpisodeProgress, fullScreen, player]);
 
-  // Handle play previous with progress save
   const handlePlayPrev = useCallback(() => {
-    if (!hasPrev || !playPrevEpisode) return;
+    if (!hasPrev || !playPrev) return;
     saveEpisodeProgress();
-    playPrevEpisode();
-  }, [hasPrev, playPrevEpisode, saveEpisodeProgress]);
+    // Store current fullscreen state before navigating
+    const wasFullscreen = player.playerRef.current?.state.fullscreen ?? fullScreen;
+    playPrev();
+    // Re-enter fullscreen after navigation
+    setTimeout(() => {
+      if (wasFullscreen && player.playerRef.current) {
+        player.playerRef.current.enterFullscreen();
+      }
+    }, 100);
+  }, [hasPrev, playPrev, saveEpisodeProgress, fullScreen, player]);
 
-  // Initialize player position on mount/src change
   useEffect(() => {
     setPlaybackError(null);
 
     if (mediaType === '/movies' || mediaType === '/movies/movie') {
-      // Load saved movie progress
       const movieItem = movies.find((item) => item.id.toString() === movieId);
       if (movieItem && player.playerRef.current) {
         player.playerRef.current.currentTime = movieItem.position;
       }
     } else if (mediaType === '/series' || mediaType === '/series/serie') {
-      // Load saved episode progress
       const episodeProgress = getEpisodeProgress(
         parseInt(serieId || '0'),
         episodeNumber || 0,
@@ -208,24 +235,19 @@ export function VideoPlayer({
     }
   }, [src, movieId, serieId, episodeNumber, seasonId, mediaType, movies, getEpisodeProgress]);
 
-  // Save progress on unmount and every 30 seconds during playback
   useEffect(() => {
-    // Save every 30 seconds while playing
     const interval = setInterval(() => {
       if (player.isPlaying) {
         saveProgressRef.current();
       }
-    }, 30000); // 30 seconds
+    }, 30000);
 
-    // Save on unmount
     return () => {
       clearInterval(interval);
-      // Ensure progress is saved when component unmounts
       saveProgressRef.current();
     };
   }, []);
 
-  // Also save when video ends
   useEffect(() => {
     if (mediaType === '/series' || mediaType === '/series/serie') {
       const handleEnded = () => {
@@ -243,14 +265,12 @@ export function VideoPlayer({
     }
   }, [mediaType, saveEpisodeProgress, onEnded]);
 
-  // Handle time updates
   useEffect(() => {
     if (onTimeUpdate) {
       onTimeUpdate(player.currentTime);
     }
   }, [player.currentTime, onTimeUpdate]);
 
-  // Handle fullscreen changes
   useEffect(() => {
     if (fullScreen === true) {
       player.playerRef.current?.enterFullscreen();
@@ -259,12 +279,37 @@ export function VideoPlayer({
     }
   }, [fullScreen, player.playerRef]);
 
-  //add key event listner "SHIFT + n" to play next episode
+  useEffect(() => {
+    // Apply persisted playback rate on mount
+    player.setPlaybackRate(preferredRate);
+  }, [preferredRate, player]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      //check if the media type is series
-      if (mediaType !== '/series' && mediaType !== '/series/serie') {
-        return;
+      if (e.key === ' ') {
+        e.preventDefault();
+        player.togglePlay();
+      }
+      if (e.key === 'm' || e.key === 'M') {
+        player.toggleMute();
+      }
+      if (e.key === 'f' || e.key === 'F') {
+        player.toggleFullscreen();
+      }
+      if (e.key === 'p' || e.key === 'P') {
+        player.togglePiP();
+      }
+      if (e.key === '+' || e.key === '=') {
+        player.setPlaybackRate(player.playbackRate + 0.25);
+      }
+      if (e.key === '-' || e.key === '_') {
+        player.setPlaybackRate(player.playbackRate - 0.25);
+      }
+      if (e.key === 'ArrowRight') {
+        player.forward(5);
+      }
+      if (e.key === 'ArrowLeft') {
+        player.backward(5);
       }
       if (e.key === 'n' || e.key === 'N') {
         handlePlayNext();
@@ -272,6 +317,7 @@ export function VideoPlayer({
       if (e.key === 'b' || e.key === 'B') {
         handlePlayPrev();
       }
+      return;
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -279,13 +325,12 @@ export function VideoPlayer({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [handlePlayNext]);
+  }, [handlePlayNext, player]);
 
   if (!src) {
     return null;
   }
 
-  // Error UI
   if (playbackError) {
     let errorMessage = 'An unknown playback error occurred.';
     let detailedMessage = '';
@@ -340,7 +385,7 @@ export function VideoPlayer({
           toggleFullScreen(details);
         }}
         onEnd={() => {
-          if (hasNext && playNextEpisode) {
+          if (hasNext && playNext) {
             handlePlayNext();
           }
         }}
@@ -353,13 +398,9 @@ export function VideoPlayer({
         }}
         onDoubleClick={() => toggleFullScreen(!fullScreen)}
         onClick={() => player.togglePlay()}
-        className={cn(
-          'w-full h-full overflow-hidden bg-black relative',
-          player.isPlaying && fullScreen && 'cursor-none',
-        )}
+        className={cn('w-full h-full overflow-hidden bg-black relative')}
         data-isfullscreen={fullScreen}
         data-aspect-ratio={aspectRatio}
-        data-is-paused={player.playerRef.current?.addEventListener('', () => {})}
       >
         <MediaProvider>
           <source src={src} type={videoType} />
@@ -388,6 +429,7 @@ export function VideoPlayer({
             buffered={player.buffered}
             volume={volume}
             isMuted={isMuted}
+            playbackRate={player.playbackRate}
             onPlayPause={player.togglePlay}
             onSeek={player.seek}
             onVolumeChange={setVolume}
@@ -401,8 +443,21 @@ export function VideoPlayer({
             onToggleAspectRatio={() => {
               const currentIndex = ASPECT_RATIOS.indexOf(aspectRatio);
               const nextIndex = (currentIndex + 1) % ASPECT_RATIOS.length;
-              setAspectRatio(ASPECT_RATIOS[nextIndex]);
+              const next = ASPECT_RATIOS[nextIndex];
+              setAspectRatio(next);
+              setPreferredAspectRatio(next);
             }}
+            onRateIncrease={() => {
+              const next = player.playbackRate + 0.25;
+              player.setPlaybackRate(next);
+              setPreferredRate(next);
+            }}
+            onRateDecrease={() => {
+              const next = player.playbackRate - 0.25;
+              player.setPlaybackRate(next);
+              setPreferredRate(next);
+            }}
+            onTogglePiP={player.togglePiP}
             aspectRatio={aspectRatio}
           />
         </div>
