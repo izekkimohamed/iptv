@@ -38,6 +38,7 @@ export const playlistsRouter = t.router({
       const x = xtream(input.url, input.username, input.password);
       const data = await x.getProfile();
       if (!data) throw new Error("Failed to get profile from xtream");
+
       const res = await db
         .insert(playlists)
         .values({
@@ -47,11 +48,12 @@ export const playlistsRouter = t.router({
           password: data.password,
           username: data.username,
           status: data.status,
-          userId: "",
+          userId: "anonymous",
           createdAt: new Date().toISOString(),
         })
         .onConflictDoNothing()
         .returning();
+
       return res[0];
     }),
   updatePlaylists: publicProcedure
