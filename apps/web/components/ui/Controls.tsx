@@ -1,3 +1,5 @@
+import { Button } from './button';
+
 type ControlsProps = {
   isFullscreen: boolean;
   isPlaying: boolean;

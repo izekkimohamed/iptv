@@ -36,23 +36,21 @@ function SearchList({ searchQuery }: SearchListProps) {
       { enabled: debouncedSearchQuery.trim().length > 0 },
     );
 
-  const getFilteredResults = useMemo(() => {
-    if (!globalSearchResults)
-      return { channels: [], movies: [], series: [] } as {
-        channels: NonNullable<typeof globalSearchResults>['channels'] | [];
-        movies: NonNullable<typeof globalSearchResults>['movies'] | [];
-        series: NonNullable<typeof globalSearchResults>['series'] | [];
-      };
-
-    return {
-      channels:
-        activeFilter === 'all' || activeFilter === 'channels' ? globalSearchResults.channels : [],
-      movies: activeFilter === 'all' || activeFilter === 'movies' ? globalSearchResults.movies : [],
-      series: activeFilter === 'all' || activeFilter === 'series' ? globalSearchResults.series : [],
-    };
+  const filteredResults = useMemo(() => {
+    const channels =
+      activeFilter === 'all' || activeFilter === 'channels'
+        ? (globalSearchResults?.channels ?? [])
+        : [];
+    const movies =
+      activeFilter === 'all' || activeFilter === 'movies'
+        ? (globalSearchResults?.movies ?? [])
+        : [];
+    const series =
+      activeFilter === 'all' || activeFilter === 'series'
+        ? (globalSearchResults?.series ?? [])
+        : [];
+    return { channels, movies, series };
   }, [globalSearchResults, activeFilter]);
-
-  const filteredResults = getFilteredResults;
   const hasResults =
     (filteredResults.channels?.length ?? 0) > 0 ||
     (filteredResults.movies?.length ?? 0) > 0 ||
@@ -72,42 +70,6 @@ function SearchList({ searchQuery }: SearchListProps) {
   );
 
   const order: FilterType[] = ['all', 'channels', 'movies', 'series'];
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-      const idx = order.indexOf(activeFilter);
-      const next =
-        e.key === 'ArrowLeft'
-          ? order[(idx - 1 + order.length) % order.length]
-          : order[(idx + 1) % order.length];
-      setActiveFilter(next);
-      return;
-    }
-    if (e.key === '1') setActiveFilter('all');
-    if (e.key === '2') setActiveFilter('channels');
-    if (e.key === '3') setActiveFilter('movies');
-    if (e.key === '4') setActiveFilter('series');
-    if (e.key === 'Enter' && hasResults) {
-      const firstChannel = filteredResults.channels?.[0];
-      const firstMovie = filteredResults.movies?.[0];
-      const firstSeries = filteredResults.series?.[0];
-      const target =
-        (activeFilter === 'channels' && firstChannel) ||
-        (activeFilter === 'movies' && firstMovie) ||
-        (activeFilter === 'series' && firstSeries) ||
-        firstChannel ||
-        firstMovie ||
-        firstSeries;
-      if (target) {
-        if ('categoryId' in target && 'id' in target) {
-          router.push(`/channels?categoryId=${target.categoryId}&channelId=${target.id}`);
-        } else if ('categoryId' in target && 'streamId' in target) {
-          router.push(`/movies?categoryId=${target.categoryId}&movieId=${target.streamId}`);
-        } else if ('categoryId' in target && 'seriesId' in target) {
-          router.push(`/series?categoryId=${target.categoryId}&serieId=${target.seriesId}`);
-        }
-      }
-    }
-  };
 
   const highlight = (text: string, query: string) => {
     if (!query) return text;
@@ -130,7 +92,7 @@ function SearchList({ searchQuery }: SearchListProps) {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto" tabIndex={0} onKeyDown={handleKeyDown}>
+    <div className="flex-1 overflow-y-auto">
       <div className="max-w-[90vw] mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
         <div className="flex items-center justify-between gap-4">
           <div className="flex-1">
@@ -454,87 +416,42 @@ function SearchList({ searchQuery }: SearchListProps) {
                 </div>
               </div>
 
-              {viewMode === 'grid' ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                  {(filteredResults.series || []).map((series) => (
-                    <Link
-                      href={`/series?categoryId=${series.categoryId}&serieId=${series.seriesId}`}
-                      key={series.id}
-                      className="group"
-                    >
-                      <div className="relative rounded-xl overflow-hidden bg-slate-800 cursor-pointer border border-amber-400/5 hover:border-amber-400/20 transition-all duration-300 h-full hover:shadow-lg hover:shadow-amber-400/20">
-                        <div className="relative aspect-[2/3] overflow-hidden">
-                          <Image
-                            className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300"
-                            fill
-                            src={series.cover || '/icon.png'}
-                            alt={series.name}
-                            onError={(e) => {
-                              e.currentTarget.src = '/icon.png';
-                            }}
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                            <div className="p-3 bg-amber-600 rounded-full">
-                              <Play className="w-10 h-10 text-white fill-white" />
-                            </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {(filteredResults.series || []).map((series) => (
+                  <Link
+                    href={`/series?categoryId=${series.categoryId}&serieId=${series.seriesId}`}
+                    key={series.id}
+                    className="group"
+                  >
+                    <div className="relative rounded-xl overflow-hidden bg-slate-800 cursor-pointer border border-amber-400/5 hover:border-amber-400/20 transition-all duration-300 h-full hover:shadow-lg hover:shadow-amber-400/20">
+                      <div className="relative aspect-[2/3] overflow-hidden">
+                        <Image
+                          className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300"
+                          fill
+                          src={series.cover || '/icon.png'}
+                          alt={series.name || series.plot || ''}
+                          onError={(e) => {
+                            e.currentTarget.src = '/icon.png';
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                          <div className="p-3 bg-amber-600 rounded-full">
+                            <Play className="w-10 h-10 text-white fill-white" />
                           </div>
                         </div>
-                        <div className="p-3 bg-gradient-to-t from-black to-transparent">
-                          <p className="text-white font-semibold text-sm truncate group-hover:text-amber-300 transition-colors">
-                            {highlight(series.name, searchQuery)}
-                          </p>
-                          <p className="text-yellow-400 text-xs mt-1 font-bold">
-                            ⭐ {parseFloat(series.rating || '0').toFixed(1)}
-                          </p>
-                        </div>
                       </div>
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <HorizontalCarousel
-                  scrollBy={800}
-                  ariaLabelLeft="Scroll series left"
-                  ariaLabelRight="Scroll series right"
-                >
-                  {(filteredResults.series || []).map((series) => (
-                    <Link
-                      href={`/series?categoryId=${series.categoryId}&serieId=${series.seriesId}`}
-                      key={series.id}
-                      className="group w-[220px] flex-shrink-0"
-                    >
-                      <div className="relative rounded-xl overflow-hidden bg-slate-800 cursor-pointer border border-amber-400/5 hover:border-amber-400/20 transition-all duration-300 h-full hover:shadow-lg hover:shadow-amber-400/20">
-                        <div className="relative aspect-[2/3] overflow-hidden">
-                          <Image
-                            className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300"
-                            fill
-                            src={series.cover || '/icon.png'}
-                            alt={series.name}
-                            onError={(e) => {
-                              e.currentTarget.src = '/icon.png';
-                            }}
-                          />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                            <div className="p-2.5 bg-amber-500 rounded-full shadow-lg shadow-amber-600/40">
-                              <Play className="w-5 h-5 text-white fill-white ml-0.5" />
-                            </div>
-                          </div>
-                          {series.rating && (
-                            <div className="absolute left-2 top-2 bg-black/60 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full border border-white/10">
-                              ⭐ {parseFloat(series.rating || '0').toFixed(1)}
-                            </div>
-                          )}
-                        </div>
-                        <div className="p-3 bg-gradient-to-t from-black to-transparent">
-                          <p className="text-white font-semibold text-xs truncate group-hover:text-amber-300 transition-colors">
-                            {highlight(series.name, searchQuery)}
-                          </p>
-                        </div>
+                      <div className="p-3 bg-gradient-to-t from-black to-transparent">
+                        <p className="text-white font-semibold text-sm truncate group-hover:text-amber-300 transition-colors">
+                          {highlight(series.name || series.plot || '', searchQuery)}
+                        </p>
+                        <p className="text-yellow-400 text-xs mt-1 font-bold">
+                          ⭐ {parseFloat(series.rating || '0').toFixed(1)}
+                        </p>
                       </div>
-                    </Link>
-                  ))}
-                </HorizontalCarousel>
-              )}
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </section>
           )}
         </div>
