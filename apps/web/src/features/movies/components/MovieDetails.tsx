@@ -56,7 +56,7 @@ export default function MovieDetails({
           backgroundImage: `url(${tmdb?.backdrop || image})`,
         }}
       >
-        <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xl" />
+        <div className="absolute inset-0 bg-black/70 backdrop-blur-md" />
       </div>
 
       <div className="relative h-full overflow-hidden">

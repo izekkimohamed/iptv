@@ -1,9 +1,11 @@
 'use client';
+import { useTauri } from '@/hooks/useTauri';
 import { trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import { usePlaylistStore } from '@/store/appStore';
 import { invoke } from '@tauri-apps/api/core';
 import { Minus, RefreshCcw, X } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -28,6 +30,7 @@ export default function NavBar() {
   const router = useRouter();
   const utils = trpc.useUtils();
   const [time, setTime] = useState<string>('');
+  const { isDesktopApp } = useTauri();
 
   useEffect(() => {
     const updateTime = () => {
@@ -91,7 +94,7 @@ export default function NavBar() {
   const navItems = [
     { label: 'Channels', href: '/channels', icon: '📺' },
     { label: 'Movies', href: '/movies', icon: '🎬' },
-    { label: 'Series', href: '/series', icon: '📺' },
+    { label: 'Series', href: '/series', icon: '🎞️' },
     { label: 'Add Playlist', href: '/playlists/add', icon: '➕' },
   ];
 
@@ -110,10 +113,14 @@ export default function NavBar() {
         <div className="flex items-center justify-between h-20  gap-4">
           {/* Logo */}
           <Link href={'/'} className="flex items-center flex-shrink-0">
-            <div className="flex items-center justify-center w-9 h-9 mr-3 rounded-lg bg-gradient-to-br from-[#e94560] to-[#f39c12] shadow-lg shadow-orange-500/20">
-              <span className="text-lg font-bold text-white">▶</span>
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent hidden sm:inline">
+            <Image
+              src="/icon.png"
+              alt="StreamMax"
+              width={60}
+              height={60}
+              className="mr-2 rounded-lg"
+            />
+            <span className="text-xl font-bold bg-gradient-to-r from-slate-200 to-slate-500 bg-clip-text text-transparent hidden sm:inline">
               StreamMax
             </span>
           </Link>
@@ -150,9 +157,16 @@ export default function NavBar() {
                       <SelectItem
                         key={playlist.id}
                         value={playlist.id.toString()}
-                        className="cursor-pointer transition-colors"
+                        className={cn(
+                          'cursor-pointer transition-colors flex justify-between items-center w-full',
+                          playlist.id === selectedPlaylist?.id
+                            ? 'bg-amber-400/20 text-white'
+                            : 'text-gray-300 hover:bg-white/5 hover:text-white',
+                        )}
                       >
-                        <div className="flex items-center gap-2">{playlist.username}</div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-medium">{playlist.username}</span>
+                        </div>
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -191,22 +205,24 @@ export default function NavBar() {
             </div>
 
             {/* Window Controls */}
-            <div className="absolute right-1.5 flex items-center gap-2 ml-3 pl-3">
-              <Button
-                onClick={minimizeApp}
-                className="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-400 hover:text-yellow-300 transition-all duration-200 group"
-                title="Minimize"
-              >
-                <Minus className="w-4 h-4" />
-              </Button>
-              <Button
-                onClick={quitApp}
-                className="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-red-500/20 hover:bg-red-500/40 text-red-400 hover:text-red-300 transition-all duration-200 group"
-                title="Exit"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
+            {isDesktopApp && (
+              <div className="absolute right-1.5 flex items-center gap-2 ml-3 pl-3">
+                <Button
+                  onClick={minimizeApp}
+                  className="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-400 hover:text-yellow-300 transition-all duration-200 group"
+                  title="Minimize"
+                >
+                  <Minus className="w-4 h-4" />
+                </Button>
+                <Button
+                  onClick={quitApp}
+                  className="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-red-500/20 hover:bg-red-500/40 text-red-400 hover:text-red-300 transition-all duration-200 group"
+                  title="Exit"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>

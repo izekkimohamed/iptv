@@ -26,32 +26,6 @@ function HomeLanding() {
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-[90vw] mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-16">
-        <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Link href="/channels" className="group">
-            <div className="rounded-xl p-6 border border-slate-700 bg-slate-900/40 hover:border-amber-500 transition">
-              <h3 className="text-white font-bold text-lg group-hover:text-amber-300 transition-colors">
-                Live Channels
-              </h3>
-              <p className="text-slate-400 text-sm mt-1">Browse and watch live content</p>
-            </div>
-          </Link>
-          <Link href="/movies" className="group">
-            <div className="rounded-xl p-6 border border-slate-700 bg-slate-900/40 hover:border-amber-500 transition">
-              <h3 className="text-white font-bold text-lg group-hover:text-amber-300 transition-colors">
-                Movies
-              </h3>
-              <p className="text-slate-400 text-sm mt-1">Explore your playlists’ movies</p>
-            </div>
-          </Link>
-          <Link href="/series" className="group">
-            <div className="rounded-xl p-6 border border-slate-700 bg-slate-900/40 hover:border-amber-500 transition">
-              <h3 className="text-white font-bold text-lg group-hover:text-amber-300 transition-colors">
-                Series
-              </h3>
-              <p className="text-slate-400 text-sm mt-1">Binge-worthy episodes by category</p>
-            </div>
-          </Link>
-        </section>
         {/* Favorite Channels */}
         {favoriteChannels && favoriteChannels.length > 0 && (
           <section className="space-y-6">

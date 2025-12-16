@@ -80,12 +80,14 @@ export default function ChannelsPage() {
 
   if (!playlist) {
     return (
-      <EmptyState
-        icon="📺"
-        title="No Playlists Found"
-        description="Please add a playlist to view channels"
-        fullScreen
-      />
+      <div className="flex justify-center items-center h-full">
+        <EmptyState
+          icon="📺"
+          title="No Playlists Found"
+          description="Please add a playlist to view channels"
+          fullScreen
+        />
+      </div>
     );
   }
 

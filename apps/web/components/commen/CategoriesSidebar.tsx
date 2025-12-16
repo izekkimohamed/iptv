@@ -5,6 +5,7 @@ import Link from 'next/link';
 import React, { useEffect, useRef, useState } from 'react';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import { Button } from '../ui/button';
+import { Input } from '../ui/input';
 
 interface CategoriesSidebarProps {
   categories?: Category[];
@@ -41,19 +42,21 @@ export default function CategoriesSidebar(props: CategoriesSidebarProps) {
   };
 
   return (
-    <div className="w-[340px] h-full flex flex-col border-r border-white/10 backdrop-blur-sm">
+    <div className="w-[400px] h-full flex flex-col border-r border-white/10 backdrop-blur-sm">
       {/* Search */}
-      <div className="p-3 border-b border-white/10">
+      <div className="px-5 py-3 border-b border-white/10">
         <div className="relative flex items-center">
           <Search className="absolute left-3 w-4 h-4 text-gray-400" />
-          <input
+          <Input
             id="search-input"
             placeholder="Search categories..."
-            className="w-full pl-10 pr-10 py-2 bg-transparent border border-amber-400/15 rounded-md
-                       text-sm text-amber-400 placeholder-gray-400 focus:border-amber-400/20"
+            className="w-full pl-10 pr-10 py-2 bg-transparent border rounded-md border-amber-400/15
+            focus:ring-1 ring-amber-400/10
+            active:ring-1 text-sm text-amber-400 placeholder-gray-400 focus:border-amber-400/20"
             style={{}}
             value={searchValue}
             onChange={handleChange}
+            onKeyDown={(e) => e.stopPropagation()}
           />
           {searchValue && (
             <Button
@@ -67,7 +70,7 @@ export default function CategoriesSidebar(props: CategoriesSidebarProps) {
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto px-2 py-3" ref={categoryRef}>
+      <div className="flex-1 overflow-y-auto px-1 py-1" ref={categoryRef}>
         {isLoading ? (
           <LoadingSpinner />
         ) : !filteredCategories?.length ? (
@@ -76,7 +79,7 @@ export default function CategoriesSidebar(props: CategoriesSidebarProps) {
             <p>{searchValue ? 'No categories found' : 'No categories available'}</p>
           </div>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             {filteredCategories.map((category) => {
               const isSelected = selectedCategoryId === category.categoryId.toString();
 
@@ -87,17 +90,17 @@ export default function CategoriesSidebar(props: CategoriesSidebarProps) {
                   data-category-id={category.categoryId}
                   title={category.categoryName}
                   className={`
-                    flex items-center justify-between px-3 py-2 rounded-lg border transition-all
+                    flex items-center justify-between px-1 py-3 rounded-lg border transition-all
                     ${
                       isSelected
-                        ? 'border-amber-500/40 shadow-md shadow-amber-500/10 text-amber-100'
-                        : 'border-transparent hover:border-white/10 hover:bg-white/5 text-gray-300 hover:text-white'
+                        ? 'border-amber-500/40 bg-white/15 backdrop-blur-md shadow-md shadow-amber-500/10 text-amber-400'
+                        : 'border-white/20  hover:bg-white/5 text-gray-300 hover:text-white'
                     }
                   `}
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <Folder
-                      className={`w-4 h-4 ${isSelected ? 'text-amber-300' : 'text-gray-500'}`}
+                      className={`w-4 h-4 ${isSelected ? 'text-amber-400' : 'text-gray-500'}`}
                     />
                     <span className="truncate font-medium">{category.categoryName}</span>
                   </div>
@@ -105,7 +108,7 @@ export default function CategoriesSidebar(props: CategoriesSidebarProps) {
                   <ChevronRight
                     className={`w-4 h-4 transition ${
                       isSelected
-                        ? 'text-amber-300 translate-x-0 opacity-100'
+                        ? 'text-amber-400 translate-x-0 opacity-100'
                         : 'text-gray-500 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-2'
                     }`}
                   />

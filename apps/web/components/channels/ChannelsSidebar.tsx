@@ -28,7 +28,7 @@ export default function ChannelsSidebar(props: ChannelsSidebarProps) {
   });
 
   return (
-    <div className="max-w-[400px] h-full flex flex-col border-r border-white/10 backdrop-blur-sm">
+    <div className="w-[400px] h-full flex flex-col border-r border-white/10 backdrop-blur-sm">
       {/* Header */}
       <div className="px-4 py-4 border-b border-white/10 flex items-center justify-between">
         <h2 className="text-lg font-semibold tracking-tight text-white/90">Channels</h2>
@@ -41,21 +41,21 @@ export default function ChannelsSidebar(props: ChannelsSidebarProps) {
       </div>
 
       {/* Scroll Area */}
-      <div className="flex-1 overflow-y-auto px-2 py-3" ref={listRef}>
+      <div className="flex-1 overflow-y-auto px-2 py-1" ref={listRef}>
         {!selectedCategoryId ? (
           <div className="text-center py-12 flex flex-col items-center space-y-3 text-gray-400">
             <div className="text-4xl opacity-40">📺</div>
             <p>Select a category to view channels</p>
           </div>
         ) : isLoading ? (
-          <LoadingSpinner />
+          <LoadingSpinner fullScreen />
         ) : !channels?.length ? (
           <div className="text-center py-12 flex flex-col items-center space-y-3 text-gray-400">
             <div className="text-4xl opacity-40">📂</div>
             <p>No channels in this category</p>
           </div>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2.5">
             {channels.map((channel) => {
               const isSelected = selectedChannelId === channel.id.toString();
               return (
@@ -64,33 +64,29 @@ export default function ChannelsSidebar(props: ChannelsSidebarProps) {
                   key={channel.id}
                   data-channel-id={channel.id}
                   className={`
-                    group grid items-center grid-cols-[65px_1fr_auto] gap-3 px-3 py-2 rounded-lg border transition-all
+                    group grid items-center grid-cols-[65px_1fr_auto] gap-3 rounded-lg border  transition-all overflow-hidden px-0.5
                     ${
                       isSelected
-                        ? 'border-amber-500/40 shadow-md bg-amber-500/10 backdrop-blur-sm shadow-amber-500/10 text-amber-100'
-                        : 'border-transparent hover:border-white/10 hover:bg-white/5 text-gray-300 hover:text-white'
+                        ? 'border-amber-500/40 shadow-md bg-white/10 backdrop-blur-md shadow-amber-500/10 text-amber-400'
+                        : ' hover:bg-white/10 text-white/90 border-white/20'
                     }
                   `}
                 >
-                  <div className="flex items-center gap-3 w-[65px] h-[50px] relative rounded-md overflow-hidden bg-white/10 ">
-                    {channel.streamIcon ? (
-                      <Image
-                        fill
-                        src={channel.streamIcon}
-                        alt={channel.name}
-                        className="object-center object-contain p-1 scale-110"
-                        onError={(e) => (e.currentTarget.style.display = 'none')}
-                      />
-                    ) : (
-                      <div className="w-10 h-10 bg-white/5 border border-white/10 rounded flex items-center justify-center">
-                        <span className="text-lg">📺</span>
-                      </div>
-                    )}
+                  <div className="flex items-center justify-center gap-3 w-[65px] h-[50px] relative  overflow-hidden bg-white/10  ">
+                    <Image
+                      fill
+                      className=" object-cover"
+                      src={channel.streamIcon || '/icon.png'}
+                      alt={channel.name}
+                      onError={(e) => {
+                        e.currentTarget.src = '/icon.png';
+                      }}
+                    />
                   </div>
-                  <span className="text-wrap font-medium line-clamp-2">{channel.name}</span>
+                  <span className="text-wrap font-medium line-clamp-2 ">{channel.name}</span>
 
                   {channel.isFavorite && (
-                    <span className="text-amber-400 text-lg">
+                    <span className="text-lg px-2 text-amber-500">
                       <Star className="w-4 h-4" fill="currentColor" />
                     </span>
                   )}

@@ -78,7 +78,7 @@ export default function SeriesPage() {
             fullScreen
           />
         )}
-        {isFetchingSeries || (isFetchingSerie && <LoadingSpinner fullScreen />)}
+        {(isFetchingSeries || isFetchingSerie) && <LoadingSpinner fullScreen />}
         {serieId && serie && (
           <SeriesDetails
             image={serie.info.cover}
@@ -94,25 +94,23 @@ export default function SeriesPage() {
 
         {series && !isFetchingSeries && !isFetchingSerie && !serieId && (
           <div className="bg-gradient-to-b from-slate-900/40 to-slate-950 min-h-full">
-            <div className="">
-              <VirtualGrid
-                className="h-full p-5"
-                items={series}
-                renderItem={(serie) => (
-                  <ItemsList
-                    image={serie.cover || ''}
-                    title={serie.name || ''}
-                    rating={serie.rating || ''}
-                    streamId={serie.seriesId}
-                    onMovieClick={() => handleserieClick(serie.seriesId)}
-                    itemType="series"
-                  />
-                )}
-                minItemWidth={230}
-                estimateItemHeight={360}
-                gapClassName="gap-3"
-              />
-            </div>
+            <VirtualGrid
+              className="h-full p-5"
+              items={series}
+              renderItem={(serie) => (
+                <ItemsList
+                  image={serie.cover || ''}
+                  title={serie.name || ''}
+                  rating={serie.rating || ''}
+                  streamId={serie.seriesId}
+                  onMovieClick={() => handleserieClick(serie.seriesId)}
+                  itemType="series"
+                />
+              )}
+              minItemWidth={230}
+              estimateItemHeight={360}
+              gapClassName="gap-3"
+            />
           </div>
         )}
       </div>

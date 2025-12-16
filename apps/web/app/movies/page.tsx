@@ -83,7 +83,7 @@ export default function MoviesPage() {
             fullScreen
           />
         )}
-        {isFetchingMovies || (isFetchingMovie && <LoadingSpinner fullScreen />)}
+        {(isFetchingMovies || isFetchingMovie) && <LoadingSpinner fullScreen />}
         {movieId && movie && (
           <MovieDetails
             image={movie.info.movie_image}

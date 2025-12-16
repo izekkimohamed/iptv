@@ -2,6 +2,7 @@
 
 import NavBar from '@/components/Navbar';
 import Providers from '@/components/providers';
+import { useTauri } from '@/hooks/useTauri';
 import { usePlayerStore } from '@/store/player-store';
 import { invoke } from '@tauri-apps/api/core';
 import { JetBrains_Mono } from 'next/font/google';
@@ -20,22 +21,15 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { toggleFullScreen, fullScreen, clearPlayer } = usePlayerStore();
   const pathname = usePathname();
-  useEffect(() => {
-    invoke('close_splashscreen');
-  }, []);
+  const { toggleFullScreen, fullScreen, clearPlayer } = usePlayerStore();
+  const { isDesktopApp } = useTauri();
 
   useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      if (event.key === 'f' || event.key === 'F') {
-        toggleFullScreen(!fullScreen);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [fullScreen]);
+    if (isDesktopApp) {
+      invoke('close_splashscreen');
+    }
+  }, [isDesktopApp]);
 
   useEffect(() => {
     return () => {
