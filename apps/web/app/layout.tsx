@@ -2,6 +2,7 @@
 
 import NavBar from '@/components/Navbar';
 import Providers from '@/components/providers';
+import { Toaster } from '@/components/ui/sonner';
 import { useTauri } from '@/hooks/useTauri';
 import { usePlayerStore } from '@/store/player-store';
 import { invoke } from '@tauri-apps/api/core';
@@ -58,6 +59,7 @@ export default function RootLayout({
             </div>
             <Suspense>{children}</Suspense>
           </div>
+          <Toaster />
         </body>
       </Providers>
     </html>

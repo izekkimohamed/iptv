@@ -345,6 +345,62 @@ export const playlistsRouter = t.router({
         : Promise.resolve(),
       ]);
 
+      const channelCatIdsWithItems = await db
+        .select({ categoryId: channels.categoryId })
+        .from(channels)
+        .where(eq(channels.playlistId, input.playlistId));
+      const movieCatIdsWithItems = await db
+        .select({ categoryId: movies.categoryId })
+        .from(movies)
+        .where(eq(movies.playlistId, input.playlistId));
+      const seriesCatIdsWithItems = await db
+        .select({ categoryId: series.categoryId })
+        .from(series)
+        .where(eq(series.playlistId, input.playlistId));
+
+      const channelCatIds = channelCatIdsWithItems.map((r) => r.categoryId);
+      const movieCatIds = movieCatIdsWithItems.map((r) => r.categoryId);
+      const seriesCatIds = seriesCatIdsWithItems.map((r) => r.categoryId);
+
+      const prunedChannelsCats = await db
+        .delete(categories)
+        .where(
+          and(
+            eq(categories.playlistId, input.playlistId),
+            eq(categories.type, "channels"),
+            channelCatIds.length > 0 ?
+              not(inArray(categories.categoryId, channelCatIds))
+            : eq(categories.categoryId, categories.categoryId)
+          )
+        )
+        .returning({ id: categories.id });
+
+      const prunedMoviesCats = await db
+        .delete(categories)
+        .where(
+          and(
+            eq(categories.playlistId, input.playlistId),
+            eq(categories.type, "movies"),
+            movieCatIds.length > 0 ?
+              not(inArray(categories.categoryId, movieCatIds))
+            : eq(categories.categoryId, categories.categoryId)
+          )
+        )
+        .returning({ id: categories.id });
+
+      const prunedSeriesCats = await db
+        .delete(categories)
+        .where(
+          and(
+            eq(categories.playlistId, input.playlistId),
+            eq(categories.type, "series"),
+            seriesCatIds.length > 0 ?
+              not(inArray(categories.categoryId, seriesCatIds))
+            : eq(categories.categoryId, categories.categoryId)
+          )
+        )
+        .returning({ id: categories.id });
+
       return {
         success: true,
         newItems: {
@@ -361,6 +417,11 @@ export const playlistsRouter = t.router({
           channelsCat: ccats,
           moviesCat: mcats,
           seriesCat: scats,
+          pruned: {
+            channels: prunedChannelsCats.length,
+            movies: prunedMoviesCats.length,
+            series: prunedSeriesCats.length,
+          },
         },
       };
     }),

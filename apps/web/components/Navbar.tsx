@@ -9,6 +9,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
@@ -68,7 +69,7 @@ export default function NavBar() {
     isPending,
     error,
   } = trpc.playlists.updatePlaylists.useMutation({
-    onSuccess: async () => {
+    onSuccess: async (data) => {
       await utils.playlists.getPlaylists.invalidate();
       await utils.channels.getCategories.invalidate({
         playlistId: selectedPlaylist?.id || 0,
@@ -88,6 +89,28 @@ export default function NavBar() {
       await utils.series.getseries.invalidate({
         playlistId: selectedPlaylist?.id || 0,
       });
+      if (data) {
+        const addedTotal =
+          (data.newItems?.channels ?? 0) +
+          (data.newItems?.movies ?? 0) +
+          (data.newItems?.series ?? 0);
+        const deletedTotal =
+          (data.deletedItems?.channels ?? 0) +
+          (data.deletedItems?.movies ?? 0) +
+          (data.deletedItems?.series ?? 0);
+        const prunedTotal =
+          (data.categories?.pruned?.channels ?? 0) +
+          (data.categories?.pruned?.movies ?? 0) +
+          (data.categories?.pruned?.series ?? 0);
+        toast.success(
+          `Updated library: +${addedTotal} new, -${deletedTotal} removed, -${prunedTotal} categories pruned`,
+        );
+      } else {
+        toast.info('Playlist updated');
+      }
+    },
+    onError: (err) => {
+      toast.error(err.message || 'Failed to update playlist');
     },
   });
 
