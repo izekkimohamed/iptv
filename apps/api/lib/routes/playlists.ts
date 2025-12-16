@@ -18,6 +18,87 @@ function xtream(url: string, username: string, password: string) {
   return new Xtream({ url, username, password, preferredFormat: "m3u8" });
 }
 
+// Define a reasonable batch size for the IN clause (e.g., 500 or 1000)
+const BATCH_SIZE = 500;
+
+async function pruneCategoriesByType(
+  db: ReturnType<typeof getDb>,
+  playlistId: number,
+  type: "channels" | "movies" | "series",
+  validCatIds: number[]
+) {
+  const commonConditions = [
+    eq(categories.playlistId, playlistId),
+    eq(categories.type, type),
+  ];
+
+  // Case 1: No valid IDs to keep (Delete ALL of this type for this playlist)
+  if (validCatIds.length === 0) {
+    return await db
+      .delete(categories)
+      .where(and(...commonConditions))
+      .returning({ id: categories.id });
+  }
+
+  // Case 2: A small number of valid IDs (Use the original inArray method)
+  if (validCatIds.length < BATCH_SIZE) {
+    const conditions = [
+      ...commonConditions,
+      not(inArray(categories.categoryId, validCatIds)),
+    ];
+
+    return await db
+      .delete(categories)
+      .where(and(...conditions))
+      .returning({ id: categories.id });
+  }
+
+  let deletedIds: { id: number }[] = [];
+
+  // Get ALL category IDs that belong to the playlist and type
+  const allCatIdsResult = await db
+    .select({ categoryId: categories.categoryId })
+    .from(categories)
+    .where(and(...commonConditions));
+
+  const allCategoryIds = allCatIdsResult.map(
+    (row: { categoryId: number }) => row.categoryId
+  );
+
+  // Determine the IDs that need to be deleted
+  const validSet = new Set(validCatIds);
+  const idsToDelete = allCategoryIds.filter((id: number) => !validSet.has(id));
+
+  if (idsToDelete.length === 0) {
+    console.log("No categories to delete after filtering.");
+    return []; // Nothing to delete
+  }
+
+  console.log(`Found ${idsToDelete.length} categories to delete. Batching...`);
+
+  // Perform the batched deletion on the IDs that need to be removed
+  for (let i = 0; i < idsToDelete.length; i += BATCH_SIZE) {
+    const batch = idsToDelete.slice(i, i + BATCH_SIZE);
+
+    // The conditions for the delete are:
+    // 1. belongs to the playlist/type (already implicitly filtered by how idsToDelete was created)
+    // 2. the categoryId is one of the batch IDs
+    const batchConditions = [
+      ...commonConditions,
+      inArray(categories.categoryId, batch),
+    ];
+
+    const result = await db
+      .delete(categories)
+      .where(and(...batchConditions))
+      .returning({ id: categories.id });
+
+    deletedIds = deletedIds.concat(result);
+  }
+
+  return deletedIds;
+}
+
 export async function performPlaylistUpdate(input: {
   url: string;
   username: string;
@@ -272,45 +353,28 @@ export async function performPlaylistUpdate(input: {
     .select({ categoryId: series.categoryId })
     .from(series)
     .where(eq(series.playlistId, input.playlistId));
+
   const channelCatIds = channelCatIdsWithItems.map((r) => r.categoryId);
   const movieCatIds = movieCatIdsWithItems.map((r) => r.categoryId);
   const seriesCatIds = seriesCatIdsWithItems.map((r) => r.categoryId);
-  const prunedChannelsCats = await db
-    .delete(categories)
-    .where(
-      and(
-        eq(categories.playlistId, input.playlistId),
-        eq(categories.type, "channels"),
-        channelCatIds.length > 0 ?
-          not(inArray(categories.categoryId, channelCatIds))
-        : eq(categories.categoryId, categories.categoryId)
-      )
-    )
-    .returning({ id: categories.id });
-  const prunedMoviesCats = await db
-    .delete(categories)
-    .where(
-      and(
-        eq(categories.playlistId, input.playlistId),
-        eq(categories.type, "movies"),
-        movieCatIds.length > 0 ?
-          not(inArray(categories.categoryId, movieCatIds))
-        : eq(categories.categoryId, categories.categoryId)
-      )
-    )
-    .returning({ id: categories.id });
-  const prunedSeriesCats = await db
-    .delete(categories)
-    .where(
-      and(
-        eq(categories.playlistId, input.playlistId),
-        eq(categories.type, "series"),
-        seriesCatIds.length > 0 ?
-          not(inArray(categories.categoryId, seriesCatIds))
-        : eq(categories.categoryId, categories.categoryId)
-      )
-    )
-    .returning({ id: categories.id });
+  const prunedChannelsCats = await pruneCategoriesByType(
+    db,
+    input.playlistId,
+    "channels",
+    channelCatIds
+  );
+  const prunedMoviesCats = await pruneCategoriesByType(
+    db,
+    input.playlistId,
+    "movies",
+    movieCatIds
+  );
+  const prunedSeriesCats = await pruneCategoriesByType(
+    db,
+    input.playlistId,
+    "series",
+    seriesCatIds
+  );
   await db
     .update(playlists)
     .set({ updatedAt: new Date().toISOString() })
@@ -332,9 +396,9 @@ export async function performPlaylistUpdate(input: {
       moviesCat: mcats,
       seriesCat: scats,
       pruned: {
-        channels: prunedChannelsCats.length,
-        movies: prunedMoviesCats.length,
-        series: prunedSeriesCats.length,
+        channels: prunedChannelsCats,
+        movies: prunedMoviesCats,
+        series: prunedSeriesCats,
       },
     },
   };
@@ -342,10 +406,37 @@ export async function performPlaylistUpdate(input: {
 
 export const playlistsRouter = t.router({
   getPlaylists: publicProcedure
-    .output(z.array(zodPlaylistsSchema))
+    .output(
+      z.array(
+        z.object({
+          id: z.number(),
+          userId: z.string(),
+          baseUrl: z.string(),
+          username: z.string(),
+          password: z.string(),
+          status: z.string(),
+          expDate: z.string(),
+          isTrial: z.string(),
+          createdAt: z.string(),
+          updatedAt: z.string(),
+        })
+      )
+    )
     .query(async () => {
       const db = getDb();
-      return await db.select().from(playlists);
+
+      const p = await db.select().from(playlists);
+      const xtreamData = xtream(p[0].baseUrl, p[0].username, p[0].password);
+      const profile = await xtreamData.getChannelCategories();
+      const channels = await xtreamData.getChannels();
+      const xtreamData2 = xtream(p[1].baseUrl, p[1].username, p[1].password);
+      const profile2 = await xtreamData2.getChannelCategories();
+      const channels2 = await xtreamData2.getChannels();
+
+      console.log(xtreamData.baseUrl, channels.length, profile.length);
+      console.log(xtreamData2.baseUrl, channels2.length, profile2.length);
+
+      return p;
     }),
   createPlaylist: publicProcedure
     .input(
@@ -426,7 +517,7 @@ export const playlistsRouter = t.router({
       const [name] = await db
         .delete(playlists)
         .where(and(eq(playlists.id, input.playlistId)))
-        .returning({ id: playlists.username });
-      return { success: `Playlist ${name} deleted successfully` };
+        .returning({ username: playlists.username });
+      return { success: `Playlist ${name.username} deleted successfully` };
     }),
 });

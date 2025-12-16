@@ -1,5 +1,5 @@
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 interface Playlist {
   id: number;
@@ -8,6 +8,7 @@ interface Playlist {
   password: string;
   userId: string;
   createdAt: string;
+  updatedAt: string;
   expDate: string;
   status: string;
   isTrial: string;
@@ -56,7 +57,7 @@ export const usePlaylistStore = create<PlaylistState>()(
     }),
 
     {
-      name: "playlist-storage", // unique key in storage
-    }
-  )
+      name: 'playlist-storage', // unique key in storage
+    },
+  ),
 );

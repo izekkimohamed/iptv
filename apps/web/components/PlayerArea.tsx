@@ -23,16 +23,12 @@ function PlayerArea({ selectedChannel }: { selectedChannel: SelectedChannel | un
   }
   return (
     <div className="flex-1 flex flex-col">
-      {/* Player Header */}
       <PlayerHeader selectedChannel={selectedChannel} />
 
-      {/* Player Content */}
       <div className="flex-1 overflow-y-auto">
         {selectedChannel ? (
-          <div className="h-full flex flex-col">
-            {/* Video Player Area */}
-            <div className="h-1/2">
-              {/* <VideoPlayer src={selectedChannel?.url} /> */}
+          <div className="h-full flex flex-col md:flex-row">
+            <div className="h-2/3 md:h-1/2">
               <VideoPlayer
                 src={selectedChannel?.url}
                 poster={selectedChannel?.streamIcon}
@@ -45,8 +41,7 @@ function PlayerArea({ selectedChannel }: { selectedChannel: SelectedChannel | un
               />
             </div>
 
-            {/* Channel Info */}
-            <div className="h-1/2 ">
+            <div className="h-1/3 md:h-1/2 overflow-y-auto">
               <ChannelInfoPanel
                 selectedChannel={selectedChannel}
                 playlistProps={{

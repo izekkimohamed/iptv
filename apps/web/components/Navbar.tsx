@@ -7,7 +7,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { Minus, RefreshCcw, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from './ui/button';
@@ -28,6 +28,7 @@ export default function NavBar() {
     addPlaylist,
     playlists: storePlaylists,
   } = usePlaylistStore();
+  const pathName = usePathname();
   const router = useRouter();
   const utils = trpc.useUtils();
   const [time, setTime] = useState<string>('');
@@ -64,11 +65,7 @@ export default function NavBar() {
     }
   }, [playlists, selectPlaylist]);
 
-  const {
-    mutate: handleUpdate,
-    isPending,
-    error,
-  } = trpc.playlists.updatePlaylists.useMutation({
+  const { mutate: handleUpdate, isPending } = trpc.playlists.updatePlaylists.useMutation({
     onSuccess: async (data) => {
       await utils.playlists.getPlaylists.invalidate();
       await utils.channels.getCategories.invalidate({
@@ -98,12 +95,12 @@ export default function NavBar() {
           (data.deletedItems?.channels ?? 0) +
           (data.deletedItems?.movies ?? 0) +
           (data.deletedItems?.series ?? 0);
-        const prunedTotal =
-          (data.categories?.pruned?.channels ?? 0) +
-          (data.categories?.pruned?.movies ?? 0) +
-          (data.categories?.pruned?.series ?? 0);
+        // const prunedTotal =
+        //   (data.categories?.pruned?.channels ?? 0) +
+        //   (data.categories?.pruned?.movies ?? 0) +
+        //   (data.categories?.pruned?.series ?? 0);
         toast.success(
-          `Updated library: +${addedTotal} new, -${deletedTotal} removed, -${prunedTotal} categories pruned`,
+          `Updated library: +${addedTotal} new, -${deletedTotal} removed, -${0} categories pruned`,
         );
       } else {
         toast.info('Playlist updated');
@@ -122,17 +119,17 @@ export default function NavBar() {
   ];
 
   const handlePlaylistSelect = async (id: string) => {
-    await utils.channels.getChannels.cancel({
-      playlistId: Number(id),
-    });
-    selectPlaylist(playlists?.find((playlist) => playlist.id === Number(id)) || null);
-    router.replace('/');
-    document.cookie = `selectedPlaylistId=${id}; path=/; max-age=31536000`;
+    selectPlaylist(storePlaylists?.find((playlist) => playlist.id === Number(id)) || null);
+    router.push(pathName);
   };
-
   return (
-    <header className="sticky top-0 z-50  border-b border-white/10">
-      <div className="px-4 mx-auto max-w-[90vw] sm:px-6 lg:px-8">
+    <header
+      className={cn(
+        'sticky top-0 z-50  border-b border-white/10',
+        isPending ? 'animate-pulse bg-white/20 pointer-events-none cursor-not-allowed' : '',
+      )}
+    >
+      <div className={cn('mx-auto max-w-[90vw]', isPending ? 'opacity-50 cursor-not-allowed' : '')}>
         <div className="flex items-center justify-between h-20  gap-4">
           {/* Logo */}
           <Link href={'/'} className="flex items-center flex-shrink-0">
@@ -152,10 +149,15 @@ export default function NavBar() {
           <nav className="items-center justify-center hidden space-x-1 md:flex flex-1 ml-8">
             {navItems.map((item) => (
               <Link key={item.href} href={item.href}>
-                <span className="px-3 py-2 text-lg font-medium text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200">
+                <p
+                  className={cn(
+                    'flex items-center gap-2 px-3 py-2  font-medium text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200',
+                    isPending ? 'animate-pulse bg-white/20' : '',
+                  )}
+                >
                   <span className="mr-1">{item.icon}</span>
-                  {item.label}
-                </span>
+                  <span className="mr-1 hidden md:inline text-sm text-nowrap">{item.label}</span>
+                </p>
               </Link>
             ))}
           </nav>
@@ -164,7 +166,7 @@ export default function NavBar() {
           <div className="flex items-center gap-4 flex-shrink-0">
             <div className="relative group">
               <Select
-                disabled={!playlists || playlists.length === 0}
+                disabled={!storePlaylists.length}
                 onValueChange={(e) => handlePlaylistSelect(e)}
                 defaultValue={selectedPlaylist?.id.toString()}
               >
@@ -175,8 +177,8 @@ export default function NavBar() {
                   <SelectValue placeholder={selectedPlaylist?.username || 'Playlist'} />
                 </SelectTrigger>
                 <SelectContent className="text-white bg-black/10 backdrop-blur-lg border border-white/10 rounded-lg shadow-xl">
-                  {playlists &&
-                    playlists.map((playlist) => (
+                  {storePlaylists &&
+                    storePlaylists.map((playlist) => (
                       <SelectItem
                         key={playlist.id}
                         value={playlist.id.toString()}
@@ -220,15 +222,12 @@ export default function NavBar() {
             </Button>
           </div>
 
-          {/* Right Side - Time & Controls */}
-          <div className="flex items-center gap-3 ml-auto  flex-shrink-0">
-            {/* Time Display */}
-            <div className="hidden sm:block px-4 py-2.5 rounded-lg border border-white/10">
-              <div className="text-xs text-gray-400 font-mono">{time}</div>
-            </div>
-
-            {/* Window Controls */}
-            {isDesktopApp && (
+          {/* Window Controls */}
+          {isDesktopApp && (
+            <div className="flex items-center gap-3 ml-auto  flex-shrink-0">
+              <div className="hidden sm:block px-4 py-2.5 rounded-lg border border-white/10">
+                <div className="text-xs text-gray-400 font-mono">{time}</div>
+              </div>
               <div className="absolute right-1.5 flex items-center gap-2 ml-3 pl-3">
                 <Button
                   onClick={minimizeApp}
@@ -245,8 +244,8 @@ export default function NavBar() {
                   <X className="w-4 h-4" />
                 </Button>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </header>

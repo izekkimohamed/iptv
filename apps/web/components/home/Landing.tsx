@@ -55,7 +55,7 @@ function HomeLanding() {
                   key={channel.id}
                   className="group"
                 >
-                  <div className="w-[150px] flex-shrink-0">
+                  <div className="w-[120px] sm:w-[150px] flex-shrink-0">
                     <div className="relative rounded-2xl overflow-hidden aspect-square bg-slate-800 cursor-pointer border border-slate-700 hover:border-amber-500 transition-all duration-300 hover:shadow-[0_8px_16px_-4px_rgba(245,158,11,0.2)]">
                       <Image
                         className="w-full h-full group-hover:scale-105 transition-transform duration-300"
