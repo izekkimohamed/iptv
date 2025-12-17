@@ -8,7 +8,7 @@ import { usePlayerStore } from '@/store/player-store';
 import { invoke } from '@tauri-apps/api/core';
 import { JetBrains_Mono } from 'next/font/google';
 import { usePathname } from 'next/navigation';
-import { Suspense, useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import './globals.css';
 
 const jetBrainsMono = JetBrains_Mono({
@@ -20,10 +20,10 @@ const jetBrainsMono = JetBrains_Mono({
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: ReactNode;
 }>) {
   const pathname = usePathname();
-  const { toggleFullScreen, fullScreen, clearPlayer } = usePlayerStore();
+  const { clearPlayer } = usePlayerStore();
   const { isDesktopApp } = useTauri();
 
   useEffect(() => {
@@ -57,7 +57,7 @@ export default function RootLayout({
             <div>
               <NavBar />
             </div>
-            <Suspense>{children}</Suspense>
+            <>{children}</>
           </div>
           <Toaster />
         </body>

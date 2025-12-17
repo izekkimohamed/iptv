@@ -15,12 +15,10 @@ interface Playlist {
 }
 
 interface PlaylistState {
-  firstLaunch: boolean;
   isCreatingPlaylist: boolean;
   playlists: Playlist[];
   selectedPlaylist: Playlist | null;
 
-  setFirstLaunch: (value: boolean) => void;
   startPlaylistCreation: () => void;
   finishPlaylistCreation: () => void;
   addPlaylist: (playlist: Playlist) => void;
@@ -31,12 +29,9 @@ interface PlaylistState {
 export const usePlaylistStore = create<PlaylistState>()(
   persist(
     (set) => ({
-      firstLaunch: true,
       isCreatingPlaylist: false,
       playlists: [],
       selectedPlaylist: null,
-
-      setFirstLaunch: (value) => set({ firstLaunch: value }),
 
       startPlaylistCreation: () => set({ isCreatingPlaylist: true }),
 

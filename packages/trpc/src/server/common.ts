@@ -24,7 +24,7 @@ const TmdbVideoSchema = z.object({
   name: z.string(),
 });
 
-const TmdbDetailsResponseSchema = z.object({
+export const TmdbDetailsResponseSchema = z.object({
   id: z.number(),
   title: z.string().optional(),
   name: z.string().optional(),
@@ -91,28 +91,32 @@ export async function getTmdbInfo(
   const director =
     details.credits?.crew?.find((c) => c.job === "Director")?.name ?? null;
   const cast =
-    details.credits?.cast?.slice(0, 15).map((c) => ({
-      name: c.name,
-      profilePath:
-        c.profile_path ?
-          `https://image.tmdb.org/t/p/w500${c.profile_path}`
-        : null,
-    })) ?? [];
+    details.credits?.cast ?
+      details.credits.cast.slice(0, 15).map((c) => ({
+        name: c.name,
+        profilePath:
+          c.profile_path ?
+            `https://image.tmdb.org/t/p/w500${c.profile_path}`
+          : null,
+      }))
+    : [];
   const videos =
-    details.videos?.results?.slice(0, 3).map((v) => ({
-      id: v.id,
-      key: v.key,
-      site: v.site,
-      type: v.type,
-      name: v.name,
-    })) ?? [];
+    details.videos?.results ?
+      details.videos.results.slice(0, 3).map((v) => ({
+        id: v.id,
+        key: v.key,
+        site: v.site,
+        type: v.type,
+        name: v.name,
+      }))
+    : [];
   return {
     id: details.id,
     title: details.title || details.name || "Untitled",
-    overview: details.overview,
-    genres: details.genres,
-    runtime: details.runtime ?? details.episode_run_time?.[0],
-    releaseDate: details.release_date || details.first_air_date,
+    overview: details.overview || null,
+    genres: details.genres || null,
+    runtime: (details.runtime ?? details.episode_run_time?.[0]) || null,
+    releaseDate: details.release_date || details.first_air_date || null,
     poster:
       details.poster_path ?
         `https://image.tmdb.org/t/p/w500${details.poster_path}`

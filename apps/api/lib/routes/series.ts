@@ -1,14 +1,19 @@
-import { batchInsert, getTmdbInfo } from "@/trpc/common";
+import {
+  buildMissingCategories,
+  fetchAndCreateCategoriesByType,
+  insertMissingCategories,
+} from "@/services/categoryService";
+import {
+  fetchAndPrepareSeries,
+  getSeriesDetails,
+  insertSeries,
+} from "@/services/seriesService";
 import { getDb } from "@/trpc/db";
 import { categories, series, zodSerieSchema } from "@/trpc/schema";
-import { Xtream } from "@iptv/xtream-api";
-import { and, asc, eq, sql } from "drizzle-orm";
+import { createXtreamClient } from "@/utils/xtream";
+import { and, asc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { publicProcedure, t } from "../trpc";
-
-function xtream(url: string, username: string, password: string) {
-  return new Xtream({ url, username, password, preferredFormat: "m3u8" });
-}
 
 export const seriesRouter = t.router({
   getseries: publicProcedure
@@ -21,7 +26,7 @@ export const seriesRouter = t.router({
     .output(z.array(zodSerieSchema))
     .query(async ({ input }) => {
       const db = getDb();
-      const rows = await db
+      return await db
         .select()
         .from(series)
         .where(
@@ -31,8 +36,8 @@ export const seriesRouter = t.router({
           )
         )
         .orderBy(asc(series.id));
-      return rows;
     }),
+
   getSerie: publicProcedure
     .input(
       z.object({
@@ -43,36 +48,14 @@ export const seriesRouter = t.router({
       })
     )
     .query(async ({ input }) => {
-      const res = await fetch(
-        `${input.url}/player_api.php?username=${input.username}&password=${input.password}&action=get_series_info&series_id=${input.serieId}`
+      return await getSeriesDetails(
+        input.url,
+        input.username,
+        input.password,
+        input.serieId
       );
-
-      const data = await res.json();
-      if (!data) {
-        throw new Error("Failed to get serie details from Xtream API");
-      }
-
-      const episodes = data.episodes ?? {};
-      const seasons = Object.keys(episodes).map(Number);
-
-      const info = data.info ?? {};
-
-      data.seasons = seasons;
-
-      const details =
-        info.tmdb_id ?
-          await getTmdbInfo(
-            "show",
-            info.tmdb_id,
-            info.name ?? "",
-            info.first_aired ?
-              new Date(info.first_aired).getFullYear()
-            : undefined
-          )
-        : null;
-
-      return { ...data, tmdb: details };
     }),
+
   createSerie: publicProcedure
     .input(
       z.object({
@@ -83,58 +66,31 @@ export const seriesRouter = t.router({
       })
     )
     .mutation(async ({ input }) => {
-      const x = xtream(input.url, input.username, input.password);
-      const seriesData = await x.getShows();
-      const uniqueCategoryIds = new Set<number>();
-      seriesData.forEach((serie) => {
-        if (serie.category_id) uniqueCategoryIds.add(Number(serie.category_id));
-      });
-      const db = getDb();
-      const existingCategories = await db
-        .select({ selected: categories.categoryId })
-        .from(categories);
-      const missingCategoryIds = Array.from(uniqueCategoryIds).filter(
-        (id) => !existingCategories.map((cat) => cat.selected).includes(id)
+      const xtreamClient = createXtreamClient(
+        input.url,
+        input.username,
+        input.password
       );
-      if (missingCategoryIds.length > 0) {
-        const newCategories = missingCategoryIds.map((id) => ({
-          playlistId: input.playlistId,
-          type: "series" as const,
-          categoryName: `category ${id}`,
-          categoryId: id,
-        }));
-        await db.insert(categories).values(newCategories);
-      }
-      const seriesChunk = seriesData.map((serie) => ({
-        seriesId: serie.series_id,
-        name: serie.name ?? "",
-        cast: serie.cast ?? "",
-        director: serie.director ?? "",
-        genere: serie.genre ?? "",
-        releaseDate: serie.release_date ?? "",
-        lastModified: serie.last_modified ?? "",
-        rating: serie.rating?.toString() ?? "0",
-        backdropPath:
-          Array.isArray(serie.backdrop_path) ? serie.backdrop_path[0] : "",
-        youtubeTrailer: serie.youtube_trailer ?? "",
-        episodeRunTime: serie.episode_run_time ?? "",
-        categoryId: +serie.category_id,
-        playlistId: input.playlistId,
-        cover: serie.cover ?? "",
-        plot: serie.plot ?? "",
-      }));
-      await batchInsert(series, seriesChunk, {
-        chunkSize: 3000,
-        concurrency: 5,
-      });
+
+      const { newSeries } = await fetchAndPrepareSeries(
+        input.playlistId,
+        xtreamClient
+      );
+
+      const categoryData = await buildMissingCategories(
+        newSeries,
+        "series",
+        input.playlistId,
+        new Set()
+      );
+      await insertMissingCategories(categoryData);
+      await insertSeries(newSeries);
+
       return { success: true };
     }),
+
   getSeriesCategories: publicProcedure
-    .input(
-      z.object({
-        playlistId: z.number(),
-      })
-    )
+    .input(z.object({ playlistId: z.number() }))
     .query(async ({ input }) => {
       const db = getDb();
       const rows = await db
@@ -152,6 +108,7 @@ export const seriesRouter = t.router({
         playlistId: r.playlistId ?? input.playlistId,
       }));
     }),
+
   createSeriesCategories: publicProcedure
     .input(
       z.object({
@@ -162,29 +119,15 @@ export const seriesRouter = t.router({
       })
     )
     .mutation(async ({ input }) => {
-      const db = getDb();
-      const x = xtream(input.url, input.username, input.password);
-      const data = await x.getShowCategories();
-      const tempCategories = data.map((category) => ({
-        playlistId: input.playlistId,
-        type: "series" as const,
-        categoryName: category.category_name,
-        categoryId: +category.category_id,
-      }));
-      if (!tempCategories.length) return [];
-      await db
-        .insert(categories)
-        .values(tempCategories)
-        .onConflictDoUpdate({
-          target: [categories.categoryId, categories.playlistId],
-          set: {
-            categoryName: sql`excluded.category_name`,
-            type: sql`excluded.type`,
-          },
-        })
-        .catch(() => {
-          return { success: false, message: "error", data: [] };
-        });
-      return { success: true };
+      const xtreamClient = createXtreamClient(
+        input.url,
+        input.username,
+        input.password
+      );
+      return await fetchAndCreateCategoriesByType(
+        xtreamClient,
+        "series",
+        input.playlistId
+      );
     }),
 });

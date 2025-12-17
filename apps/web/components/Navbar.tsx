@@ -95,12 +95,12 @@ export default function NavBar() {
           (data.deletedItems?.channels ?? 0) +
           (data.deletedItems?.movies ?? 0) +
           (data.deletedItems?.series ?? 0);
-        // const prunedTotal =
-        //   (data.categories?.pruned?.channels ?? 0) +
-        //   (data.categories?.pruned?.movies ?? 0) +
-        //   (data.categories?.pruned?.series ?? 0);
+        const prunedTotal =
+          (data.categories?.pruned?.channels ?? 0) +
+          (data.categories?.pruned?.movies ?? 0) +
+          (data.categories?.pruned?.series ?? 0);
         toast.success(
-          `Updated library: +${addedTotal} new, -${deletedTotal} removed, -${0} categories pruned`,
+          `Updated library: +${addedTotal} new, -${deletedTotal} removed, -${prunedTotal} categories pruned`,
         );
       } else {
         toast.info('Playlist updated');

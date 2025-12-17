@@ -11,13 +11,12 @@ import {
   Clock,
   Film,
   Play,
-  Star,
   User,
   Youtube,
 } from 'lucide-react';
 import Image from 'next/image';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useMemo, useState } from 'react'; // 💡 Imported useMemo
+import { useMemo, useState } from 'react';
 
 export default function Page() {
   const pathname = usePathname();
@@ -50,8 +49,16 @@ export default function Page() {
 
   // 💡 Use useMemo to track the currently selected movie source for dropdown display
   const currentMovieSource = useMemo(() => {
-    if (!movieDetails?.dbMovies || movieDetails.dbMovies.length === 0) return null;
-    return movieDetails.dbMovies.find((movie) => movie.url === srcUrl) || movieDetails.dbMovies[0];
+    if (
+      !movieDetails ||
+      movieDetails.length === 0 ||
+      !movieDetails[0].dbMovies ||
+      movieDetails[0].dbMovies.length === 0
+    )
+      return null;
+    return (
+      movieDetails[0].dbMovies.find((movie) => movie.url === srcUrl) || movieDetails[0].dbMovies[0]
+    );
   }, [movieDetails, srcUrl]);
 
   console.log(pathname);
@@ -81,7 +88,7 @@ export default function Page() {
     );
   }
 
-  if (!movieDetails) {
+  if (!movieDetails || movieDetails.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center ">
         <p className="text-gray-400">No movie details available</p>
@@ -90,9 +97,9 @@ export default function Page() {
   }
 
   // Helper function to set movie state and start playing
-  const handlePlayMovie = (movie: (typeof movieDetails.dbMovies)[0]) => {
-    setTitle(movieDetails.tmdb.title);
-    setPoster(movieDetails.tmdb.poster);
+  const handlePlayMovie = (movie: any) => {
+    setTitle(movieDetails[0].tmdb.title);
+    setPoster(movieDetails[0].tmdb.poster || '');
     setSrc(movie.url);
     setCategoryId(movie.categoryId.toString());
     setDbMovieId(movie.id.toString());
@@ -100,7 +107,7 @@ export default function Page() {
     setIsDropdownOpen(false); // Close dropdown on selection
   };
 
-  const hasMultipleSources = movieDetails.dbMovies.length > 1;
+  const hasMultipleSources = movieDetails[0].dbMovies.length > 1;
 
   return (
     <div className="flex-1 overflow-y-auto relative">
@@ -108,7 +115,7 @@ export default function Page() {
       <div
         className="absolute inset-0 bg-center bg-no-repeat bg-cover"
         style={{
-          backgroundImage: `url(${movieDetails.tmdb.backdrop})`,
+          backgroundImage: `url(${movieDetails[0].tmdb.backdrop})`,
           backgroundAttachment: 'fixed',
         }}
       >
@@ -139,8 +146,11 @@ export default function Page() {
               <div className="relative group">
                 <div className="absolute -inset-2 rounded-xl blur opacity-40 group-hover:opacity-70 transition duration-500 bg-amber-500/50" />
                 <Image
-                  src={movieDetails.tmdb.poster}
-                  alt={movieDetails.tmdb.title}
+                  src={
+                    movieDetails[0].tmdb.poster ||
+                    'https://via.placeholder.com/300x450?text=No+Poster'
+                  }
+                  alt={movieDetails[0].tmdb.title}
                   width={300}
                   height={450}
                   className="relative rounded-xl shadow-2xl w-72 h-auto object-cover border border-white/10"
@@ -154,28 +164,31 @@ export default function Page() {
               {/* Title */}
               <div className="space-y-3">
                 <h1 className="text-5xl font-bold text-white leading-tight">
-                  {movieDetails.tmdb.title}
+                  {movieDetails[0].tmdb.title}
                 </h1>
 
                 {/* Meta Tags */}
                 <div className="flex flex-wrap gap-3 items-center">
-                  {/* Rating */}
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30">
+                  {/* Rating - TODO: Add rating to schema */}
+                  {/* <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30">
                     <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
                     <span className="font-bold text-yellow-300">
-                      {movieDetails.tmdb.rating?.toFixed(1)}/10
+                      {movieDetails[0].tmdb.rating?.toFixed(1)}/10
                     </span>
-                  </div>
+                  </div> */}
 
                   {/* Release Date */}
                   <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10">
                     <Calendar className="w-5 h-5 text-gray-300" />
                     <span className="text-sm font-medium text-gray-300">
-                      {new Date(movieDetails.tmdb.releaseDate).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })}
+                      {new Date(movieDetails[0].tmdb.releaseDate || '').toLocaleDateString(
+                        'en-US',
+                        {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        },
+                      )}
                     </span>
                   </div>
 
@@ -183,17 +196,17 @@ export default function Page() {
                   <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10">
                     <Clock className="w-5 h-5 text-gray-300" />
                     <span className="text-sm font-medium text-gray-300">
-                      {Math.floor(movieDetails.tmdb.runtime / 60)}h {movieDetails.tmdb.runtime % 60}
-                      m
+                      {Math.floor((movieDetails[0].tmdb.runtime || 0) / 60)}h{' '}
+                      {(movieDetails[0].tmdb.runtime || 0) % 60}m
                     </span>
                   </div>
                 </div>
               </div>
 
               {/* Genres */}
-              {movieDetails.tmdb.genres && movieDetails.tmdb.genres.length > 0 && (
+              {movieDetails[0].tmdb.genres && movieDetails[0].tmdb.genres.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {movieDetails.tmdb.genres.map((genre) => (
+                  {movieDetails[0].tmdb.genres.map((genre) => (
                     <span
                       key={genre.id}
                       className="px-3 py-1.5 text-xs font-medium text-amber-300 bg-amber-500/20 rounded-full border border-amber-500/30"
@@ -208,16 +221,16 @@ export default function Page() {
               <div className="space-y-2 pt-4">
                 <h3 className="text-lg font-semibold text-white">Synopsis</h3>
                 <p className="text-gray-300 leading-relaxed text-base">
-                  {movieDetails.tmdb.overview}
+                  {movieDetails[0].tmdb.overview}
                 </p>
               </div>
 
               {/* 💡 REFACTORED: Primary Play Button and Source Selector Dropdown */}
-              {movieDetails.dbMovies.length > 0 ? (
+              {movieDetails[0].dbMovies.length > 0 ? (
                 <div className="flex items-center gap-4 pt-4">
                   {/* Primary Play Button */}
                   <Button
-                    onClick={() => handlePlayMovie(movieDetails.dbMovies[0])}
+                    onClick={() => handlePlayMovie(movieDetails[0].dbMovies[0])}
                     className="flex items-center gap-2 px-8 py-3 text-lg font-bold text-white bg-amber-600 rounded-full shadow-lg shadow-amber-500/50 hover:bg-amber-700 transition duration-300 transform hover:scale-[1.02]"
                   >
                     <Play className="w-5 h-5 fill-white" />
@@ -243,7 +256,7 @@ export default function Page() {
 
                       {isDropdownOpen && (
                         <div className="absolute left-0 mt-2 w-56 max-h-60 overflow-y-auto bg-slate-900 border border-white/20 rounded-lg shadow-xl origin-top-left z-30">
-                          {movieDetails.dbMovies.map((movie) => (
+                          {movieDetails[0].dbMovies.map((movie) => (
                             <div
                               key={movie.id}
                               onClick={() => handlePlayMovie(movie)}
@@ -272,7 +285,7 @@ export default function Page() {
           </div>
 
           {/* Cast Section */}
-          {movieDetails.tmdb.cast && movieDetails.tmdb.cast.length > 0 && (
+          {movieDetails[0].tmdb.cast && movieDetails[0].tmdb.cast.length > 0 && (
             <section className="space-y-6">
               <div>
                 <h2 className="text-3xl font-bold text-white flex items-center gap-3">
@@ -281,7 +294,7 @@ export default function Page() {
                 </h2>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {movieDetails.tmdb.cast.slice(0, 12).map((actor, idx) => (
+                {movieDetails[0].tmdb.cast.slice(0, 12).map((actor, idx) => (
                   <div
                     key={idx}
                     className="group rounded-lg overflow-hidden border border-white/10 hover:border-amber-500/50 transition-all duration-300 bg-white/5 hover:bg-white/10"
@@ -310,7 +323,7 @@ export default function Page() {
           )}
 
           {/* Videos/Trailers Section */}
-          {movieDetails.tmdb.videos && movieDetails.tmdb.videos.length > 0 && (
+          {movieDetails[0].tmdb.videos && movieDetails[0].tmdb.videos.length > 0 && (
             <section className="space-y-6 pb-12">
               <div>
                 <h2 className="text-3xl font-bold text-white flex items-center gap-3">
@@ -319,7 +332,7 @@ export default function Page() {
                 </h2>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {movieDetails.tmdb.videos
+                {movieDetails[0].tmdb.videos
                   .filter((v) => v.site === 'YouTube')
                   .map((video) => (
                     <Button
