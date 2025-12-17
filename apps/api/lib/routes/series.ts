@@ -46,18 +46,31 @@ export const seriesRouter = t.router({
       const res = await fetch(
         `${input.url}/player_api.php?username=${input.username}&password=${input.password}&action=get_series_info&series_id=${input.serieId}`
       );
+
       const data = await res.json();
-      if (!data) throw new Error("Failed to get serie details from Xtream API");
-      const seasons = Object.keys(data.episodes).map((season) =>
-        Number(season)
-      );
+      if (!data) {
+        throw new Error("Failed to get serie details from Xtream API");
+      }
+
+      const episodes = data.episodes ?? {};
+      const seasons = Object.keys(episodes).map(Number);
+
+      const info = data.info ?? {};
+
       data.seasons = seasons;
-      const details = await getTmdbInfo(
-        "show",
-        data.info.tmdb_id,
-        data.info.name,
-        new Date(data.info.first_aired).getFullYear()
-      );
+
+      const details =
+        info.tmdb_id ?
+          await getTmdbInfo(
+            "show",
+            info.tmdb_id,
+            info.name ?? "",
+            info.first_aired ?
+              new Date(info.first_aired).getFullYear()
+            : undefined
+          )
+        : null;
+
       return { ...data, tmdb: details };
     }),
   createSerie: publicProcedure

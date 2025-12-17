@@ -10,93 +10,12 @@ import {
   zodPlaylistsSchema,
 } from "@/trpc/schema";
 import { Xtream } from "@iptv/xtream-api";
-import { and, eq, inArray, not } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { publicProcedure, t } from "../trpc";
 
 function xtream(url: string, username: string, password: string) {
   return new Xtream({ url, username, password, preferredFormat: "m3u8" });
-}
-
-// Define a reasonable batch size for the IN clause (e.g., 500 or 1000)
-const BATCH_SIZE = 500;
-
-async function pruneCategoriesByType(
-  db: ReturnType<typeof getDb>,
-  playlistId: number,
-  type: "channels" | "movies" | "series",
-  validCatIds: number[]
-) {
-  const commonConditions = [
-    eq(categories.playlistId, playlistId),
-    eq(categories.type, type),
-  ];
-
-  // Case 1: No valid IDs to keep (Delete ALL of this type for this playlist)
-  if (validCatIds.length === 0) {
-    return await db
-      .delete(categories)
-      .where(and(...commonConditions))
-      .returning({ id: categories.id });
-  }
-
-  // Case 2: A small number of valid IDs (Use the original inArray method)
-  if (validCatIds.length < BATCH_SIZE) {
-    const conditions = [
-      ...commonConditions,
-      not(inArray(categories.categoryId, validCatIds)),
-    ];
-
-    return await db
-      .delete(categories)
-      .where(and(...conditions))
-      .returning({ id: categories.id });
-  }
-
-  let deletedIds: { id: number }[] = [];
-
-  // Get ALL category IDs that belong to the playlist and type
-  const allCatIdsResult = await db
-    .select({ categoryId: categories.categoryId })
-    .from(categories)
-    .where(and(...commonConditions));
-
-  const allCategoryIds = allCatIdsResult.map(
-    (row: { categoryId: number }) => row.categoryId
-  );
-
-  // Determine the IDs that need to be deleted
-  const validSet = new Set(validCatIds);
-  const idsToDelete = allCategoryIds.filter((id: number) => !validSet.has(id));
-
-  if (idsToDelete.length === 0) {
-    console.log("No categories to delete after filtering.");
-    return []; // Nothing to delete
-  }
-
-  console.log(`Found ${idsToDelete.length} categories to delete. Batching...`);
-
-  // Perform the batched deletion on the IDs that need to be removed
-  for (let i = 0; i < idsToDelete.length; i += BATCH_SIZE) {
-    const batch = idsToDelete.slice(i, i + BATCH_SIZE);
-
-    // The conditions for the delete are:
-    // 1. belongs to the playlist/type (already implicitly filtered by how idsToDelete was created)
-    // 2. the categoryId is one of the batch IDs
-    const batchConditions = [
-      ...commonConditions,
-      inArray(categories.categoryId, batch),
-    ];
-
-    const result = await db
-      .delete(categories)
-      .where(and(...batchConditions))
-      .returning({ id: categories.id });
-
-    deletedIds = deletedIds.concat(result);
-  }
-
-  return deletedIds;
 }
 
 export async function performPlaylistUpdate(input: {
@@ -107,299 +26,293 @@ export async function performPlaylistUpdate(input: {
 }) {
   const db = getDb();
   const x = xtream(input.url, input.username, input.password);
-  const existingCats = await db
+
+  // categories
+  const fetchedChannelsCategories = await x.getChannelCategories();
+  const fetchedMoviesCategories = await x.getMovieCategories();
+  const fetchedSeriesCategories = await x.getShowCategories();
+  const fetchedCategories: (typeof categories.$inferInsert)[] = [
+    ...fetchedChannelsCategories.map((category) => ({
+      categoryName: category.category_name,
+      categoryId: parseInt(category.category_id),
+      playlistId: input.playlistId,
+      type: "channels" as const,
+    })),
+    ...fetchedMoviesCategories.map((category) => ({
+      categoryName: category.category_name,
+      categoryId: parseInt(category.category_id),
+      playlistId: input.playlistId,
+      type: "movies" as const,
+    })),
+    ...fetchedSeriesCategories.map((category) => ({
+      categoryName: category.category_name,
+      categoryId: parseInt(category.category_id),
+      playlistId: input.playlistId,
+      type: "series" as const,
+    })),
+  ];
+
+  const ExistingCategories = await db
     .select({ categoryId: categories.categoryId, type: categories.type })
     .from(categories)
     .where(eq(categories.playlistId, input.playlistId));
-  const existingCatKeys = new Set(
-    existingCats.map((c) => `${c.categoryId}-${c.type}`)
+  const fetchedCategoriesMap = new Map(
+    fetchedCategories.map((category) => [category.categoryId, category])
   );
-  const channelCats = await x.getChannelCategories();
-  const ccats = channelCats
-    .filter((c) => !existingCatKeys.has(`${c.category_id}-channels`))
-    .map((c) => ({
-      playlistId: input.playlistId,
-      type: "channels" as const,
-      categoryName: c.category_name,
-      categoryId: +c.category_id,
-    }));
-  if (ccats.length) {
-    await db.insert(categories).values(ccats).onConflictDoNothing();
+  const categoryMap = new Map(
+    ExistingCategories.map((category) => [category.categoryId, category])
+  );
+  const newCategories = fetchedCategories.filter(
+    (category) => !categoryMap.has(Number(category.categoryId))
+  );
+  const categoriesToDelete = ExistingCategories.filter(
+    (category) => !fetchedCategoriesMap.has(category.categoryId)
+  );
+
+  if (newCategories.length > 0) {
+    const categoriesToCreate = await db
+      .insert(categories)
+      .values(newCategories)
+      .returning({ categoryId: categories.categoryId });
+    console.log("created categories", categoriesToCreate.length);
   }
-  const movieCats = await x.getMovieCategories();
-  const mcats = movieCats
-    .filter((c) => !existingCatKeys.has(`${c.category_id}-movies`))
-    .map((c) => ({
-      playlistId: input.playlistId,
-      type: "movies" as const,
-      categoryName: c.category_name,
-      categoryId: +c.category_id,
-    }));
-  if (mcats.length) {
-    await db.insert(categories).values(mcats).onConflictDoNothing();
-  }
-  const seriesCats = await x.getShowCategories();
-  const scats = seriesCats
-    .filter((c) => !existingCatKeys.has(`${c.category_id}-series`))
-    .map((c) => ({
-      playlistId: input.playlistId,
-      type: "series" as const,
-      categoryName: c.category_name,
-      categoryId: +c.category_id,
-    }));
-  if (scats.length) {
-    await db.insert(categories).values(scats).onConflictDoNothing();
-  }
-  const [channelsData, moviesData, seriesData] = await Promise.all([
-    x.getChannels(),
-    x.getMovies(),
-    x.getShows(),
-  ]);
-  const allowedChannelIdsByCat = new Map<number, number[]>();
-  for (const ch of channelsData) {
-    const catId = Number(ch.category_id);
-    const list = allowedChannelIdsByCat.get(catId) ?? [];
-    list.push(ch.stream_id);
-    allowedChannelIdsByCat.set(catId, list);
-  }
-  const allowedMovieIdsByCat = new Map<number, number[]>();
-  for (const m of moviesData) {
-    const catId = m.category_id ? Number(m.category_id) : 0;
-    const list = allowedMovieIdsByCat.get(catId) ?? [];
-    list.push(m.stream_id);
-    allowedMovieIdsByCat.set(catId, list);
-  }
-  const allowedSeriesIdsByCat = new Map<number, number[]>();
-  for (const s of seriesData) {
-    const catId = Number(s.category_id);
-    const list = allowedSeriesIdsByCat.get(catId) ?? [];
-    list.push(s.series_id);
-    allowedSeriesIdsByCat.set(catId, list);
-  }
-  let deletedChannels = 0;
-  for (const [catId, ids] of allowedChannelIdsByCat.entries()) {
-    const rows =
-      ids.length > 0 ?
-        await db
-          .delete(channels)
-          .where(
-            and(
-              eq(channels.playlistId, input.playlistId),
-              eq(channels.categoryId, catId),
-              not(inArray(channels.streamId, ids))
-            )
-          )
-          .returning({ id: channels.id })
-      : await db
-          .delete(channels)
-          .where(
-            and(
-              eq(channels.playlistId, input.playlistId),
-              eq(channels.categoryId, catId)
-            )
-          )
-          .returning({ id: channels.id });
-    deletedChannels += rows.length;
-  }
-  let deletedMovies = 0;
-  for (const [catId, ids] of allowedMovieIdsByCat.entries()) {
-    const rows =
-      ids.length > 0 ?
-        await db
-          .delete(movies)
-          .where(
-            and(
-              eq(movies.playlistId, input.playlistId),
-              eq(movies.categoryId, catId),
-              not(inArray(movies.streamId, ids))
-            )
-          )
-          .returning({ id: movies.id })
-      : await db
-          .delete(movies)
-          .where(
-            and(
-              eq(movies.playlistId, input.playlistId),
-              eq(movies.categoryId, catId)
-            )
-          )
-          .returning({ id: movies.id });
-    deletedMovies += rows.length;
-  }
-  let deletedSeries = 0;
-  for (const [catId, ids] of allowedSeriesIdsByCat.entries()) {
-    const rows =
-      ids.length > 0 ?
-        await db
-          .delete(series)
-          .where(
-            and(
-              eq(series.playlistId, input.playlistId),
-              eq(series.categoryId, catId),
-              not(inArray(series.seriesId, ids))
-            )
-          )
-          .returning({ id: series.id })
-      : await db
-          .delete(series)
-          .where(
-            and(
-              eq(series.playlistId, input.playlistId),
-              eq(series.categoryId, catId)
-            )
-          )
-          .returning({ id: series.id });
-    deletedSeries += rows.length;
-  }
+
+  // channels
+  const fetchedChannels = await x.getChannels();
   const existingChannels = await db
-    .select({
-      streamId: channels.streamId,
-      categoryId: channels.categoryId,
-    })
+    .select({ streamId: channels.streamId })
     .from(channels)
     .where(eq(channels.playlistId, input.playlistId));
-  const existingMovies = await db
-    .select({ streamId: movies.streamId, categoryId: movies.categoryId })
-    .from(movies)
-    .where(eq(movies.playlistId, input.playlistId));
-  const existingSeries = await db
-    .select({ seriesId: series.seriesId, categoryId: series.categoryId })
-    .from(series)
-    .where(eq(series.playlistId, input.playlistId));
-  const existingChannelKeys = new Set(
-    existingChannels.map((c) => `${c.streamId}-${c.categoryId}`)
+
+  const fetchedChannelsMap = new Map(
+    fetchedChannels.map((channel) => [channel.stream_id, channel])
   );
-  const existingMovieKeys = new Set(
-    existingMovies.map((m) => `${m.streamId}-${m.categoryId}`)
+  const ExistinghannelsMap = new Map(
+    existingChannels.map((channel) => [channel.streamId, channel])
   );
-  const existingSeriesKeys = new Set(
-    existingSeries.map((s) => `${s.seriesId}-${s.categoryId}`)
-  );
-  const channelsChunk = channelsData
-    .filter(
-      (ch) =>
-        !existingChannelKeys.has(`${ch.stream_id}-${Number(ch.category_id)}`)
-    )
-    .map((ch) => ({
-      categoryId: +ch.category_id,
-      name: ch.name,
-      streamType: ch.stream_type,
-      streamId: ch.stream_id,
-      streamIcon: ch.stream_icon || "",
+  const newChannels = fetchedChannels
+    .filter((channel) => !ExistinghannelsMap.has(Number(channel.stream_id)))
+    .map((channel) => ({
+      categoryId: +channel.category_id,
+      name: channel.name || "Unkown channel",
+      streamType: channel.stream_type,
+      streamId: channel.stream_id,
+      streamIcon: channel.stream_icon || "",
       playlistId: input.playlistId,
       isFavorite: false,
-      url: ch.url || "",
+      url: channel.url || "",
     }));
-  const moviesChunk = moviesData
-    .filter(
-      (m) =>
-        !existingMovieKeys.has(
-          `${m.stream_id}-${m.category_id ? Number(m.category_id) : 0}`
-        )
-    )
-    .map((m) => ({
-      streamId: m.stream_id,
-      name: m.name,
-      streamType: "movie",
-      streamIcon: m.stream_icon || "",
-      rating: m.rating?.toString() ?? "0",
-      added: m.added,
-      categoryId: m.category_id ? Number(m.category_id) : 0,
-      playlistId: input.playlistId,
-      containerExtension: m.container_extension,
-      url: m.url || "",
-    }));
-  const seriesChunk = seriesData
-    .filter(
-      (s) => !existingSeriesKeys.has(`${s.series_id}-${Number(s.category_id)}`)
-    )
-    .map((s) => ({
-      seriesId: s.series_id,
-      name: s.name ?? "",
-      cast: s.cast ?? "",
-      director: s.director ?? "",
-      genere: s.genre ?? "",
-      releaseDate: s.release_date ?? "",
-      lastModified: s.last_modified ?? "",
-      rating: s.rating?.toString() ?? "0",
-      backdropPath: Array.isArray(s.backdrop_path) ? s.backdrop_path[0] : "",
-      youtubeTrailer: s.youtube_trailer ?? "",
-      episodeRunTime: s.episode_run_time ?? "",
-      categoryId: +s.category_id,
-      playlistId: input.playlistId,
-      cover: s.cover ?? "",
-      plot: s.plot ?? "",
-    }));
-  await Promise.all([
-    channelsChunk.length > 0 ?
-      batchInsert(channels, channelsChunk, { chunkSize: 3000, concurrency: 5 })
-    : Promise.resolve(),
-    moviesChunk.length > 0 ?
-      batchInsert(movies, moviesChunk, { chunkSize: 5000, concurrency: 5 })
-    : Promise.resolve(),
-    seriesChunk.length > 0 ?
-      batchInsert(series, seriesChunk, { chunkSize: 3000, concurrency: 5 })
-    : Promise.resolve(),
-  ]);
-  const channelCatIdsWithItems = await db
-    .select({ categoryId: channels.categoryId })
-    .from(channels)
-    .where(eq(channels.playlistId, input.playlistId));
-  const movieCatIdsWithItems = await db
-    .select({ categoryId: movies.categoryId })
+
+  const newChannelsCategories = newChannels.map((channel) => ({
+    playlistId: input.playlistId,
+    type: "channels" as const,
+    categoryName: `category ${channel.categoryId}`,
+    categoryId: channel.categoryId,
+  }));
+
+  const newChannelsCategoriesMap = new Map(
+    newChannelsCategories.map((category) => [category.categoryId, category])
+  );
+
+  const existingChannelsCategories = ExistingCategories.filter(
+    (c) => c.type !== "channels"
+  );
+  const existingChannelsCategoriesMap = new Map(
+    existingChannelsCategories.map((category) => [
+      category.categoryId,
+      category,
+    ])
+  );
+
+  const newChannelsCategoriesToCreate = newChannelsCategories.filter(
+    (category) => !existingChannelsCategoriesMap.has(category.categoryId)
+  );
+  console.log(
+    "new channels categories",
+    newChannelsCategoriesMap.size,
+    existingChannelsCategories.length
+  );
+  if (newChannelsCategoriesToCreate.length > 0) {
+    // await db
+    //   .insert(categories)
+    //   .values(newChannelsCategoriesToCreate)
+    //   .onConflictDoUpdate({
+    //     target: [categories.categoryId, categories.playlistId],
+    //     set: {
+    //       categoryName: sql`excluded.category_name`,
+    //       type: sql`excluded.type`,
+    //     },
+    //   });
+    console.log(
+      " newChannelsCategoriesToCreate",
+      newChannelsCategoriesToCreate.length
+    );
+  }
+
+  const channelsToDelete = existingChannels.filter(
+    (channel) => !fetchedChannelsMap.has(Number(channel.streamId))
+  );
+
+  if (newChannels.length > 0) {
+    const results = await batchInsert(channels, newChannels, {
+      chunkSize: 3000,
+      concurrency: 5,
+    });
+    console.log("new channels", results);
+  }
+
+  // movies
+  const fetchedMovies = await x.getMovies();
+  const existingMovies = await db
+    .select({ streamId: movies.streamId })
     .from(movies)
     .where(eq(movies.playlistId, input.playlistId));
-  const seriesCatIdsWithItems = await db
-    .select({ categoryId: series.categoryId })
+  const fetchedMoviesMap = new Map(
+    fetchedMovies.map((movie) => [movie.stream_id, movie])
+  );
+  const ExistingMoviesMap = new Map(
+    existingMovies.map((movie) => [movie.streamId, movie])
+  );
+  const newMovies = fetchedMovies
+    .filter((movie) => !ExistingMoviesMap.has(Number(movie.stream_id)))
+    .map((movie) => ({
+      streamId: movie.stream_id,
+      name: movie.name,
+      streamType: movie.stream_type,
+      streamIcon: movie.stream_icon,
+      rating: movie.rating,
+      added: movie.added,
+      categoryId: movie.category_id,
+      playlistId: input.playlistId,
+      containerExtension: movie.container_extension,
+      url: movie.url,
+    }));
+  const newMoviesCategories = newMovies.map((movie) => ({
+    playlistId: input.playlistId,
+    type: "movies" as const,
+    categoryName: `category ${movie.categoryId}`,
+    categoryId: +movie.categoryId,
+  }));
+
+  const existingMoviesCategoriesMap = new Map(
+    ExistingCategories.map((category) => [category.categoryId, category])
+  );
+
+  const newMoviesCategoriesToCreate = newMoviesCategories.filter(
+    (category) => !existingMoviesCategoriesMap.has(category.categoryId)
+  );
+  console.log("new movies categories", newMoviesCategoriesToCreate);
+  if (newMoviesCategoriesToCreate.length > 0) {
+    await db
+      .insert(categories)
+      .values(newMoviesCategoriesToCreate)
+      .onConflictDoUpdate({
+        target: [categories.categoryId, categories.playlistId],
+        set: {
+          categoryName: sql`excluded.category_name`,
+          type: sql`excluded.type`,
+        },
+      });
+  }
+  const moviesToDelete = existingMovies.filter(
+    (movie) => !fetchedMoviesMap.has(Number(movie.streamId))
+  );
+  if (newMovies.length > 0) {
+    await batchInsert(movies, newMovies, {
+      chunkSize: 3000,
+      concurrency: 5,
+    });
+    console.log("new movies", newMovies.length);
+  }
+
+  // series
+  const fetchedSeries = await x.getShows();
+  const existingSeries = await db
+    .select({ seriesId: series.seriesId })
     .from(series)
     .where(eq(series.playlistId, input.playlistId));
+  const fetchedSeriesMap = new Map(
+    fetchedSeries.map((series) => [series.series_id, series])
+  );
+  const ExistingSeriesMap = new Map(
+    existingSeries.map((series) => [series.seriesId, series])
+  );
+  const newSeries = fetchedSeries
+    .filter((series) => !ExistingSeriesMap.has(Number(series.series_id)))
+    .map((series) => ({
+      seriesId: series.series_id,
+      name: series.name,
+      cover: series.cover,
+      plot: series.plot,
+      rating: series.rating,
+      cast: series.cast,
+      genere: series.genre,
+      director: series.director,
+      releaseDate: series.release_date,
+      lastModified: series.last_modified,
+      backdropPath: series.backdrop_path,
+      youtubeTrailer: series.youtube_trailer,
+      episodeRunTime: series.episode_run_time,
+      categoryId: series.category_id,
+      playlistId: input.playlistId,
+    }));
+  const existingSeriesCategoriesMap = new Map(
+    ExistingCategories.filter((category) => category.type === "series").map(
+      (category) => [category.categoryId, category]
+    )
+  );
+  const newSeriesCategories = newSeries.map((series) => ({
+    playlistId: input.playlistId,
+    type: "series" as const,
+    categoryName: `category ${series.categoryId}`,
+    categoryId: +series.categoryId,
+  }));
 
-  const channelCatIds = channelCatIdsWithItems.map((r) => r.categoryId);
-  const movieCatIds = movieCatIdsWithItems.map((r) => r.categoryId);
-  const seriesCatIds = seriesCatIdsWithItems.map((r) => r.categoryId);
-  const prunedChannelsCats = await pruneCategoriesByType(
-    db,
-    input.playlistId,
-    "channels",
-    channelCatIds
+  const newSeriesCategoriesToCreate = newSeriesCategories.filter(
+    (category) => !existingSeriesCategoriesMap.has(Number(category.categoryId))
   );
-  const prunedMoviesCats = await pruneCategoriesByType(
-    db,
-    input.playlistId,
-    "movies",
-    movieCatIds
+  if (newSeriesCategoriesToCreate.length > 0) {
+    await db
+      .insert(categories)
+      .values(newSeriesCategoriesToCreate)
+      .onConflictDoUpdate({
+        target: [categories.categoryId, categories.playlistId],
+        set: {
+          categoryName: sql`excluded.category_name`,
+          type: sql`excluded.type`,
+        },
+      });
+    console.log("new series categories", newSeriesCategoriesToCreate.length);
+  }
+
+  const seriesToDelete = existingSeries.filter(
+    (series) => !fetchedSeriesMap.has(Number(series.seriesId))
   );
-  const prunedSeriesCats = await pruneCategoriesByType(
-    db,
-    input.playlistId,
-    "series",
-    seriesCatIds
-  );
-  await db
-    .update(playlists)
-    .set({ updatedAt: new Date().toISOString() })
-    .where(eq(playlists.id, input.playlistId));
+
+  if (newSeries.length > 0) {
+    await batchInsert(series, newSeries, {
+      chunkSize: 3000,
+      concurrency: 5,
+    });
+    console.log("new series", newSeries.length);
+  }
+
   return {
     success: true,
     newItems: {
-      channels: channelsChunk.length,
-      movies: moviesChunk.length,
-      series: seriesChunk.length,
+      channels: newChannels[0],
+      movies: newMovies[0],
+      series: newSeries[0],
     },
     deletedItems: {
-      channels: deletedChannels,
-      movies: deletedMovies,
-      series: deletedSeries,
+      channels: channelsToDelete[0],
+      movies: moviesToDelete[0],
+      series: seriesToDelete[0],
     },
     categories: {
-      channelsCat: ccats,
-      moviesCat: mcats,
-      seriesCat: scats,
-      pruned: {
-        channels: prunedChannelsCats,
-        movies: prunedMoviesCats,
-        series: prunedSeriesCats,
-      },
+      channelsCat: newCategories[0],
+      moviesCat: newCategories[0],
+      seriesCat: newCategories[0],
     },
   };
 }
@@ -424,17 +337,7 @@ export const playlistsRouter = t.router({
     )
     .query(async () => {
       const db = getDb();
-
       const p = await db.select().from(playlists);
-      const xtreamData = xtream(p[0].baseUrl, p[0].username, p[0].password);
-      const profile = await xtreamData.getChannelCategories();
-      const channels = await xtreamData.getChannels();
-      const xtreamData2 = xtream(p[1].baseUrl, p[1].username, p[1].password);
-      const profile2 = await xtreamData2.getChannelCategories();
-      const channels2 = await xtreamData2.getChannels();
-
-      console.log(xtreamData.baseUrl, channels.length, profile.length);
-      console.log(xtreamData2.baseUrl, channels2.length, profile2.length);
 
       return p;
     }),
