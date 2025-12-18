@@ -11,40 +11,45 @@ export const HeaderSection: FC<HeaderSectionProps> = ({
   genres,
 }) => (
   <div className="space-y-6">
-    <div className="space-y-3">
-      <h1 className="text-4xl sm:text-5xl font-bold text-white leading-tight">{cleanName(name)}</h1>
-      <div className="flex items-center gap-4 flex-wrap">
+    <div className="space-y-4">
+      <h1 className="text-4xl sm:text-6xl font-black text-white leading-[1.1] tracking-tight">
+        {cleanName(name)}
+      </h1>
+
+      <div className="flex items-center gap-3 flex-wrap">
         {rating && (
-          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30">
-            <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-            <span className="text-lg font-bold text-yellow-300">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 backdrop-blur-md">
+            <Star className="w-4 h-4 text-green-400 fill-green-400" />
+            <span className="text-sm font-black text-white">
               {parseFloat(String(rating)).toFixed(1)}
             </span>
           </div>
         )}
-        {runtime && (
-          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10">
-            <Clock className="w-5 h-5 text-gray-300" />
-            <span className="text-sm font-medium text-gray-300">{formatRuntime(runtime)}</span>
-          </div>
-        )}
-        {releaseDate && (
-          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10">
-            <Calendar className="w-5 h-5 text-gray-300" />
-            <span className="text-sm font-medium text-gray-300">
-              {new Date(releaseDate).getFullYear()}
-            </span>
-          </div>
+
+        {[
+          { icon: Clock, value: runtime ? formatRuntime(runtime) : null },
+          { icon: Calendar, value: releaseDate ? new Date(releaseDate).getFullYear() : null },
+        ].map(
+          (item, i) =>
+            item.value && (
+              <div
+                key={i}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/5"
+              >
+                <item.icon className="w-4 h-4 text-white/40" />
+                <span className="text-xs font-bold text-white/60 tracking-wide">{item.value}</span>
+              </div>
+            ),
         )}
       </div>
     </div>
 
-    {genres && genres.length > 0 && (
+    {genres && (
       <div className="flex flex-wrap gap-2">
         {genres.map((genre) => (
           <span
             key={genre.id}
-            className="px-3 py-1.5 text-xs font-medium text-amber-300 bg-amber-500/20 rounded-full border border-amber-500/30"
+            className="px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white/40 border border-white/10 rounded-full bg-white/[0.02]"
           >
             {cleanName(genre.name)}
           </span>

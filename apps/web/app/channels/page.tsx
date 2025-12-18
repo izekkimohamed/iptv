@@ -98,13 +98,7 @@ export default function ChannelsPage() {
       {/* Player Area */}
       <div className="flex-1 flex flex-col">
         {/* Player Header */}
-        <PlayerHeader
-          name={title || ''}
-          poster={poster || ''}
-          channelId={selectedChannel?.id || 0}
-          isFavorite={selectedChannel?.isFavorite}
-          streamId={selectedChannel?.streamId || ''}
-        />
+        <PlayerHeader selectedChannel={selectedChannel} />
 
         {/* Player Content */}
         <div className="flex-1 overflow-y-auto">

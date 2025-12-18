@@ -55,7 +55,7 @@ function HomeLanding() {
                   key={channel.id}
                   className="group"
                 >
-                  <div className="w-[120px] sm:w-[150px] flex-shrink-0">
+                  <div className="w-30 sm:w-37.5ex-shrink-0">
                     <div className="relative rounded-2xl overflow-hidden aspect-square bg-slate-800 cursor-pointer border border-slate-700 hover:border-amber-500 transition-all duration-300 hover:shadow-[0_8px_16px_-4px_rgba(245,158,11,0.2)]">
                       <Image
                         className="w-full h-full group-hover:scale-105 transition-transform duration-300"
@@ -84,7 +84,6 @@ function HomeLanding() {
             </HorizontalCarousel>
           </section>
         )}
-
         {/* Continue Watching Movies Section */}
         {movies.filter((item) => item.playlistId === playlist?.id || 0).length > 0 && (
           <>
@@ -117,11 +116,11 @@ function HomeLanding() {
                     <Link
                       key={item.id}
                       href={`movies?categoryId=${item.categoryId}&movieId=${item.id}&play=true`}
-                      className="relative group w-[250px] flex-shrink-0 rounded-2xl overflow-hidden border-2 border-slate-700 hover:border-amber-500 transition-all duration-300 hover:shadow-[0_12px_24px_-8px_rgba(245,158,11,0.2)]"
+                      className="relative group w-62.5 shrink-0 rounded-2xl overflow-hidden border-2 border-slate-700 hover:border-amber-500 transition-all duration-300 hover:shadow-[0_12px_24px_-8px_rgba(245,158,11,0.2)]"
                     >
                       <div className="relative bg-slate-800">
                         {/* Thumbnail */}
-                        <div className="relative h-[300px] overflow-hidden bg-slate-800">
+                        <div className="relative h-75 overflow-hidden bg-slate-800">
                           <Image
                             className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
                             fill
@@ -210,11 +209,11 @@ function HomeLanding() {
                     <Link
                       key={item.id}
                       href={`series?categoryId=${item.categoryId}&serieId=${item.id}&seasonId=${episode.seasonId}&episodeNumber=${episode.episodeNumber}`}
-                      className="relative group w-[250px] flex-shrink-0 rounded-2xl overflow-hidden border-2 border-slate-700 hover:border-amber-500 transition-all duration-300 hover:shadow-[0_12px_24px_-8px_rgba(245,158,11,0.2)]"
+                      className="relative group w-62.5 shrink-0 rounded-2xl overflow-hidden border-2 border-slate-700 hover:border-amber-500 transition-all duration-300 hover:shadow-[0_12px_24px_-8px_rgba(245,158,11,0.2)]"
                     >
                       <div className="relative bg-slate-800">
                         {/* Thumbnail */}
-                        <div className="relative h-[300px] overflow-hidden bg-slate-800">
+                        <div className="relative h-75 overflow-hidden bg-slate-800">
                           <Image
                             className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
                             fill
@@ -298,10 +297,10 @@ function HomeLanding() {
                 <Link
                   href={`movies/movie?movieId=${movie.id}`}
                   key={movie.id}
-                  className="group w-[250px] flex-shrink-0"
+                  className="group w-62.5 shrink-0"
                 >
                   <div className="relative rounded-2xl overflow-hidden bg-slate-800 cursor-pointer border border-slate-700 hover:border-amber-500 transition-all duration-300 hover:shadow-[0_12px_24px_-8px_rgba(245,158,11,0.2)]">
-                    <div className="relative h-[400px] overflow-hidden">
+                    <div className="relative h-100 overflow-hidden">
                       <Image
                         className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
                         fill
@@ -358,9 +357,9 @@ function HomeLanding() {
               ariaLabelRight="Scroll popular series right"
             >
               {trendingMovies?.series?.slice(0, 12).map((s) => (
-                <div key={s.id} className="group w-[250px] flex-shrink-0">
+                <div key={s.id} className="group w-62.5 shrink-0">
                   <div className="relative rounded-2xl overflow-hidden bg-slate-800 cursor-pointer border border-slate-700 hover:border-amber-500 transition-all duration-300 hover:shadow-[0_12px_24px_-8px_rgba(245,158,11,0.2)]">
-                    <div className="relative h-[400px] overflow-hidden">
+                    <div className="relative h-100 overflow-hidden">
                       <Image
                         className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
                         fill

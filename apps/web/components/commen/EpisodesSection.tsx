@@ -2,12 +2,11 @@
 
 import { useEpisodePlayback, useSeasonSelection, useStreamingUrls } from '@/hooks/useDetails';
 import { EpisodesSectionProps } from '@/lib/types';
+import { VideoPlayerModal } from '@/shared/components/common/VideoPlayerModal';
 import { usePlaylistStore } from '@/store/appStore';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { forwardRef, useEffect, useImperativeHandle, useMemo } from 'react';
-import { Button } from '../ui/button';
 import { EpisodeCard } from './EpisodeCard';
-import { VideoPlayerModal } from '@/shared/components/common/VideoPlayerModal';
 
 interface EpisodesSectionHandle {
   playEpisode: (episode: any) => void;
@@ -123,52 +122,56 @@ export const EpisodesSection = forwardRef<EpisodesSectionHandle, EpisodesSection
     if (!seasons || seasons.length === 0) return null;
 
     return (
-      <div className="" data-episodes-section>
-        <div className="mt-16 space-y-6">
-          <h2 className="text-3xl font-bold text-white">Episodes</h2>
+      <div className="mt-20 space-y-8" data-episodes-section>
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-1 bg-green-500 rounded-full" /> {/* Accent bar */}
+          <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Episodes</h2>
+        </div>
 
-          {/* Season Selector */}
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            {seasons.map((season) => {
-              const count = episodes?.[season]?.length ?? 0;
-              const isSelected = selectedSeason === season;
+        {/* Season Selector */}
+        <div className="flex gap-3 overflow-x-auto pb-4 no-scrollbar">
+          {seasons.map((season) => {
+            const isSelected = selectedSeason === season;
+            return (
+              <button
+                key={season}
+                onClick={() => setSelectedSeason(season)}
+                className={`px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all duration-300 border ${
+                  isSelected
+                    ? 'bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.2)]'
+                    : 'bg-white/5 text-white/40 border-white/10 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                Season {season}
+              </button>
+            );
+          })}
+        </div>
 
-              return (
-                <Button
-                  key={season}
-                  onClick={() => setSelectedSeason(season)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 whitespace-nowrap border flex-shrink-0 ${
-                    isSelected
-                      ? 'bg-amber-500/20 text-amber-200 border-amber-400 shadow-lg shadow-amber-500/25'
-                      : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:border-slate-600'
-                  }`}
-                >
-                  <span>Season {season}</span>
-                  {count > 0 && <span className="ml-2 text-xs opacity-75">({count})</span>}
-                </Button>
-              );
-            })}
-          </div>
-
-          {/* Episodes Grid */}
-          {sortedEpisodes.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {sortedEpisodes.map((episode) => (
+        {/* Episodes Grid */}
+        {sortedEpisodes.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {sortedEpisodes.map((episode) => (
+              <div
+                key={episode.id}
+                className="transition-transform duration-300 hover:scale-[1.02]"
+              >
                 <EpisodeCard
-                  key={episode.id}
                   episode={episode}
                   tmdbPoster={tmdbPoster}
                   fallbackImage={fallbackImage}
                   onSelect={handleSelectEpisodeWithSeason}
                 />
-              ))}
-            </div>
-          ) : (
-            <div className="py-12 text-center bg-slate-800 rounded-lg border border-slate-700">
-              <p className="text-slate-400">No episodes available for Season {selectedSeason}</p>
-            </div>
-          )}
-        </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="py-20 text-center bg-white/[0.02] rounded-3xl border border-dashed border-white/10">
+            <p className="text-white/20 font-bold uppercase tracking-widest text-xs">
+              No Content Found
+            </p>
+          </div>
+        )}
 
         {/* Video Player Modal */}
         {playingEpisode && (

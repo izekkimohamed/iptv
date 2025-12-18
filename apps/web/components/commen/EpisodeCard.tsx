@@ -1,8 +1,10 @@
+'use client';
+
 import { Episode } from '@/lib/types';
 import { cn, formatDate, formatDuration } from '@/lib/utils';
 import { usePlaylistStore } from '@/store/appStore';
 import { useWatchedSeriesStore } from '@/store/watchedStore';
-import { Calendar, CheckCircle2, Clock, Flame, Play, Star } from 'lucide-react';
+import { Calendar, CheckCircle2, Clock, Play, Star } from 'lucide-react';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { FC } from 'react';
@@ -26,135 +28,116 @@ export const EpisodeCard: FC<EpisodeCardProps> = ({
   const { getEpisodeProgress } = useWatchedSeriesStore();
 
   const safeSerieId = serieId ? +serieId : 0;
-  const position =
-    getEpisodeProgress(safeSerieId, episode.episode_num, episode.season)?.position ?? 0;
-  const duration =
-    getEpisodeProgress(safeSerieId, episode.episode_num, episode.season)?.duration ?? 0;
+  const progressData = getEpisodeProgress(safeSerieId, episode.episode_num, episode.season);
 
+  const position = progressData?.position ?? 0;
+  const duration = progressData?.duration ?? 0;
   const progress = duration > 0 ? position / duration : 0;
   const progressPercent = Math.min(progress * 100, 100);
 
   const isWatched = progressPercent >= 95;
-  const isInProgress = progress > 0;
+  const isInProgress = progress > 0 && !isWatched;
 
   const imageSrc = episode.info?.movie_image || tmdbPoster || fallbackImage;
-
-  // Determine rating level for visual indicator
-  const rating = episode.info?.rating ? parseFloat(episode.info.rating.toString()) : 0;
-  const isHighRated = rating >= 8;
 
   return (
     <div
       onClick={() => onSelect(episode)}
-      className="relative group cursor-pointer rounded-lg overflow-hidden border border-slate-700 bg-slate-900/20 transition-all duration-300 hover:border-amber-500 hover:shadow-[0_12px_32px_-8px_rgba(245,158,11,0.25)] hover:-translate-y-2 active:translate-y-0"
+      className="group relative bg-white/[0.03] backdrop-blur-xl rounded-3xl border border-white/10 overflow-hidden cursor-pointer transition-all duration-500 hover:border-white/30 hover:shadow-2xl active:scale-95"
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onSelect(episode);
-        }
-      }}
     >
-      {/* Image Container */}
-      <div className="relative aspect-video w-full overflow-hidden bg-slate-900/20">
+      {/* Thumbnail Section */}
+      <div className="relative aspect-video w-full overflow-hidden bg-white/5">
         <Image
           src={imageSrc.replace('/w185/', '/w500/')}
-          alt={`Season ${episode.season} Episode ${episode.episode_num}`}
+          alt={episode.title || 'Episode'}
           fill
           className={cn(
-            'object-cover transition-all duration-500 group-hover:scale-110',
-            isWatched ? 'opacity-50 saturate-200' : '',
+            'object-cover transition-all duration-700 group-hover:scale-110',
+            isWatched ? 'opacity-30 grayscale' : 'opacity-80 group-hover:opacity-100',
           )}
         />
 
-        {/* Dark overlay on hover */}
-        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-        {/* Play Button */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="p-3 rounded-full bg-amber-500 shadow-lg shadow-amber-600/30 opacity-0 group-hover:opacity-100 transform scale-75 group-hover:scale-100 transition-all duration-300">
-            <Play className="w-6 h-6 text-white fill-white ml-1" />
+        {/* Play Overlay */}
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-all duration-300">
+          <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center transform scale-75 group-hover:scale-100 transition-transform">
+            <Play className="w-5 h-5 text-white fill-white ml-0.5" />
           </div>
         </div>
 
-        {/* Top-right badges */}
-        <div className="absolute top-3 right-3 z-20 flex flex-col gap-2 items-end">
-          {/* Watched Badge */}
-          {isWatched && (
-            <div className="bg-emerald-600 text-white text-xs font-bold px-2.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-md backdrop-blur-sm border border-emerald-500/30">
-              <CheckCircle2 className="w-3.5 h-3.5" /> Watched
+        {/* Status Badges */}
+        <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
+          {isWatched ? (
+            <div className="bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-xl border border-emerald-400/50">
+              <CheckCircle2 className="w-3 h-3" /> Finished
             </div>
-          )}
-
-          {/* High Rating Badge */}
-          {isHighRated && !isWatched && (
-            <div className="bg-orange-600 text-white text-xs font-bold px-2.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-md backdrop-blur-sm border border-orange-500/30">
-              <Flame className="w-3.5 h-3.5" /> Hot
+          ) : isInProgress ? (
+            <div className="bg-white/10 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-white/20">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+              </span>
+              Resuming
             </div>
-          )}
+          ) : null}
         </div>
 
-        {/* Progress Bar */}
+        {/* Dynamic Progress Bar */}
         {isInProgress && (
-          <div className="absolute bottom-0 left-0 right-0 h-2 bg-slate-800/80 backdrop-blur-sm">
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10">
             <div
-              className="h-full bg-amber-500 shadow-[inset_0_0_8px_rgba(245,158,11,0.3)]"
-              style={{
-                width: `${progressPercent}%`,
-                transition: 'width 0.3s ease-out',
-              }}
+              className="h-full bg-amber-500 transition-all duration-500"
+              style={{ width: `${progressPercent}%` }}
             />
           </div>
         )}
       </div>
 
-      {/* Content Section */}
-      <div className="p-4 space-y-3">
-        {/* Episode Header */}
-        <div className="space-y-1">
-          <span className="text-amber-400 text-xs font-bold tracking-wider uppercase block">
-            Season {episode.season} • Episode {episode.episode_num}
-          </span>
-          <h4 className="font-bold text-white text-sm leading-snug line-clamp-2 group-hover:text-amber-200 transition-colors">
+      {/* Info Section */}
+      <div className="p-5 space-y-4">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">
+              S{episode.season} • E{episode.episode_num}
+            </span>
+            {episode.info?.rating && (
+              <div className="flex items-center gap-1 text-amber-400">
+                <Star className="w-3 h-3 fill-current" />
+                <span className="text-[10px] font-bold tracking-tighter">
+                  {parseFloat(episode.info.rating.toString()).toFixed(1)}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <h4 className="font-bold text-white text-base leading-tight line-clamp-1 group-hover:text-amber-400 transition-colors">
             {episode.title || episode.info?.name || `Episode ${episode.episode_num}`}
           </h4>
         </div>
 
-        {/* Plot Summary */}
         {episode.info?.plot && (
-          <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">{episode.info.plot}</p>
+          <p className="text-xs text-white/40 line-clamp-2 leading-relaxed font-medium">
+            {episode.info.plot}
+          </p>
         )}
 
-        {/* Footer with Metadata and Rating */}
-        <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-800">
-          <div className="flex items-center gap-3 text-xs text-slate-500">
-            {episode.info?.releasedate && (
-              <span className="flex items-center gap-1">
-                <Calendar size={13} className="text-slate-600" />
-                {formatDate(episode.info.releasedate)}
-              </span>
-            )}
-            {formatDuration(episode.info?.duration || episode.info?.duration_secs) && (
-              <span className="flex items-center gap-1">
-                <Clock size={13} className="text-slate-600" />
-                {formatDuration(episode.info?.duration || episode.info?.duration_secs)}
-              </span>
-            )}
-          </div>
-
-          {/* Rating Badge */}
-          {episode.info?.rating && episode.info.rating > 0 && (
-            <div className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-amber-300 bg-amber-950 rounded-md border border-amber-900/50 flex-shrink-0 backdrop-blur-sm">
-              <Star className="w-3.5 h-3.5 fill-current" />
-              <span>{parseFloat(episode.info.rating.toString()).toFixed(1)}</span>
+        {/* Footer Meta */}
+        <div className="pt-4 border-t border-white/5 flex items-center gap-4">
+          {episode.info?.releasedate && (
+            <div className="flex items-center gap-1.5 text-[10px] font-bold text-white/20 uppercase tracking-tight">
+              <Calendar size={12} />
+              {formatDate(episode.info.releasedate)}
+            </div>
+          )}
+          {episode.info?.duration && (
+            <div className="flex items-center gap-1.5 text-[10px] font-bold text-white/20 uppercase tracking-tight">
+              <Clock size={12} />
+              {formatDuration(episode.info?.duration)}
             </div>
           )}
         </div>
       </div>
-
-      {/* Hover shine effect */}
-      <div className="absolute -inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none border border-white rounded-lg" />
     </div>
   );
 };

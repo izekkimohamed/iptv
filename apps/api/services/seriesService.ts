@@ -1,6 +1,7 @@
 import { batchInsert, getTmdbInfo } from "@/trpc/common";
 import { getDb } from "@/trpc/db";
 import { series } from "@/trpc/schema";
+import { cleanName } from "@/utils/cleanName";
 import type { Xtream } from "@iptv/xtream-api";
 import { eq } from "drizzle-orm";
 
@@ -73,15 +74,12 @@ export async function getSeriesDetails(
 
   data.seasons = seasons;
 
-  const details =
-    info.tmdb_id ?
-      await getTmdbInfo(
-        "show",
-        info.tmdb_id,
-        info.name ?? "",
-        info.first_aired ? new Date(info.first_aired).getFullYear() : undefined
-      )
-    : null;
+  const details = await getTmdbInfo(
+    "show",
+    info.tmdb_id,
+    cleanName(info.name),
+    info.first_aired ? new Date(info.first_aired).getFullYear() : undefined
+  );
 
   return { ...data, tmdb: details };
 }

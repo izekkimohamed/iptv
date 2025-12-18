@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 type VirtualGridProps<T> = {
   items: T[];
@@ -91,4 +91,3 @@ export default function VirtualGrid<T>({
     </div>
   );
 }
-

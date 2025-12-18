@@ -116,6 +116,7 @@ export default function NavBar() {
     { label: 'Movies', href: '/movies', icon: '🎬' },
     { label: 'Series', href: '/series', icon: '🎞️' },
     { label: 'Add Playlist', href: '/playlists/add', icon: '➕' },
+    { label: '365SCORES', href: '/365', icon: '🏆' },
   ];
 
   const handlePlaylistSelect = async (id: string) => {
@@ -132,7 +133,7 @@ export default function NavBar() {
       <div className={cn('mx-auto max-w-[90vw]', isPending ? 'opacity-50 cursor-not-allowed' : '')}>
         <div className="flex items-center justify-between h-20  gap-4">
           {/* Logo */}
-          <Link href={'/'} className="flex items-center flex-shrink-0">
+          <Link href={'/'} className="flex items-center shrink-0">
             <Image
               src="/icon.png"
               alt="StreamMax"
@@ -140,7 +141,7 @@ export default function NavBar() {
               height={60}
               className="mr-2 rounded-lg"
             />
-            <span className="text-xl font-bold bg-gradient-to-r from-slate-200 to-slate-500 bg-clip-text text-transparent hidden sm:inline">
+            <span className="text-xl font-bold bg-linear-to-r from-slate-200 to-slate-500 bg-clip-text text-transparent hidden sm:inline">
               StreamMax
             </span>
           </Link>
@@ -148,22 +149,31 @@ export default function NavBar() {
           {/* Desktop Navigation */}
           <nav className="items-center justify-center hidden space-x-1 md:flex flex-1 ml-8">
             {navItems.map((item) => (
-              <Link key={item.href} href={item.href}>
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  pathName === item.href
+                    ? 'bg-amber-500/30 text-amber-400'
+                    : 'text-gray-300 hover:text-white hover:bg-white/10',
+                  'flex items-center gap-2 px-3 py-1  font-medium rounded-lg transition-all duration-200',
+                )}
+              >
                 <p
                   className={cn(
-                    'flex items-center gap-2 px-3 py-2  font-medium text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200',
+                    'flex items-center gap-2 px-3 py-2  font-medium text-gray-300 rounded-lg transition-all duration-200',
                     isPending ? 'animate-pulse bg-white/20' : '',
                   )}
                 >
                   <span className="mr-1">{item.icon}</span>
-                  <span className="mr-1 hidden md:inline text-sm text-nowrap">{item.label}</span>
+                  <span className="mr-1 hidden md:inline text-lg text-nowrap">{item.label}</span>
                 </p>
               </Link>
             ))}
           </nav>
 
           {/* Center - Playlist Selector & Refresh */}
-          <div className="flex items-center gap-4 flex-shrink-0">
+          <div className="flex items-center gap-4 shrink-0">
             <div className="relative group">
               <Select
                 disabled={!storePlaylists.length}
@@ -171,7 +181,7 @@ export default function NavBar() {
                 defaultValue={selectedPlaylist?.id.toString()}
               >
                 <SelectTrigger
-                  className="w-[160px] md:w-[180px] rounded-lg text-white border border-white/10 hover:border-white/20 hover:bg-white/10 transition-all duration-200 focus:ring-2 focus:ring-white/20 cursor-pointer"
+                  className="w-40 md:w-45 rounded-lg text-white border border-white/10 hover:border-white/20 hover:bg-white/10 transition-all duration-200 focus:ring-2 focus:ring-white/20 cursor-pointer"
                   value={selectedPlaylist?.username || 'Select'}
                 >
                   <SelectValue placeholder={selectedPlaylist?.username || 'Playlist'} />
@@ -224,7 +234,7 @@ export default function NavBar() {
 
           {/* Window Controls */}
           {isDesktopApp && (
-            <div className="flex items-center gap-3 ml-auto  flex-shrink-0">
+            <div className="flex items-center gap-3 ml-auto  shrink-0">
               <div className="hidden sm:block px-4 py-2.5 rounded-lg border border-white/10">
                 <div className="text-xs text-gray-400 font-mono">{time}</div>
               </div>

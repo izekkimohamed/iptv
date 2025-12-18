@@ -8,7 +8,7 @@ import { usePlayerStore } from '@/store/player-store';
 import { invoke } from '@tauri-apps/api/core';
 import { JetBrains_Mono } from 'next/font/google';
 import { usePathname } from 'next/navigation';
-import { useEffect, type ReactNode } from 'react';
+import { Suspense, useEffect, type ReactNode } from 'react';
 import './globals.css';
 
 const jetBrainsMono = JetBrains_Mono({
@@ -45,19 +45,18 @@ export default function RootLayout({
       <Providers>
         <body className={`${jetBrainsMono.className} font-mono antialiased`}>
           <div
-            className="flex flex-col h-screen font-mono bg-gradient-to-br from-slate-800 to-slate-900"
-            style={{
-              // backgroundImage:
-              //   'linear-gradient(125.83deg, #392DD1 0%, #22B8CF 99.09%), linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundBlendMode: 'overlay',
-            }}
+            className="flex flex-col h-screen font-mono bg-linear-to-br to-[#182848] from-[#030023]"
+            style={
+              {
+                // backgroundImage: 'radial-gradient(circle at center top, #182848 0%, #030023 100%)',
+                // backgroundImage: 'linear-gradient(90deg, #182848 0%, #030023 100%)',
+              }
+            }
           >
             <div>
               <NavBar />
             </div>
-            <>{children}</>
+            <Suspense>{children}</Suspense>
           </div>
           <Toaster />
         </body>

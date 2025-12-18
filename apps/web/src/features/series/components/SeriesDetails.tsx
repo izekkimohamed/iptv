@@ -133,7 +133,7 @@ export default function SeriesDetails({
                   genres={tmdb?.genres}
                 />
 
-                <div className="space-y-2">
+                <div className="space-y-2 flex-1">
                   <h3 className="text-lg font-semibold text-white">Synopsis</h3>
                   <p className="text-gray-300 leading-relaxed line-clamp-4">
                     {tmdb?.overview || description || 'No description available.'}

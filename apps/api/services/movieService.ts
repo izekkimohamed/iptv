@@ -1,6 +1,7 @@
 import { batchInsert, getTmdbInfo } from "@/trpc/common";
 import { getDb } from "@/trpc/db";
 import { movies } from "@/trpc/schema";
+import { cleanName } from "@/utils/cleanName";
 import { Xtream } from "@iptv/xtream-api";
 import { and, eq, ilike } from "drizzle-orm";
 
@@ -64,7 +65,7 @@ export async function getMovieDetails(
   const details = await getTmdbInfo(
     "movie",
     data.info.tmdb_id,
-    data.movie_data.name,
+    cleanName(data.movie_data.name),
     new Date(data.info.releasedate).getFullYear()
   );
   return { ...data, tmdb: details };

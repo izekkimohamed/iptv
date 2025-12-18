@@ -1,7 +1,7 @@
 import { cleanName } from '@/lib/utils';
 import { usePlaylistStore } from '@/store/appStore';
 import { useWatchedMoviesStore, useWatchedSeriesStore } from '@/store/watchedStore';
-import { Film, Play, TrendingUp } from 'lucide-react';
+import { Film, Play } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 
@@ -52,110 +52,89 @@ function ItemsList(props: ItemsListProps) {
         }
       }}
     >
-      {/* Background Image */}
-      {image && (image.endsWith('.png') || image.endsWith('.jpg') || image.endsWith('.jpeg')) ? (
-        <>
-          <Image
-            src={image}
-            alt={cleanName(title)}
-            fill
-            className="transition-all duration-500 group-hover:scale-105"
-            priority={false}
-            onLoad={() => setLoaded(true)}
-            onError={(e) => {
-              e.currentTarget.src = './icon.png';
-              e.currentTarget.height = 0;
-              e.currentTarget.width = 0;
-              e.currentTarget.style.display = 'none';
-              e.currentTarget.style.visibility = 'hidden';
-            }}
-          />
-          {!loaded && (
-            <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-slate-800 to-slate-900" />
-          )}
-          {/* Dark overlay */}
-          <div className="h-full flex flex-col gap-1 justify-center items-center text-center text-slate-50 bg-gradient-to-br from-slate-800 to-slate-900">
-            <Film className="w-14 h-14 text-slate-600 mx-auto" />
-            {cleanName(title)}
-          </div>
-        </>
-      ) : (
-        <div className="absolute inset-0 flex items-center justify-center text-center text-slate-50 bg-gradient-to-br from-slate-800 to-slate-900">
-          <div className="text-center space-y-3">
-            <Film className="w-14 h-14 text-slate-600 mx-auto" />
-            <p className="text-xs truncate  px-3">{cleanName(title)}</p>
-          </div>
-        </div>
-      )}
+      {/* Background Poster Image */}
+      <div className="absolute inset-0 z-0">
+        {image && (image.startsWith('http') || image.startsWith('/')) ? (
+          <>
+            <Image
+              src={image}
+              alt={cleanName(title)}
+              fill
+              className="transition-all duration-500 group-hover:scale-105"
+              priority={false}
+              onLoad={() => setLoaded(true)}
+              onError={(e) => {
+                e.currentTarget.src = './icon.png';
 
-      {/* Play Button - Center Overlay */}
-      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 z-20">
-        <div className="p-4 rounded-full bg-amber-500 shadow-lg shadow-amber-600/40 transform scale-75 group-hover:scale-100 transition-transform duration-300">
-          <Play className="w-7 h-7 text-white fill-white ml-0.5" />
-        </div>
-      </div>
+                e.currentTarget.height = 0;
 
-      {/* Progress Bar */}
-      {progressPct > 0 && (
-        <div className="absolute bottom-0 left-0 w-full h-1.5 bg-slate-800/80 z-30">
-          <div
-            className="h-full bg-amber-500 shadow-[inset_0_0_6px_rgba(245,158,11,0.3)]"
-            style={{
-              width: `${Math.min(progressPct * 100, 100)}%`,
-              transition: 'width 0.3s ease-out',
-            }}
-          />
-        </div>
-      )}
+                e.currentTarget.width = 0;
 
-      {/* Top Right Badges */}
-      <div className="absolute top-3 right-3 z-30 flex flex-col gap-2 items-end">
-        {/* Rating Badge */}
-        <div
-          className={`flex items-center justify-center w-12 h-12 rounded-full border-2 shadow-md backdrop-blur-sm ${
-            isHighRated
-              ? 'bg-emerald-950 border-emerald-600'
-              : isMediumRated
-                ? 'bg-amber-950 border-amber-600'
-                : 'bg-slate-900 border-slate-700'
-          }`}
-        >
-          <div className="text-center">
-            <div className="text-xs font-bold text-white">{ratingValue}</div>
-            <div
-              className={`text-[9px] font-semibold ${
-                isHighRated
-                  ? 'text-emerald-400'
-                  : isMediumRated
-                    ? 'text-amber-400'
-                    : 'text-slate-500'
-              }`}
-            >
-              /10
-            </div>
-          </div>
-        </div>
+                e.currentTarget.style.display = 'none';
 
-        {/* Quality Indicator */}
-        {isHighRated && (
-          <div className="bg-emerald-600 text-white text-xs font-bold px-2.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-md border border-emerald-500/30">
-            <TrendingUp className="w-3.5 h-3.5" />
-            <span>Top</span>
+                e.currentTarget.style.visibility = 'hidden';
+              }}
+            />
+
+            {!loaded && (
+              <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-slate-800 to-slate-900" />
+            )}
+          </>
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center bg-white/2">
+            <Film className="w-12 h-12 text-white/10" />
           </div>
         )}
       </div>
 
-      {/* Content - Bottom Section */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 bg-black/50 backdrop-blur-sm transform translate-y-1 group-hover:translate-y-0 transition-all duration-300 border-t border-white/5">
-        <div className="space-y-2">
-          <h3 className="text-sm text-center font-bold text-white line-clamp-2 leading-snug group-hover:text-amber-200 truncate transition-colors">
+      {/* Content Overlay */}
+      <div className="relative z-10 h-full flex flex-col p-2">
+        {/* Top Row: Rating & Play Status */}
+        <div className="flex justify-between items-start">
+          <div className="flex items-center gap-2 bg-black/40 px-3 py-1 rounded-full border border-white/10 backdrop-blur-md">
+            <span className="text-sm font-black text-white/90">
+              <span className="text-amber-400">{ratingValue}</span>{' '}
+              <span className="text-white/40 font-bold ml-0.5">IMDB</span>
+            </span>
+          </div>
+
+          {progressPct > 0 && (
+            <div className="flex items-center gap-1.5 bg-green-500/20 px-2 py-1 rounded-full border border-green-500/30">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              </span>
+              <span className="text-[9px] font-black text-green-400 uppercase tracking-tighter">
+                Resuming
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Center: Play Icon (Visible on Hover) */}
+        <div className="flex-1 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transform scale-75 group-hover:scale-100 transition-all duration-300">
+            <Play className="w-5 h-5 text-white fill-white ml-0.5" />
+          </div>
+        </div>
+
+        {/* Bottom: Info */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-bold text-white text-center leading-tight line-clamp-2 drop-shadow-md">
             {cleanName(title)}
           </h3>
         </div>
       </div>
 
-      {/* Border shine on hover */}
-      <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-20 transition-opacity duration-300 border border-white rounded-lg" />
+      {/* Progress Bar (Matches the "Live Clock" green accent style) */}
+      {progressPct > 0 && (
+        <div className="absolute bottom-0 left-0 w-full h-1 bg-white/5">
+          <div
+            className="h-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] transition-all duration-500"
+            style={{ width: `${progressPct * 100}%` }}
+          />
+        </div>
+      )}
     </div>
   );
 }

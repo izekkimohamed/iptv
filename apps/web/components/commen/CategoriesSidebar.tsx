@@ -42,17 +42,17 @@ export default function CategoriesSidebar(props: CategoriesSidebarProps) {
   };
 
   return (
-    <div className="w-[400px] h-full flex flex-col border-r border-white/10 backdrop-blur-sm">
+    <div className="w-100 h-full flex flex-col border-r border-white/10 backdrop-blur-sm">
       {/* Search */}
-      <div className="px-5 py-3 border-b border-white/10">
+      <div className="px-1 pr-4 py-3 border-b border-white/10">
         <div className="relative flex items-center">
           <Search className="absolute left-3 w-4 h-4 text-gray-400" />
           <Input
             id="search-input"
             placeholder="Search categories..."
-            className="w-full pl-10 pr-10 py-2 bg-transparent border rounded-md border-amber-400/15
-            focus:ring-1 ring-amber-400/10
-            active:ring-1 text-sm text-amber-400 placeholder-gray-400 focus:border-amber-400/20"
+            className="w-full pl-10 pr-10 py-2 bg-transparent border rounded-md border-white/15
+            focus:ring-1
+            active:ring-1 text-sm text-amber-400 placeholder-gray-400 focus:border-amber-400"
             style={{}}
             value={searchValue}
             onChange={handleChange}
