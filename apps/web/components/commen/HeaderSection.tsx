@@ -34,7 +34,7 @@ export const HeaderSection: FC<HeaderSectionProps> = ({
             item.value && (
               <div
                 key={i}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/5"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/3 border border-white/5"
               >
                 <item.icon className="w-4 h-4 text-white/40" />
                 <span className="text-xs font-bold text-white/60 tracking-wide">{item.value}</span>
@@ -49,7 +49,7 @@ export const HeaderSection: FC<HeaderSectionProps> = ({
         {genres.map((genre) => (
           <span
             key={genre.id}
-            className="px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white/40 border border-white/10 rounded-full bg-white/[0.02]"
+            className="px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white/40 border border-white/10 rounded-full bg-white/2"
           >
             {cleanName(genre.name)}
           </span>

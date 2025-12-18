@@ -37,7 +37,7 @@ export const ActionButtons: FC<UpdatedActionButtonsProps> = ({
     <div className="flex flex-wrap gap-3 pt-4">
       {(hasSeasons || !hasSeasons) && (
         <Button
-          className="flex items-center gap-2 px-6 py-3 text-base font-semibold text-white bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 transition-all duration-300 rounded-lg shadow-lg hover:shadow-amber-600/50 group"
+          className="flex items-center gap-2 px-6 py-3 text-base font-semibold text-white bg-linear-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 transition-all duration-300 rounded-lg shadow-lg hover:shadow-amber-600/50 group"
           onClick={onPlayMovie}
           aria-label={getPlayButtonLabel()}
         >

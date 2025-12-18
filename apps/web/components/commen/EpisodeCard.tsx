@@ -43,7 +43,7 @@ export const EpisodeCard: FC<EpisodeCardProps> = ({
   return (
     <div
       onClick={() => onSelect(episode)}
-      className="group relative bg-white/[0.03] backdrop-blur-xl rounded-3xl border border-white/10 overflow-hidden cursor-pointer transition-all duration-500 hover:border-white/30 hover:shadow-2xl active:scale-95"
+      className="group relative bg-white/3 backdrop-blur-xl rounded-3xl border border-white/10 overflow-hidden cursor-pointer transition-all duration-500 hover:border-white/30 hover:shadow-2xl active:scale-95"
       role="button"
       tabIndex={0}
     >

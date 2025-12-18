@@ -96,7 +96,7 @@ export default function MoviesPage() {
           />
         )}
         {movies && !isFetchingMovies && !isFetchingMovie && !movieId && (
-          <div className="bg-gradient-to-b from-slate-900/40 to-slate-950 min-h-full">
+          <div className="bg-linear-to-b from-slate-900/40 to-slate-950 min-h-full">
             <VirtualGrid
               className="h-full p-5 "
               items={movies}

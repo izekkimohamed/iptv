@@ -46,7 +46,7 @@ export const TrailersSection: FC<TrailersSectionProps> = ({ videos, onTrailerCli
                 <Play className="w-6 h-6 text-white fill-white" />
               </div>
             </div>
-            <p className="absolute bottom-0 left-0 right-0 px-3 py-2 text-xs font-medium text-white bg-gradient-to-t from-black/80 to-transparent line-clamp-2">
+            <p className="absolute bottom-0 left-0 right-0 px-3 py-2 text-xs font-medium text-white bg-linear-to-t from-black/80 to-transparent line-clamp-2">
               {video.name}
             </p>
           </Button>

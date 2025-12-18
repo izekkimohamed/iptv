@@ -22,7 +22,6 @@ const prettierConfig = {
   endOfLine: 'lf',
   // Enable Prettier to format embedded code if a parser is available
   embeddedLanguageFormatting: 'auto',
-
 };
 
 export default prettierConfig;

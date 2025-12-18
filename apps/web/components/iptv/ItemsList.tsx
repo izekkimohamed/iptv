@@ -42,7 +42,7 @@ function ItemsList(props: ItemsListProps) {
     <div
       key={streamId}
       onClick={onMovieClick}
-      className="relative h-[320px] rounded-lg overflow-hidden cursor-pointer group border border-slate-700 hover:border-amber-500 transition-all duration-300 hover:scale-105 hover:shadow-[0_16px_40px_-8px_rgba(245,158,11,0.3)]"
+      className="relative h-80 rounded-lg overflow-hidden cursor-pointer group border border-slate-700 hover:border-amber-500 transition-all duration-300 hover:scale-105 hover:shadow-[0_16px_40px_-8px_rgba(245,158,11,0.3)]"
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
@@ -77,7 +77,7 @@ function ItemsList(props: ItemsListProps) {
             />
 
             {!loaded && (
-              <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-slate-800 to-slate-900" />
+              <div className="absolute inset-0 animate-pulse bg-linear-to-br from-slate-800 to-slate-900" />
             )}
           </>
         ) : (

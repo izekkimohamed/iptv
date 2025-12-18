@@ -166,7 +166,7 @@ export const EpisodesSection = forwardRef<EpisodesSectionHandle, EpisodesSection
             ))}
           </div>
         ) : (
-          <div className="py-20 text-center bg-white/[0.02] rounded-3xl border border-dashed border-white/10">
+          <div className="py-20 text-center bg-white/2 rounded-3xl border border-dashed border-white/10">
             <p className="text-white/20 font-bold uppercase tracking-widest text-xs">
               No Content Found
             </p>

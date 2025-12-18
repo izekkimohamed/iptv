@@ -72,12 +72,12 @@ export default function LiveScores() {
             {liveMatches.map((game) => (
               <div
                 key={game.id}
-                className="min-w-[300px] bg-gradient-to-br from-white/10 to-white/[0.02] backdrop-blur-xl rounded-3xl p-5 border border-white/10 snap-center shadow-2xl"
+                className="min-w-75 bg-linear-to-br from-white/10 to-white/2 backdrop-blur-xl rounded-3xl p-5 border border-white/10 snap-center shadow-2xl"
               >
                 {/* Match Header & Play Time */}
                 <div className="flex justify-between items-center mb-6">
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-bold text-white/40 uppercase tracking-tight truncate max-w-[140px]">
+                    <span className="text-[10px] font-bold text-white/40 uppercase tracking-tight truncate max-w-35">
                       {game.competitionDisplayName}
                     </span>
                   </div>
@@ -130,9 +130,9 @@ export default function LiveScores() {
         {Object.entries(groupedOtherGames).map(([compName, matches]) => (
           <div
             key={compName}
-            className="rounded-3xl overflow-hidden bg-white/[0.02] border border-white/5"
+            className="rounded-3xl overflow-hidden bg-white/2 border border-white/5"
           >
-            <div className="bg-white/[0.04] px-5 py-3 flex items-center gap-3">
+            <div className="bg-white/4 px-5 py-3 flex items-center gap-3">
               <span className="text-[10px] font-black uppercase tracking-widest text-white/50">
                 {compName}
               </span>
@@ -142,7 +142,7 @@ export default function LiveScores() {
               {matches.map((game) => (
                 <div
                   key={game.id}
-                  className="flex items-center p-5 hover:bg-white/[0.03] transition-all"
+                  className="flex items-center p-5 hover:bg-white/3 transition-all"
                 >
                   <div className="w-16 flex flex-col items-start border-r border-white/10 mr-4">
                     <span className="text-xs font-bold text-white">

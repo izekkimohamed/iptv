@@ -23,7 +23,7 @@ export function useAutoScrollToSelected({
     const container = containerRef.current;
 
     const scrollToSelected = () => {
-      let selector = `[${primaryAttr}="${selectedId}"]`;
+      const selector = `[${primaryAttr}="${selectedId}"]`;
 
       let selectedEl = container.querySelector(selector) as HTMLElement | null;
 

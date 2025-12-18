@@ -33,7 +33,7 @@ export const CastSection: FC<CastSectionProps> = ({ cast }) => {
                 />
               </div>
             ) : (
-              <div className="h-48 flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
+              <div className="h-48 flex items-center justify-center bg-linear-to-br from-slate-800 to-slate-900">
                 <User2 size={48} className="text-gray-600" />
               </div>
             )}
