@@ -2,6 +2,7 @@ import { useAutoScrollToSelected } from '@/hooks/useAutoScrollToSelected';
 import { Category } from '@/lib/types';
 import { ChevronRight, Folder, Search, X } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname, useSearchParams } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import { Button } from '../ui/button';
@@ -15,6 +16,8 @@ interface CategoriesSidebarProps {
 }
 
 export default function CategoriesSidebar(props: CategoriesSidebarProps) {
+  const pathname = usePathname();
+  const newChannels = useSearchParams().get('new');
   const { categories, isLoading, selectedCategoryId, categoryType } = props;
   const categoryRef = useRef<HTMLDivElement>(null);
   const [searchValue, setSearchValue] = useState('');
@@ -80,6 +83,32 @@ export default function CategoriesSidebar(props: CategoriesSidebarProps) {
           </div>
         ) : (
           <div className="flex flex-col gap-1.5">
+            <Link
+              href={`/${pathname.split('/')[1]}?new=true`}
+              data-category-id="new"
+              title="New"
+              className={`
+                    flex items-center justify-between px-1 py-3 rounded-lg border transition-all
+                    ${
+                      newChannels
+                        ? 'border-amber-500/40 bg-white/15 backdrop-blur-md shadow-md shadow-amber-500/10 text-amber-400'
+                        : 'border-white/20  hover:bg-white/5 text-gray-300 hover:text-white'
+                    }
+                  `}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <Folder className={`w-4 h-4 text-gray-500`} />
+                <span className="truncate font-medium">
+                  New{' '}
+                  {pathname.split('/')[1]?.charAt(0).toUpperCase() +
+                    pathname.split('/')[1]?.slice(1)}
+                </span>{' '}
+              </div>
+
+              <ChevronRight
+                className={`w-4 h-4 transition text-gray-500 group-hover:text-white -translate-x-2`}
+              />
+            </Link>
             {filteredCategories.map((category) => {
               const isSelected = selectedCategoryId === category.categoryId.toString();
 

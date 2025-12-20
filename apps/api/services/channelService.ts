@@ -31,7 +31,18 @@ export async function fetchAndPrepareChannels(
       url: c.url || "",
     }));
 
-  const toDelete = existing.filter((c) => !fetchedMap.has(Number(c.streamId)));
+  const toDelete = fetched
+    .filter((c) => !fetchedMap.has(Number(c.stream_id)))
+    .map((c) => ({
+      categoryId: +c.category_id,
+      name: c.name || "Unknown channel",
+      streamType: c.stream_type,
+      streamId: c.stream_id,
+      streamIcon: c.stream_icon || "",
+      playlistId,
+      isFavorite: false,
+      url: c.url || "",
+    }));
 
   return { newChannels, toDelete };
 }

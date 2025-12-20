@@ -1,4 +1,3 @@
-import { getDb } from "@/trpc/db";
 import { createXtreamClient } from "@/utils/xtream";
 import {
   buildMissingCategories,
@@ -17,7 +16,6 @@ interface PlaylistUpdateInput {
 }
 
 export async function performPlaylistUpdate(input: PlaylistUpdateInput) {
-  const db = getDb();
   const xtreamClient = createXtreamClient(
     input.url,
     input.username,
@@ -73,19 +71,21 @@ export async function performPlaylistUpdate(input: PlaylistUpdateInput) {
   return {
     success: true,
     newItems: {
-      channels: newChannels.length,
-      movies: newMovies.length,
-      series: newSeries.length,
+      channels: newChannels,
+      movies: newMovies,
+      series: newSeries,
     },
     deletedItems: {
-      channels: channelsToDelete.length,
-      movies: moviesToDelete.length,
-      series: seriesToDelete.length,
+      channels: channelsToDelete,
+      movies: moviesToDelete,
+      series: seriesToDelete,
     },
     categories: {
-      channelsCat: newChannelsCategories.length,
-      moviesCat: newMoviesCategories.length,
-      seriesCat: newSeriesCategories.length,
+      channelsCat: newChannelsCategories,
+      moviesCat: newMoviesCategories,
+      seriesCat: newSeriesCategories,
     },
   };
 }
+
+export type returnType = Awaited<ReturnType<typeof performPlaylistUpdate>>;

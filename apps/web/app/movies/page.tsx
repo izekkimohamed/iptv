@@ -9,14 +9,19 @@ import ItemsList from '@/components/iptv/ItemsList';
 import EmptyState from '@/components/ui/EmptyState';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import MovieDetails from '@/features/movies/components/MovieDetails';
+import { useRecentUpdateStore } from '@/store/recentUpdate';
 
 export default function MoviesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { selectedPlaylist: playlist } = usePlaylistStore();
   const selectedCategoryId = searchParams.get('categoryId');
   const movieId = searchParams.get('movieId');
 
-  const { selectedPlaylist: playlist } = usePlaylistStore();
+  const newMovies = useSearchParams().get('new');
+  const selectedPlaylist = usePlaylistStore((state) => state.selectedPlaylist);
+  const recentMovies = useRecentUpdateStore((state) => state.getLatestUpdate(selectedPlaylist?.id));
+  const newMoviesData = recentMovies?.newItems.movies || [];
 
   const { data: movies, isLoading: isFetchingMovies } = trpc.movies.getMovies.useQuery(
     {
@@ -75,7 +80,7 @@ export default function MoviesPage() {
             goBack
           />
         )}
-        {!selectedCategoryId && !movieId && (
+        {!selectedCategoryId && !movieId && !newMovies && (
           <EmptyState
             icon="📺"
             title="No Categories Found"
@@ -100,6 +105,27 @@ export default function MoviesPage() {
             <VirtualGrid
               className="h-full p-5 "
               items={movies}
+              renderItem={(movie) => (
+                <ItemsList
+                  image={movie.streamIcon}
+                  title={movie.name}
+                  rating={movie.rating}
+                  streamId={movie.streamId}
+                  onMovieClick={() => handleMovieClick(movie.streamId)}
+                  itemType="movie"
+                />
+              )}
+              minItemWidth={230}
+              estimateItemHeight={360}
+              gapClassName="gap-3"
+            />
+          </div>
+        )}
+        {newMoviesData.length > 0 && (
+          <div className="bg-linear-to-b from-slate-900/40 to-slate-950 min-h-full">
+            <VirtualGrid
+              className="h-full p-5 "
+              items={newMoviesData}
               renderItem={(movie) => (
                 <ItemsList
                   image={movie.streamIcon}

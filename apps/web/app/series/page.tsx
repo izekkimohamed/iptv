@@ -8,15 +8,21 @@ import SeriesDetails from '@/features/series/components/SeriesDetails';
 import { trpc } from '@/lib/trpc';
 import VirtualGrid from '@/src/shared/components/common/VirtualGrid';
 import { usePlaylistStore } from '@/store/appStore';
+import { useRecentUpdateStore } from '@/store/recentUpdate';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function SeriesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  // const { selectedPlaylist } = usePlaylistStore();
+
   const selectedCategoryId = searchParams.get('categoryId');
   const serieId = searchParams.get('serieId');
 
-  const { selectedPlaylist } = usePlaylistStore();
+  const newSeries = useSearchParams().get('new');
+  const selectedPlaylist = usePlaylistStore((state) => state.selectedPlaylist);
+  const recentSeries = useRecentUpdateStore((state) => state.getLatestUpdate(selectedPlaylist?.id));
+  const newSeriesData = recentSeries?.newItems.series || [];
 
   const { data: categories, isLoading } = trpc.series.getSeriesCategories.useQuery({
     playlistId: selectedPlaylist?.id || 0,
@@ -70,7 +76,7 @@ export default function SeriesPage() {
             goBack
           />
         )}
-        {!selectedCategoryId && !serieId && (
+        {!selectedCategoryId && !serieId && !newSeries && (
           <EmptyState
             icon="📺"
             title="No Categories Found"
@@ -97,6 +103,28 @@ export default function SeriesPage() {
             <VirtualGrid
               className="h-full p-5"
               items={series}
+              renderItem={(serie) => (
+                <ItemsList
+                  image={serie.cover || ''}
+                  title={serie.name || ''}
+                  rating={serie.rating || ''}
+                  streamId={serie.seriesId}
+                  onMovieClick={() => handleserieClick(serie.seriesId)}
+                  itemType="series"
+                />
+              )}
+              minItemWidth={230}
+              estimateItemHeight={360}
+              gapClassName="gap-3"
+            />
+          </div>
+        )}
+
+        {newSeriesData.length > 0 && (
+          <div className="bg-linear-to-b from-slate-900/40 to-slate-950 min-h-full">
+            <VirtualGrid
+              className="h-full p-5"
+              items={newSeriesData}
               renderItem={(serie) => (
                 <ItemsList
                   image={serie.cover || ''}

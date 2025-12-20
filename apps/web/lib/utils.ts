@@ -73,6 +73,8 @@ export const formatDuration = (duration: string | number | undefined) => {
   return null;
 };
 
+export const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
+
 export const getVideoType = (url: string): string => {
   if (url.includes('.m3u8') || url.includes('m3u8')) {
     return 'application/x-mpegURL'; // HLS

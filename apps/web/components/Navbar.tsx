@@ -3,6 +3,7 @@ import { useTauri } from '@/hooks/useTauri';
 import { trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import { usePlaylistStore } from '@/store/appStore';
+import { useRecentUpdateStore } from '@/store/recentUpdate';
 import { invoke } from '@tauri-apps/api/core';
 import { Minus, RefreshCcw, X } from 'lucide-react';
 import Image from 'next/image';
@@ -33,6 +34,7 @@ export default function NavBar() {
   const utils = trpc.useUtils();
   const [time, setTime] = useState<string>('');
   const { isDesktopApp } = useTauri();
+  const addUpdate = useRecentUpdateStore((state) => state.addUpdate);
 
   useEffect(() => {
     const updateTime = () => {
@@ -67,6 +69,11 @@ export default function NavBar() {
 
   const { mutate: handleUpdate, isPending } = trpc.playlists.updatePlaylists.useMutation({
     onSuccess: async (data) => {
+      if (data && selectedPlaylist) {
+        // Save data specifically for this playlist
+        addUpdate(selectedPlaylist.id, data);
+      }
+
       await utils.playlists.getPlaylists.invalidate();
       await utils.channels.getCategories.invalidate({
         playlistId: selectedPlaylist?.id || 0,
@@ -87,20 +94,8 @@ export default function NavBar() {
         playlistId: selectedPlaylist?.id || 0,
       });
       if (data) {
-        const addedTotal =
-          (data.newItems?.channels ?? 0) +
-          (data.newItems?.movies ?? 0) +
-          (data.newItems?.series ?? 0);
-        const deletedTotal =
-          (data.deletedItems?.channels ?? 0) +
-          (data.deletedItems?.movies ?? 0) +
-          (data.deletedItems?.series ?? 0);
-        const prunedTotal =
-          (data.categories?.pruned?.channels ?? 0) +
-          (data.categories?.pruned?.movies ?? 0) +
-          (data.categories?.pruned?.series ?? 0);
         toast.success(
-          `Updated library: +${addedTotal} new, -${deletedTotal} removed, -${prunedTotal} categories pruned`,
+          `Updated library: +${data.newItems.channels.length} new channels, -${data.deletedItems.channels.length} removed channels, -${data.categories.channelsCat.length} categories pruned`,
         );
       } else {
         toast.info('Playlist updated');

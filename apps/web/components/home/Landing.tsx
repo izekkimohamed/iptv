@@ -84,6 +84,7 @@ function HomeLanding() {
             </HorizontalCarousel>
           </section>
         )}
+
         {/* Continue Watching Movies Section */}
         {movies.filter((item) => item.playlistId === playlist?.id || 0).length > 0 && (
           <>
