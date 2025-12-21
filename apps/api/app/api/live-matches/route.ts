@@ -1,6 +1,19 @@
+import { Competition, Game, Root } from "@/utils/types";
 import { NextResponse } from "next/server";
 
-// 1. Improved CORS helper to handle local and production origins
+// 1. Centralized "Featured" Configuration
+const FEATURED_COMPETITION_IDS = [
+  11, // Premier League
+  7, // La Liga
+  8, // Serie A
+  9, // Bundesliga
+  10, // Ligue 1
+  573, // Champions League
+  574, // Europa League
+  167, // AFCON
+  7674, // FIFA Arab Cup
+];
+
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get("origin") ?? "*";
   return {
@@ -10,103 +23,70 @@ function getCorsHeaders(req: Request) {
   };
 }
 
-export async function OPTIONS(req: Request) {
-  return new Response(null, { status: 204, headers: getCorsHeaders(req) });
-}
-
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const competitionId = searchParams.get("competitionId") || "7";
   const corsHeaders = getCorsHeaders(request);
-  const today = new Date().toLocaleDateString("en-GB").replace(/\//g, "/");
-  // Result: "18/12/2025" (dynamic)
 
-  // This URL focuses on top-tier matches globally
-  const TARGET_URL = `https://webws.365scores.com/web/games/allscores/?appTypeId=5&langId=1&timezoneName=Europe/Paris&userCountryId=5&sports=1&startDate=${today}&endDate=${today}&showOdds=false&onlyLiveGames=false&withTop=true&topBookmaker=16`;
+  // Get date from params (DD/MM/YYYY) or default to today
+  const targetDate =
+    searchParams.get("date") || new Date().toLocaleDateString("en-GB");
+
+  const TARGET_URL = `https://webws.365scores.com/web/games/allscores/?appTypeId=5&langId=1&timezoneName=Europe/Paris&userCountryId=5&sports=1&startDate=${targetDate}&endDate=${targetDate}&showOdds=false&onlyLiveGames=false&withTop=true`;
 
   try {
     const response = await fetch(TARGET_URL, {
-      method: "GET",
-      // 2. Comprehensive Browser Spoofing Headers
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        Accept: "application/json, text/plain, */*",
-        "Accept-Language": "en-US,en;q=0.9",
         Referer: "https://www.365scores.com/",
-        Origin: "https://www.365scores.com",
-        "Sec-Fetch-Dest": "empty",
-        "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Site": "same-site",
-        Pragma: "no-cache",
-        "Cache-Control": "no-cache",
       },
       next: { revalidate: 60 },
     });
 
-    // 3. Status Code Check
-    if (!response.ok) {
-      console.error(`Upstream API error: ${response.status}`);
-      return NextResponse.json(
-        { error: `Upstream error: ${response.status}` },
-        { status: response.status, headers: corsHeaders }
-      );
+    if (!response.ok) throw new Error("Upstream API failure");
+
+    const data: Root = await response.json();
+
+    if (!data.games || !data.competitions) {
+      return NextResponse.json([]);
     }
 
-    // 4. Content-Type Check (Prevents the JSON parse crash)
-    const contentType = response.headers.get("content-type");
-    if (!contentType || !contentType.includes("application/json")) {
-      const text = await response.text();
-      console.error(
-        "API returned non-JSON response. Likely a Cloudflare block page."
-      );
-      return NextResponse.json(
-        {
-          error: "Blocked by provider anti-bot protection",
-          details: "Received HTML instead of JSON",
-        },
-        { status: 403, headers: corsHeaders }
-      );
-    }
+    // 1. Filter for "Elite" popularity only
+    // We'll set a threshold (e.g., 10,000,000) or take the Top 10 by rank
+    const POPULARITY_THRESHOLD = 10000000;
 
-    const data = await response.json();
-    if (!data.games) return NextResponse.json([], { headers: corsHeaders });
+    const featuredCompetitions = data.competitions
+      .filter(
+        (comp: Competition) => comp.popularityRank >= POPULARITY_THRESHOLD
+      )
+      .sort((a, b) => b.popularityRank - a.popularityRank); // Highest rank first
 
-    // 1. Define your "Featured" Competition IDs
-    const featuredWhiteslist = [
-      11, // English Premier League
-      3, // English League Two
-      7, // Spanish La Liga
-      569, // Spanish Supercopa
-      13, // Copa del Rey
-      23, // Supercoppa Italiana
-      7674, // FIFA Arab Cup
-      167, // Africa Cup of Nations
-    ];
+    const featuredIds = new Set(featuredCompetitions.map((c) => c.id));
 
-    // 2. Filter games based on your whitelist OR the "isTop" flag from the API
-    let featuredGames = data.games.filter(
-      (game: any) =>
-        featuredWhiteslist.includes(game.competitionId) || game.isTop === true
-    );
+    // 2. Map Games to include their Competition Popularity for sorting
+    const featuredGames = data.games
+      .filter((game: Game) => featuredIds.has(game.competitionId))
+      .map((game) => {
+        const comp = featuredCompetitions.find(
+          (c) => c.id === game.competitionId
+        );
+        return {
+          ...game,
+          compPopularity: comp?.popularityRank || 0,
+        };
+      })
+      // 3. Sort games so the absolute most popular matches are at the top
+      .sort((a, b) => b.compPopularity - a.compPopularity);
 
-    // 3. SORT by popularity (lower rank value = more famous)
-    // This ensures Premier League/UEFA shows up before smaller cups
-    featuredGames.sort(
-      (a: any, b: any) =>
-        (a.popularityRank || 999999) - (b.popularityRank || 999999)
-    );
-
-    // 4. FALLBACK: If it's a quiet day, just show the top 10 general games
-    const finalData =
-      featuredGames.length > 0 ? featuredGames : data.games.slice(0, 10);
-
-    return NextResponse.json(finalData, { status: 200, headers: corsHeaders });
+    // 4. Return only the "Elite" data
+    return NextResponse.json(featuredGames, {
+      status: 200,
+      headers: corsHeaders,
+    });
   } catch (error: any) {
-    // 5. Explicit Error Logging for Terminal
-    console.error("CRITICAL PROXY ERROR:", error.message);
+    console.error("Backend Error:", error.message);
     return NextResponse.json(
-      { error: "Internal Server Error", message: error.message },
+      { error: "Internal Error" },
       { status: 500, headers: corsHeaders }
     );
   }

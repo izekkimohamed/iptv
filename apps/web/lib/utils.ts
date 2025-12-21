@@ -30,12 +30,17 @@ export const decodeBase64 = (str: string) => {
 
 // progress calculation
 export const getProgress = (start: string, end: string) => {
-  const now = Date.now();
-  const startMs = new Date(start).getTime();
-  const endMs = new Date(end).getTime();
+  const now = new Date().getTime();
+  // Replace space with 'T' for ISO compatibility if needed, or parse directly
+  const startMs = new Date(start.replace(' ', 'T')).getTime();
+  const endMs = new Date(end.replace(' ', 'T')).getTime();
+
   if (now < startMs) return 0;
   if (now > endMs) return 100;
-  return ((now - startMs) / (endMs - startMs)) * 100;
+
+  const total = endMs - startMs;
+  const current = now - startMs;
+  return Math.round((current / total) * 100);
 };
 
 export const formatDate = (dateString: string) => {
@@ -88,4 +93,17 @@ export const getVideoType = (url: string): string => {
     return 'video/ogg';
   }
   return 'video/mp4'; // default
+};
+
+// utils/dateHelpers.ts
+export const formatDateForAPI = (date: Date): string => {
+  return date.toLocaleDateString('en-GB'); // Returns DD/MM/YYYY
+};
+
+export const formatDisplayDate = (date: Date): string => {
+  return new Intl.DateTimeFormat('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  }).format(date);
 };

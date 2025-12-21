@@ -149,7 +149,7 @@ export default function NavBar() {
                 href={item.href}
                 className={cn(
                   pathName === item.href
-                    ? 'bg-amber-500/30 text-amber-400'
+                    ? 'bg-linear-to-br from-white/10 to-transparent backdrop-blur-xl border-white/10 shadow-2xl border text-gray-300 hover:text-white hover:bg-white/10 hover:border-white/20'
                     : 'text-gray-300 hover:text-white hover:bg-white/10',
                   'flex items-center gap-2 px-3 py-1  font-medium rounded-lg transition-all duration-200',
                 )}
