@@ -1,19 +1,6 @@
 import { Competition, Game, Root } from "@/utils/types";
 import { NextResponse } from "next/server";
 
-// 1. Centralized "Featured" Configuration
-const FEATURED_COMPETITION_IDS = [
-  11, // Premier League
-  7, // La Liga
-  8, // Serie A
-  9, // Bundesliga
-  10, // Ligue 1
-  573, // Champions League
-  574, // Europa League
-  167, // AFCON
-  7674, // FIFA Arab Cup
-];
-
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get("origin") ?? "*";
   return {

@@ -31,7 +31,8 @@
       ],
       "@/shared/*": [
         "./src/shared/*"
-      ]
+      ],
+      "@/trpc/*": ["../../packages/trpc/src/server/*"]
     }
   },
   "include": [
