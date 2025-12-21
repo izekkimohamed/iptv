@@ -120,27 +120,31 @@ export default function SeriesPage() {
           </div>
         )}
 
-        {newSeriesData.length > 0 && (
-          <div className="bg-linear-to-b from-slate-900/40 to-slate-950 min-h-full">
-            <VirtualGrid
-              className="h-full p-5"
-              items={newSeriesData}
-              renderItem={(serie) => (
-                <ItemsList
-                  image={serie.cover || ''}
-                  title={serie.name || ''}
-                  rating={serie.rating || ''}
-                  streamId={serie.seriesId}
-                  onMovieClick={() => handleserieClick(serie.seriesId)}
-                  itemType="series"
-                />
-              )}
-              minItemWidth={230}
-              estimateItemHeight={360}
-              gapClassName="gap-3"
-            />
-          </div>
-        )}
+        {newSeriesData.length > 0 &&
+          !series &&
+          !isFetchingSeries &&
+          !isFetchingSerie &&
+          !serieId && (
+            <div className="bg-linear-to-b from-slate-900/40 to-slate-950 min-h-full">
+              <VirtualGrid
+                className="h-full p-5"
+                items={newSeriesData}
+                renderItem={(serie) => (
+                  <ItemsList
+                    image={serie.cover || ''}
+                    title={serie.name || ''}
+                    rating={serie.rating || ''}
+                    streamId={serie.seriesId}
+                    onMovieClick={() => handleserieClick(serie.seriesId)}
+                    itemType="series"
+                  />
+                )}
+                minItemWidth={230}
+                estimateItemHeight={360}
+                gapClassName="gap-3"
+              />
+            </div>
+          )}
       </div>
     </div>
   );

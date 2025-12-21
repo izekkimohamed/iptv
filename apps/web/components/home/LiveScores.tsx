@@ -25,9 +25,13 @@ interface Game {
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export default function LiveScores() {
-  const { data, error, isLoading } = useSWR('http://localhost:3001/api/live-matches', fetcher, {
-    refreshInterval: 60000,
-  });
+  const { data, error, isLoading } = useSWR(
+    `${process.env.NEXT_PUBLIC_API_URL}/live-matches`,
+    fetcher,
+    {
+      refreshInterval: 60000,
+    },
+  );
 
   const games: Game[] = useMemo(() => {
     if (!data) return [];

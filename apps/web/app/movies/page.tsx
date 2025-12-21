@@ -121,27 +121,31 @@ export default function MoviesPage() {
             />
           </div>
         )}
-        {newMoviesData.length > 0 && (
-          <div className="bg-linear-to-b from-slate-900/40 to-slate-950 min-h-full">
-            <VirtualGrid
-              className="h-full p-5 "
-              items={newMoviesData}
-              renderItem={(movie) => (
-                <ItemsList
-                  image={movie.streamIcon}
-                  title={movie.name}
-                  rating={movie.rating}
-                  streamId={movie.streamId}
-                  onMovieClick={() => handleMovieClick(movie.streamId)}
-                  itemType="movie"
-                />
-              )}
-              minItemWidth={230}
-              estimateItemHeight={360}
-              gapClassName="gap-3"
-            />
-          </div>
-        )}
+        {newMoviesData.length > 0 &&
+          !movies &&
+          !isFetchingMovies &&
+          !isFetchingMovie &&
+          !movieId && (
+            <div className="bg-linear-to-b from-slate-900/40 to-slate-950 min-h-full">
+              <VirtualGrid
+                className="h-full p-5 "
+                items={newMoviesData}
+                renderItem={(movie) => (
+                  <ItemsList
+                    image={movie.streamIcon}
+                    title={movie.name}
+                    rating={movie.rating}
+                    streamId={movie.streamId}
+                    onMovieClick={() => handleMovieClick(movie.streamId)}
+                    itemType="movie"
+                  />
+                )}
+                minItemWidth={230}
+                estimateItemHeight={360}
+                gapClassName="gap-3"
+              />
+            </div>
+          )}
       </div>
     </>
   );
