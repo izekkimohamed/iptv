@@ -81,6 +81,7 @@ export async function GET(request: Request) {
       13, // Copa del Rey
       23, // Supercoppa Italiana
       7674, // FIFA Arab Cup
+      167, // Africa Cup of Nations
     ];
 
     // 2. Filter games based on your whitelist OR the "isTop" flag from the API
