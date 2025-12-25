@@ -95,8 +95,8 @@ export default function MoviesPage() {
             rating={movie.info.rating}
             description={movie.info.plot}
             stream_id={movie.movie_data.stream_id}
-            name={movie.movie_data.name}
             container_extension={movie.movie_data.container_extension}
+            name={movie.movie_data.name}
             tmdb={movie.tmdb}
           />
         )}
