@@ -81,227 +81,269 @@ export default function Player() {
   }, [handleBackPress]);
 
   const volumeIcon = useCallback(() => {
-    if (volumeLevel === 0) return "volume-mute";
-    if (volumeLevel > 0.5) return "volume-high";
-    return "volume-medium";
+    if (volumeLevel === 0) return "volume-off";
+    if (volumeLevel < 0.3) return "volume-low";
+    if (volumeLevel < 0.7) return "volume-medium";
+    return "volume-high";
   }, [volumeLevel]);
+
+  const brightnessIcon = useCallback(() => {
+    if (brightnessLevel < 0.3) return "brightness-4";
+    if (brightnessLevel < 0.7) return "brightness-5";
+    return "brightness-6";
+  }, [brightnessLevel]);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      <StatusBar hidden />
+      <StatusBar hidden style='light' />
       <GestureDetector gesture={composedGesture}>
         <View
           collapsable={false}
-          style={[styles.videoContainer, isFullScreen && styles.fullScreen]}
+          style={[
+            styles.videoContainer,
+            isFullScreen ? styles.fullScreen : styles.standardView,
+          ]}
         >
           <VideoView
             style={styles.video}
             player={player}
-            fullscreenOptions={{
-              enable: true,
-            }}
+            fullscreenOptions={{ enable: true }}
             allowsPictureInPicture
             startsPictureInPictureAutomatically
             onPictureInPictureStop={() => player.pause()}
             nativeControls={false}
-            contentFit={!isFullScreen ? "fill" : resizeMode}
+            contentFit={!isFullScreen ? "contain" : resizeMode}
           />
 
-          {/* Loading state */}
+          {/* --- Loading State --- */}
           {status === "loading" && (
-            <View
-              style={[
-                styles.overlayContainer,
-                { backgroundColor: theme.glassStrong },
-              ]}
-            >
-              <View style={styles.loadingCard}>
+            <View style={styles.centerOverlay}>
+              <View
+                style={[
+                  styles.loadingBackdrop,
+                  {
+                    backgroundColor: theme.glassMedium,
+                    borderColor: theme.borderMuted,
+                  },
+                ]}
+              >
                 <View
-                  style={[styles.loadingRing, { borderColor: theme.border }]}
-                >
-                  <ActivityIndicator size='large' color={theme.primary} />
-                </View>
-                <Text
-                  style={[styles.loadingText, { color: theme.textPrimary }]}
-                >
-                  Preparing content...
-                </Text>
+                  style={[
+                    styles.loadingGlow,
+                    { backgroundColor: theme.primaryGlow },
+                  ]}
+                />
+                <ActivityIndicator size='large' color={theme.primary} />
               </View>
             </View>
           )}
 
-          {/* Error state */}
+          {/* --- Error State --- */}
           {status === "error" && (
-            <View
-              style={[
-                styles.overlayContainer,
-                { backgroundColor: theme.glassStrong },
-              ]}
-            >
+            <View style={styles.centerOverlay}>
               <View
-                style={[styles.errorCard, { borderColor: theme.accentSuccess }]}
+                style={[
+                  styles.errorBackdrop,
+                  {
+                    backgroundColor: theme.glassMedium,
+                    borderColor: theme.borderMuted,
+                  },
+                ]}
               >
                 <View
                   style={[
                     styles.errorIconContainer,
-                    { backgroundColor: `${theme.accentSuccess}26` },
+                    { backgroundColor: "rgba(239, 68, 68, 0.15)" },
                   ]}
                 >
                   <MaterialCommunityIcons
                     name='alert-circle-outline'
-                    size={56}
-                    color={theme.accentSuccess}
+                    size={36}
+                    color={theme.accentError}
                   />
                 </View>
                 <Text style={[styles.errorTitle, { color: theme.textPrimary }]}>
-                  Unable to load video
+                  Playback Error
                 </Text>
                 <Text
                   style={[styles.errorMessage, { color: theme.textSecondary }]}
                 >
-                  Please check your connection and try again
+                  Unable to load video. Check your connection.
                 </Text>
               </View>
             </View>
           )}
 
-          {/* Double tap feedback - backward */}
+          {/* --- Double Tap Ripples --- */}
           <Animated.View
+            pointerEvents='none'
             style={[
-              styles.doubleTapContainer,
-              styles.leftTap,
+              styles.rippleContainer,
+              styles.rippleLeft,
               { opacity: leftDoubleTapAnim },
             ]}
           >
             <View
               style={[
-                styles.doubleTapInner,
-                {
-                  borderColor: theme.border,
-                  backgroundColor: `${theme.primary}26`,
-                },
+                styles.rippleArcLeft,
+                { backgroundColor: theme.glassMedium },
               ]}
-            >
-              <MaterialCommunityIcons
-                name='rewind-10'
-                size={40}
-                color={theme.primary}
-              />
-              <Text style={[styles.doubleTapLabel, { color: theme.primary }]}>
-                -10s
+            />
+
+            <View style={styles.rippleContent}>
+              <View
+                style={[
+                  styles.rippleIconBg,
+                  { backgroundColor: theme.glassLight },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  name='rewind-10'
+                  size={32}
+                  color={theme.primary}
+                />
+              </View>
+              <Text style={[styles.rippleText, { color: theme.textPrimary }]}>
+                -10 sec
               </Text>
             </View>
           </Animated.View>
 
-          {/* Double tap feedback - forward */}
           <Animated.View
+            pointerEvents='none'
             style={[
-              styles.doubleTapContainer,
-              styles.rightTap,
+              styles.rippleContainer,
+              styles.rippleRight,
               { opacity: rightDoubleTapAnim },
             ]}
           >
             <View
               style={[
-                styles.doubleTapInner,
-                {
-                  borderColor: theme.border,
-                  backgroundColor: `${theme.primary}26`,
-                },
+                styles.rippleArcRight,
+                { backgroundColor: theme.glassMedium },
               ]}
-            >
-              <MaterialCommunityIcons
-                name='fast-forward-10'
-                size={40}
-                color={theme.primary}
-              />
-              <Text style={[styles.doubleTapLabel, { color: theme.primary }]}>
-                +10s
+            />
+
+            <View style={styles.rippleContent}>
+              <View
+                style={[
+                  styles.rippleIconBg,
+                  { backgroundColor: theme.glassLight },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  name='fast-forward-10'
+                  size={32}
+                  color={theme.primary}
+                />
+              </View>
+              <Text style={[styles.rippleText, { color: theme.textPrimary }]}>
+                +10 sec
               </Text>
             </View>
           </Animated.View>
 
-          {/* Volume overlay */}
+          {/* --- Volume HUD --- */}
           <Animated.View
             style={[
-              styles.sideOverlay,
-              styles.volumeOverlay,
+              styles.hudBar,
+              styles.hudLeft,
               {
                 opacity: volumeAnim,
-                backgroundColor: theme.glassStrong,
-                borderColor: theme.border,
+                backgroundColor: theme.glassMedium,
+                borderColor: theme.borderMuted,
               },
             ]}
           >
-            <View style={styles.overlayInner}>
-              <MaterialCommunityIcons
-                name={volumeIcon()}
-                size={22}
-                color={theme.primary}
-              />
+            <View
+              style={[styles.hudTrack, { backgroundColor: theme.trackBg }]}
+            />
+
+            <View
+              style={[
+                styles.hudFill,
+                {
+                  height: `${volumeLevel * 100}%`,
+                  backgroundColor: theme.primary,
+                },
+              ]}
+            />
+
+            <View style={styles.hudIconContainer}>
               <View
                 style={[
-                  styles.trackContainer,
-                  { backgroundColor: theme.trackBg },
+                  styles.hudIconBg,
+                  { backgroundColor: theme.glassLight },
                 ]}
               >
-                <View
-                  style={[
-                    styles.trackFill,
-                    {
-                      height: `${volumeLevel * 100}%`,
-                      backgroundColor: theme.primary,
-                    },
-                  ]}
+                <MaterialCommunityIcons
+                  name={volumeIcon()}
+                  size={20}
+                  color={theme.textPrimary}
                 />
               </View>
-              <Text style={[styles.valueText, { color: theme.textPrimary }]}>
+            </View>
+
+            <View style={styles.hudPercentage}>
+              <Text
+                style={[styles.hudPercentageText, { color: theme.textPrimary }]}
+              >
                 {Math.round(volumeLevel * 100)}%
               </Text>
             </View>
           </Animated.View>
 
-          {/* Brightness overlay */}
+          {/* --- Brightness HUD --- */}
           <Animated.View
             style={[
-              styles.sideOverlay,
-              styles.brightnessOverlay,
+              styles.hudBar,
+              styles.hudRight,
               {
                 opacity: brightnessAnim,
-                backgroundColor: theme.glassStrong,
-                borderColor: theme.border,
+                backgroundColor: theme.glassMedium,
+                borderColor: theme.borderMuted,
               },
             ]}
           >
-            <View style={styles.overlayInner}>
-              <MaterialCommunityIcons
-                name='brightness-6'
-                size={22}
-                color={theme.primary}
-              />
+            <View
+              style={[styles.hudTrack, { backgroundColor: theme.trackBg }]}
+            />
+
+            <View
+              style={[
+                styles.hudFill,
+                {
+                  height: `${brightnessLevel * 100}%`,
+                  backgroundColor: theme.accentWarning,
+                },
+              ]}
+            />
+
+            <View style={styles.hudIconContainer}>
               <View
                 style={[
-                  styles.trackContainer,
-                  { backgroundColor: theme.trackBg },
+                  styles.hudIconBg,
+                  { backgroundColor: theme.glassLight },
                 ]}
               >
-                <View
-                  style={[
-                    styles.trackFill,
-                    {
-                      height: `${brightnessLevel * 100}%`,
-                      backgroundColor: theme.primary,
-                    },
-                  ]}
+                <MaterialCommunityIcons
+                  name={brightnessIcon()}
+                  size={20}
+                  color={theme.textPrimary}
                 />
               </View>
-              <Text style={[styles.valueText, { color: theme.textPrimary }]}>
+            </View>
+
+            <View style={styles.hudPercentage}>
+              <Text
+                style={[styles.hudPercentageText, { color: theme.textPrimary }]}
+              >
                 {Math.round(brightnessLevel * 100)}%
               </Text>
             </View>
           </Animated.View>
 
-          {/* Video controls */}
+          {/* --- Controls --- */}
           {showControls && status !== "loading" && (
             <VideoControls
               showControls={showControls}
@@ -337,132 +379,192 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   videoContainer: {
-    height: 300,
     width: "100%",
     position: "relative",
-    backgroundColor: "#000000",
+    justifyContent: "center",
+  },
+  standardView: {
+    aspectRatio: 16 / 9,
+    width: "100%",
   },
   fullScreen: {
     height: "100%",
+    width: "100%",
   },
   video: {
     width: "100%",
     height: "100%",
   },
-  overlayContainer: {
+
+  // Center Overlays
+  centerOverlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 10,
+    zIndex: 20,
   },
-  loadingCard: {
+  loadingBackdrop: {
+    borderRadius: 200,
+    padding: 10,
     alignItems: "center",
-    gap: 20,
-    paddingHorizontal: 20,
-  },
-  loadingRing: {
-    width: 50,
-    height: 50,
-    borderRadius: 50,
     justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 2,
-  },
-  loadingText: {
-    fontSize: 16,
-    fontWeight: "600",
-    letterSpacing: 0.8,
-  },
-  errorCard: {
-    alignItems: "center",
     gap: 16,
-    paddingHorizontal: 30,
-    paddingVertical: 20,
-    borderRadius: 16,
     borderWidth: 1,
+    backdropFilter: "blur(10px)",
+    position: "relative",
+    overflow: "hidden",
   },
-  errorIconContainer: {
+  loadingGlow: {
+    position: "absolute",
     width: 80,
     height: 80,
-    borderRadius: 40,
+    borderRadius: 60,
+    opacity: 0.2,
+  },
+  loadingText: {
+    fontSize: 14,
+    fontWeight: "600",
+    letterSpacing: 0.5,
+  },
+  errorBackdrop: {
+    borderRadius: 24,
+    padding: 32,
+    alignItems: "center",
+    gap: 16,
+    borderWidth: 1,
+    backdropFilter: "blur(10px)",
+    maxWidth: 320,
+  },
+  errorIconContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     justifyContent: "center",
     alignItems: "center",
   },
   errorTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-  },
-  errorMessage: {
-    fontSize: 13,
-    fontWeight: "500",
-    textAlign: "center",
-  },
-  doubleTapContainer: {
-    position: "absolute",
-    width: 90,
-    height: 90,
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 100,
-  },
-  leftTap: {
-    left: "10%",
-    top: "35%",
-  },
-  rightTap: {
-    right: "10%",
-    top: "35%",
-  },
-  doubleTapInner: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 2,
-    gap: 4,
-  },
-  doubleTapLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-    marginTop: 4,
-  },
-  sideOverlay: {
-    position: "absolute",
-    top: "30%",
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    zIndex: 999,
-    borderWidth: 1,
-  },
-  volumeOverlay: {
-    left: 20,
-  },
-  brightnessOverlay: {
-    right: 20,
-  },
-  overlayInner: {
-    alignItems: "center",
-    gap: 10,
-  },
-  trackContainer: {
-    width: 8,
-    height: 120,
-    borderRadius: 4,
-    overflow: "hidden",
-    justifyContent: "flex-end",
-  },
-  trackFill: {
-    width: "100%",
-    borderRadius: 4,
-  },
-  valueText: {
-    fontSize: 11,
+    fontSize: 18,
     fontWeight: "700",
     letterSpacing: 0.3,
-    marginTop: 2,
+  },
+  errorMessage: {
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+
+  // Double Tap Ripples
+  rippleContainer: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    width: "45%",
+    justifyContent: "center",
+    zIndex: 15,
+    overflow: "hidden",
+  },
+  rippleLeft: {
+    left: 0,
+    alignItems: "flex-start",
+  },
+  rippleRight: {
+    right: 0,
+    alignItems: "flex-end",
+  },
+  rippleArcLeft: {
+    position: "absolute",
+    left: -80,
+    top: 0,
+    bottom: 0,
+    width: "120%",
+    borderTopRightRadius: 500,
+    borderBottomRightRadius: 500,
+  },
+  rippleArcRight: {
+    position: "absolute",
+    right: -80,
+    top: 0,
+    bottom: 0,
+    width: "120%",
+    borderTopLeftRadius: 500,
+    borderBottomLeftRadius: 500,
+  },
+  rippleContent: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    width: "100%",
+    gap: 12,
+  },
+  rippleIconBg: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: "center",
+    alignItems: "center",
+    backdropFilter: "blur(10px)",
+  },
+  rippleText: {
+    fontSize: 14,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
+
+  // HUD Bars
+  hudBar: {
+    position: "absolute",
+    top: "18%",
+    bottom: "28%",
+    width: 52,
+    borderRadius: 26,
+    overflow: "hidden",
+    zIndex: 999,
+    borderWidth: 1,
+    justifyContent: "flex-end",
+    backdropFilter: "blur(10px)",
+  },
+  hudLeft: {
+    left: 16,
+  },
+  hudRight: {
+    right: 16,
+  },
+  hudTrack: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  hudFill: {
+    width: "100%",
+    position: "absolute",
+    bottom: 0,
+    borderTopLeftRadius: 6,
+    borderTopRightRadius: 6,
+  },
+  hudIconContainer: {
+    width: "100%",
+    height: 52,
+    justifyContent: "center",
+    alignItems: "center",
+    position: "absolute",
+    bottom: 12,
+    zIndex: 10,
+  },
+  hudIconBg: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    backdropFilter: "blur(10px)",
+  },
+  hudPercentage: {
+    position: "absolute",
+    top: 12,
+    width: "100%",
+    alignItems: "center",
+  },
+  hudPercentageText: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.5,
   },
 });

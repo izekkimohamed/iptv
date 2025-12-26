@@ -1,11 +1,16 @@
+import LiveScoresScreen from "@/components/LiveScores";
 import { trpc } from "@/lib/trpc";
 import { usePlaylistStore } from "@/store/appStore";
+import { usePlayerTheme } from "@/theme/playerTheme";
+import { FlashList } from "@shopify/flash-list";
 import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { Database, Play, Search, User } from "lucide-react-native"; // Added Database icon
+import { Database, Play, Search, Star, Tv, User } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Dimensions,
   FlatList,
   Pressable,
   ScrollView,
@@ -14,13 +19,17 @@ import {
   TextInput,
   View,
 } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+const { width } = Dimensions.get("window");
+const FEATURED_WIDTH = width - 40;
 
 export default function HomeScreen() {
   const router = useRouter();
+  const theme = usePlayerTheme();
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Access the selected playlist from Zustand
   const {
     selectedPlaylist,
     selectPlaylist,
@@ -28,12 +37,24 @@ export default function HomeScreen() {
     playlists: storePlaylists,
   } = usePlaylistStore();
 
-  // Fetching popular content
+  // 1. Fetch Home Data (Featured, Movies)
   const { data: homeData, isLoading } = trpc.home.getHome.useQuery(undefined, {
-    enabled: !!selectedPlaylist, // Only fetch if a playlist is active
+    enabled: !!selectedPlaylist,
   });
 
+  // 2. Fetch Playlists (Initial Setup)
   const { data: playlists } = trpc.playlists.getPlaylists.useQuery();
+
+  // 3. Fetch Favorite Channels
+  const { data: favoriteChannels } = trpc.channels.getChannels.useQuery(
+    {
+      favorites: true,
+      playlistId: selectedPlaylist?.id || 0,
+    },
+    {
+      enabled: !!selectedPlaylist,
+    }
+  );
 
   useEffect(() => {
     if (storePlaylists.length === 0 && playlists) {
@@ -44,134 +65,215 @@ export default function HomeScreen() {
     }
   }, [addPlaylist, playlists, selectPlaylist, storePlaylists.length]);
 
-  const renderPoster = ({
-    item,
-    type,
-  }: {
-    item: any;
-    type: "movie" | "series";
-  }) => (
-    <Pressable
-      onPress={() =>
-        router.push({
-          pathname: type === "movie" ? `/(tabs)/movies/tmdb` : `/series`,
-          params: {
-            movieId: item.id,
-            playlistId: 26,
-          },
-        })
-      }
-      style={styles.card}
-    >
+  // --- Render Functions ---
+
+  const renderFeaturedItem = ({ item }: { item: any }) => (
+    <View style={styles.featuredCard}>
       <Image
-        source={{ uri: item.posterUrl }}
-        style={styles.poster}
+        source={{ uri: item.backdropUrl || item.posterUrl }}
+        style={styles.featuredImage}
         contentFit='cover'
-        transition={200}
+        transition={500}
       />
-      <Text numberOfLines={1} style={styles.cardTitle}>
-        {item.title || item.name}
+      <LinearGradient
+        colors={["transparent", "rgba(0,0,0,0.8)"]}
+        style={styles.featuredGradient}
+      />
+      <View style={styles.featuredContent}>
+        <Text style={styles.featuredTitle} numberOfLines={1}>
+          {item.title || item.name}
+        </Text>
+        <Text style={styles.featuredSub} numberOfLines={2}>
+          {item.overview || "No description available."}
+        </Text>
+        <Pressable
+          style={[styles.playButton, { backgroundColor: theme.primary }]}
+          onPress={() =>
+            router.push({
+              pathname: "/movies/tmdb",
+              params: { movieId: item.id, playlistId: 26 },
+            })
+          }
+        >
+          <Play size={16} color='#000' fill='#000' />
+          <Text style={styles.playButtonText}>Watch Now</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+
+  const renderChannel = ({ item }: { item: any }) => (
+    <Animated.View entering={FadeInDown} style={styles.channelContainer}>
+      <Pressable
+        onPress={() =>
+          router.push({
+            pathname: "/player",
+            params: {
+              url: item.url, // Ensure your API returns the stream URL here
+              title: item.name,
+              mediaType: "live",
+            },
+          })
+        }
+        style={({ pressed }) => [
+          styles.channelPressable,
+          {
+            backgroundColor: theme.surfaceSecondary,
+            borderColor: theme.border,
+          },
+          pressed && { opacity: 0.8, backgroundColor: theme.surfacePrimary },
+        ]}
+      >
+        {item.streamIcon ?
+          <Image
+            source={{ uri: item.streamIcon }}
+            style={styles.channelLogo}
+            contentFit='contain'
+            transition={300}
+          />
+        : <Tv size={24} color={theme.textMuted} />}
+      </Pressable>
+      <Text
+        numberOfLines={1}
+        style={[styles.channelTitle, { color: theme.textSecondary }]}
+      >
+        {item.name}
       </Text>
-    </Pressable>
+    </Animated.View>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header with Playlist Access */}
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.bg }]}
+      edges={["top"]}
+    >
+      {/* Header */}
       <View style={styles.header}>
-        <View style={styles.searchBar}>
-          <Search size={20} color='#9CA3AF' />
+        <View
+          style={[
+            styles.searchContainer,
+            { backgroundColor: theme.surfaceSecondary },
+          ]}
+        >
+          <Search size={18} color={theme.textMuted} />
           <TextInput
-            placeholder='Search movies, series, channels...'
-            placeholderTextColor='#9CA3AF'
-            style={styles.searchInput}
+            placeholder='Search...'
+            placeholderTextColor={theme.textMuted}
+            style={[styles.searchInput, { color: theme.textPrimary }]}
             value={searchQuery}
             onChangeText={setSearchQuery}
             onSubmitEditing={() => router.push(`/search?q=${searchQuery}`)}
+            returnKeyType='search'
           />
         </View>
-        <View style={styles.topRow}>
-          <Pressable
-            onPress={() => router.push("/playlists")}
-            style={styles.playlistButton}
-          >
-            <User size={20} color={selectedPlaylist ? "#2563eb" : "#ef4444"} />
-          </Pressable>
-        </View>
+        <Pressable
+          onPress={() => router.push("/playlists/manage")}
+          style={[
+            styles.profileButton,
+            {
+              backgroundColor: theme.surfaceSecondary,
+              borderColor: theme.border,
+            },
+          ]}
+        >
+          <User
+            size={20}
+            color={selectedPlaylist ? theme.primary : theme.accentError}
+          />
+        </Pressable>
       </View>
-      <ScrollView showsVerticalScrollIndicator={false}>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
         {!selectedPlaylist ?
-          /* Empty State if no playlist is connected */
-          <View style={styles.noPlaylistContainer}>
-            <Database size={60} color='#1f1f1f' />
-            <Text style={styles.noPlaylistText}>No active playlist found.</Text>
+          <View style={styles.emptyState}>
+            <View
+              style={[
+                styles.emptyIconCircle,
+                { backgroundColor: theme.surfaceSecondary },
+              ]}
+            >
+              <Database size={48} color={theme.textMuted} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>
+              No Playlist Connected
+            </Text>
+            <Text style={[styles.emptySub, { color: theme.textMuted }]}>
+              Please add a playlist to start watching content.
+            </Text>
             <Pressable
-              style={styles.connectButton}
+              style={[styles.actionButton, { backgroundColor: theme.primary }]}
               onPress={() => router.push("/playlists/manage")}
             >
-              <Text style={styles.connectButtonText}>Manage Playlists</Text>
+              <Text style={styles.actionButtonText}>Connect Playlist</Text>
             </Pressable>
           </View>
         : isLoading ?
-          <ActivityIndicator
-            size='large'
-            color='#2563eb'
-            style={{ marginTop: 50 }}
-          />
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size='large' color={theme.primary} />
+          </View>
         : <>
-            {/* Featured Backdrop */}
-            {homeData?.movies?.[0] && (
-              <View style={styles.featuredContainer}>
-                <Image
-                  source={{ uri: homeData.movies[0].backdropUrl || "" }}
-                  style={styles.featuredImage}
+            {/* Featured Section (Carousel) */}
+            {homeData?.movies && homeData.movies.length > 0 && (
+              <View style={styles.featuredSection}>
+                <Text
+                  style={[
+                    styles.sectionHeader,
+                    { color: theme.textPrimary, marginLeft: 20 },
+                  ]}
+                >
+                  Trending Now
+                </Text>
+                <FlashList
+                  horizontal
+                  data={homeData.movies}
+                  renderItem={renderFeaturedItem}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.featuredList}
+                  pagingEnabled
+                  decelerationRate='fast'
+                  snapToInterval={FEATURED_WIDTH + 10}
                 />
-                <View style={styles.featuredOverlay}>
-                  <Text style={styles.featuredTitle}>
-                    {homeData.movies[0].title}
-                  </Text>
-                  <Pressable
-                    style={styles.playButton}
-                    onPress={() =>
-                      router.push(`/movies/${homeData.movies[0].id}`)
-                    }
-                  >
-                    <Play size={16} color='white' fill='white' />
-                    <Text style={styles.playButtonText}>Watch Now</Text>
-                  </Pressable>
-                </View>
               </View>
             )}
 
-            {/* Popular Movies Section */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Popular Movies</Text>
-              <FlatList
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                data={homeData?.movies}
-                renderItem={(info) =>
-                  renderPoster({ item: info.item, type: "movie" })
-                }
-                keyExtractor={(item) => `movie-${item.id}`}
-                contentContainerStyle={styles.listContent}
-              />
-            </View>
-
-            {/* Popular Series Section */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Popular Series</Text>
-              <FlatList
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                data={homeData?.series}
-                renderItem={(info) =>
-                  renderPoster({ item: info.item, type: "series" })
-                }
-                keyExtractor={(item) => `series-${item.id}`}
-                contentContainerStyle={styles.listContent}
-              />
-            </View>
+            {/* Favorite Channels Section */}
+            {favoriteChannels && favoriteChannels.length > 0 && (
+              <View style={styles.section}>
+                <View style={styles.sectionTitleRow}>
+                  <View style={styles.titleLeft}>
+                    <Star
+                      size={18}
+                      color={theme.primary}
+                      fill={theme.primary}
+                    />
+                    <Text
+                      style={[
+                        styles.sectionHeader,
+                        { color: theme.textPrimary },
+                      ]}
+                    >
+                      Favorite Channels
+                    </Text>
+                  </View>
+                  <Pressable onPress={() => router.push("/(tabs)/channels")}>
+                    <Text style={[styles.seeAll, { color: theme.primary }]}>
+                      View All
+                    </Text>
+                  </Pressable>
+                </View>
+                <FlatList
+                  horizontal
+                  data={favoriteChannels}
+                  renderItem={renderChannel}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.horizontalList}
+                />
+              </View>
+            )}
+            <LiveScoresScreen />
           </>
         }
       </ScrollView>
@@ -180,108 +282,150 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000" },
+  container: { flex: 1 },
+  scrollContent: { paddingBottom: 2 },
+
+  // Header
   header: {
-    padding: 10,
-    justifyContent: "center",
-    gap: 10,
-    flexDirection: "row",
-    alignContent: "center",
-  },
-  topRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 15,
-  },
-  title: { fontSize: 28, fontWeight: "bold", color: "#fff" },
-  playlistButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#111",
-    padding: 12,
-    borderRadius: 200,
-    gap: 6,
-    borderWidth: 1,
-    borderColor: "#1f1f1f",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    gap: 12,
   },
-  playlistText: { color: "#9ca3af", fontSize: 12, fontWeight: "bold" },
-  searchBar: {
+  searchContainer: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1f1f1f",
-    borderRadius: 25,
-    paddingHorizontal: 15,
-    height: 45,
+    height: 44,
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    gap: 10,
   },
-  searchInput: { flex: 1, color: "#fff", marginLeft: 10, fontSize: 16 },
-  featuredContainer: {
-    height: 220,
-    marginHorizontal: 20,
-    borderRadius: 15,
+  searchInput: { flex: 1, fontSize: 15 },
+  profileButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+  },
+
+  // Featured Carousel
+  featuredSection: { marginBottom: 10, marginTop: 10 },
+  featuredList: { paddingHorizontal: 20, gap: 10 },
+  featuredCard: {
+    width: FEATURED_WIDTH,
+    height: 200,
+    borderRadius: 16,
     overflow: "hidden",
-    marginBottom: 30,
+    position: "relative",
+    marginRight: 10,
+    marginTop: 12,
   },
   featuredImage: { width: "100%", height: "100%" },
-  featuredOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.35)",
-    justifyContent: "flex-end",
-    padding: 15,
+  featuredGradient: { ...StyleSheet.absoluteFillObject },
+  featuredContent: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 16,
+    gap: 6,
   },
-  featuredTitle: { color: "#fff", fontSize: 20, fontWeight: "bold" },
+  featuredTitle: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "800",
+    textShadowColor: "rgba(0,0,0,0.7)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  featuredSub: {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 13,
+    marginBottom: 8,
+  },
   playButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#2563eb",
     alignSelf: "flex-start",
     paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 8,
-    marginTop: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    gap: 6,
   },
-  playButtonText: { color: "white", fontWeight: "bold", marginLeft: 5 },
-  section: { marginBottom: 25 },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#fff",
-    marginLeft: 20,
-    marginBottom: 15,
-  },
-  listContent: { paddingLeft: 20 },
-  card: { width: 130, marginRight: 15 },
-  poster: {
-    width: 130,
-    height: 190,
-    borderRadius: 10,
-    backgroundColor: "#1f1f1f",
-  },
-  cardTitle: {
-    color: "#e5e7eb",
-    marginTop: 8,
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  noPlaylistContainer: {
+  playButtonText: { color: "#000", fontWeight: "700", fontSize: 12 },
+
+  // Sections
+  section: { marginBottom: 1 },
+  sectionTitleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  titleLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
+  sectionHeader: { fontSize: 18, fontWeight: "700" },
+  seeAll: { fontSize: 12, fontWeight: "600" },
+
+  horizontalList: { paddingHorizontal: 20 },
+
+  // Poster Style (Movies)
+  posterContainer: { width: 140, marginRight: 16 },
+  posterPressable: { gap: 8 },
+  posterImage: {
+    width: 140,
+    height: 210,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  posterTitle: { fontSize: 12, fontWeight: "600", paddingLeft: 4 },
+
+  // Channel Style (Favorites)
+  channelContainer: { width: 110, marginRight: 12, alignItems: "center" },
+  channelPressable: {
+    width: 110,
+    height: 110,
+    borderRadius: 24,
     justifyContent: "center",
-    marginTop: 80,
-    padding: 40,
+    alignItems: "center",
+    marginBottom: 8,
+    borderWidth: 1,
+    padding: 10,
   },
-  noPlaylistText: {
-    color: "#4b5563",
-    fontSize: 16,
-    marginTop: 15,
-    textAlign: "center",
+  channelLogo: { width: "80%", height: "80%" },
+  channelTitle: { fontSize: 12, fontWeight: "600", textAlign: "center" },
+
+  // States
+  loadingContainer: {
+    height: 300,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  connectButton: {
-    backgroundColor: "#2563eb",
+  emptyState: {
+    marginTop: 60,
+    alignItems: "center",
+    paddingHorizontal: 40,
+    gap: 12,
+  },
+  emptyIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  emptyTitle: { fontSize: 18, fontWeight: "700" },
+  emptySub: { fontSize: 14, textAlign: "center", lineHeight: 20 },
+  actionButton: {
+    marginTop: 12,
     paddingVertical: 12,
-    paddingHorizontal: 25,
-    borderRadius: 25,
-    marginTop: 20,
+    paddingHorizontal: 24,
+    borderRadius: 24,
   },
-  connectButtonText: { color: "white", fontWeight: "bold" },
+  actionButtonText: { color: "#000", fontWeight: "700" },
 });

@@ -1,9 +1,17 @@
 import { trpc } from "@/lib/trpc";
+import { usePlayerTheme } from "@/theme/playerTheme";
 import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { ChevronRight, Clock, Tv } from "lucide-react-native";
+import { Tv } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 
 interface ChannelRowProps {
   channel: any;
@@ -14,14 +22,13 @@ interface ChannelRowProps {
   };
 }
 
+// --- Helper: Decode Base64 EPG Titles ---
 export const decodeBase64 = (str: string): string => {
   try {
     const chars =
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
     let output = "";
-
     str = String(str).replace(/=+$/, "");
-
     for (
       let bc = 0, bs = 0, buffer, i = 0;
       (buffer = str.charAt(i++));
@@ -31,27 +38,48 @@ export const decodeBase64 = (str: string): string => {
     ) {
       buffer = chars.indexOf(buffer);
     }
-
     return decodeURIComponent(escape(output));
   } catch {
     return str;
   }
 };
 
+// --- Component: Pulsing Live Dot ---
+const LivePulse = ({ color }: { color: string }) => {
+  const opacity = useSharedValue(0.5);
+
+  useEffect(() => {
+    opacity.value = withRepeat(withTiming(1, { duration: 1000 }), -1, true);
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }));
+
+  return (
+    <Animated.View
+      style={[styles.liveDotOuter, animatedStyle, { borderColor: color }]}
+    >
+      <View style={[styles.liveDotInner, { backgroundColor: color }]} />
+    </Animated.View>
+  );
+};
+
 export const ChannelRow = ({ channel, playlist }: ChannelRowProps) => {
   const router = useRouter();
+  const theme = usePlayerTheme();
   const [currentTime, setCurrentTime] = useState(Math.floor(Date.now() / 1000));
 
-  // Update time every second for live progress
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(Math.floor(Date.now() / 1000));
-    }, 1000);
-
+    // Update every 30 seconds is usually enough for EPG progress to save CPU
+    const timer = setInterval(
+      () => setCurrentTime(Math.floor(Date.now() / 1000)),
+      30000
+    );
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch EPG Data
+  // Fetch EPG (Only enable if visible/mounted)
   const { data: epgData } = trpc.channels.getShortEpg.useQuery(
     {
       channelId: channel.streamId,
@@ -61,45 +89,47 @@ export const ChannelRow = ({ channel, playlist }: ChannelRowProps) => {
     },
     {
       enabled: !!channel.streamId,
-      refetchInterval: 1000 * 60 * 5, // Refresh every 5 mins
+      staleTime: 1000 * 60 * 5, // Cache for 5 mins
     }
   );
 
-  // Calculate current program info and progress
   const programInfo = useMemo(() => {
     if (!epgData?.length) return null;
-
-    // Find the program that's currently playing
     const current = epgData.find(
       (prog: any) =>
         currentTime >= Number(prog.start_timestamp) &&
         currentTime <= Number(prog.stop_timestamp)
     );
-
     if (!current) return null;
 
     const start = Number(current.start_timestamp);
     const stop = Number(current.stop_timestamp);
     const duration = stop - start;
     const elapsed = currentTime - start;
-    const progress = (elapsed / duration) * 100;
-
-    // Format remaining time
-    const remainingSeconds = stop - currentTime;
-    const remainingMins = Math.ceil(remainingSeconds / 60);
+    const progress = Math.min(100, Math.max(0, (elapsed / duration) * 100));
 
     return {
       title: decodeBase64(current.title),
-      progress: Math.max(0, Math.min(100, progress)),
-      remainingMins,
-      duration: Math.floor(duration / 60),
-      elapsed: Math.floor(elapsed / 60),
+      progress,
+      remainingMins: Math.ceil((stop - currentTime) / 60),
+      startStr: new Date(start * 1000).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      stopStr: new Date(stop * 1000).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
     };
   }, [epgData, currentTime]);
 
   return (
     <Pressable
-      style={styles.container}
+      style={({ pressed }) => [
+        styles.rowContainer,
+        { borderColor: theme.border },
+        pressed && { backgroundColor: theme.surfaceSecondary },
+      ]}
       onPress={() =>
         router.push({
           pathname: "/player",
@@ -107,129 +137,181 @@ export const ChannelRow = ({ channel, playlist }: ChannelRowProps) => {
         })
       }
     >
-      {/* Channel Logo */}
-      <View style={styles.logoWrapper}>
+      {/* 1. Channel Logo */}
+      <View
+        style={[
+          styles.logoContainer,
+          {
+            backgroundColor: theme.surfaceSecondary,
+            borderColor: theme.border,
+          },
+        ]}
+      >
         {channel.streamIcon ?
           <Image
             source={{ uri: channel.streamIcon }}
             style={styles.logo}
             contentFit='contain'
           />
-        : <Tv color='#6b7280' size={20} />}
+        : <Tv size={24} color={theme.primary} />}
       </View>
 
-      {/* Program Info */}
-      <View style={styles.details}>
-        <Text style={styles.channelName} numberOfLines={1}>
-          {channel.name}
-        </Text>
+      {/* 2. Info Section */}
+      <View style={styles.infoContainer}>
+        <View style={styles.headerRow}>
+          <Text
+            style={[styles.channelName, { color: theme.textPrimary }]}
+            numberOfLines={1}
+          >
+            {channel.name}
+          </Text>
+          {/* Live Indicator if EPG exists */}
+        </View>
 
         {programInfo ?
-          <View style={styles.epgContainer}>
-            <Text style={styles.programTitle} numberOfLines={1}>
+          <View style={styles.programWrapper}>
+            <Text
+              style={[styles.programTitle, { color: theme.textSecondary }]}
+              numberOfLines={1}
+            >
               {programInfo.title}
             </Text>
 
             {/* Progress Bar */}
-            <View style={styles.progressContainer}>
-              <View style={styles.progressBg}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    { width: `${programInfo.progress}%` },
-                  ]}
+            <View style={styles.progressRow}>
+              <View style={[styles.track, { backgroundColor: theme.trackBg }]}>
+                <LinearGradient
+                  colors={[theme.primary, theme.primaryDark]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[styles.fill, { width: `${programInfo.progress}%` }]}
                 />
               </View>
-
-              {/* Time Info */}
-              <View style={styles.timeInfo}>
-                <Clock size={11} color='#9CA3AF' />
-                <Text style={styles.timeText}>
-                  {programInfo.elapsed}m / {programInfo.duration}m
-                </Text>
-              </View>
+              <Text style={[styles.timeText, { color: theme.textMuted }]}>
+                {programInfo.startStr} - {programInfo.stopStr}
+              </Text>
             </View>
           </View>
-        : <Text style={styles.noEpg}>No program information</Text>}
+        : <View style={styles.noEpgRow}>
+            <View style={[styles.dot, { backgroundColor: theme.textMuted }]} />
+            <Text style={[styles.noEpgText, { color: theme.textMuted }]}>
+              No information available
+            </Text>
+          </View>
+        }
       </View>
-
-      <ChevronRight color='#4b5563' size={18} />
     </Pressable>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  rowContainer: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 14,
     paddingHorizontal: 16,
-    backgroundColor: "#0a0a0a",
-    borderBottomWidth: 1,
-    borderBottomColor: "#111",
-    overflow: "hidden",
+    borderWidth: 1,
+    borderRadius: 10,
+    marginBottom: 5,
   },
-  logoWrapper: {
-    width: 56,
-    height: 42,
-    backgroundColor: "#111",
+
+  // Logo
+  logoContainer: {
+    width: 60,
+    height: 44,
     borderRadius: 8,
+    borderWidth: 1,
     justifyContent: "center",
     alignItems: "center",
+    marginRight: 14,
     overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "#222",
   },
   logo: {
-    width: "90%",
-    height: "90%",
+    width: "85%",
+    height: "85%",
   },
-  details: {
+
+  // Info
+  infoContainer: {
     flex: 1,
-    marginLeft: 14,
+    gap: 6,
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   channelName: {
-    color: "#fff",
     fontSize: 15,
     fontWeight: "700",
-    marginBottom: 4,
+    letterSpacing: 0.2,
+    flex: 1,
+    marginRight: 8,
   },
-  epgContainer: {
+
+  // EPG Section
+  programWrapper: {
     gap: 6,
   },
   programTitle: {
-    color: "#60a5fa",
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: "500",
   },
-  progressContainer: {
-    gap: 6,
+  progressRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
-  progressBg: {
-    height: 4,
-    backgroundColor: "#222",
+  track: {
+    flex: 1,
+    height: 3,
     borderRadius: 2,
-    width: "85%",
     overflow: "hidden",
   },
-  progressFill: {
+  fill: {
     height: "100%",
-    backgroundColor: "#2563eb",
     borderRadius: 2,
   },
-  timeInfo: {
+  timeText: {
+    fontSize: 10,
+    fontWeight: "600",
+    fontVariant: ["tabular-nums"],
+  },
+
+  // No EPG
+  noEpgRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+    marginTop: 2,
   },
-  timeText: {
-    color: "#9CA3AF",
-    fontSize: 11,
-    fontWeight: "500",
+  dot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    opacity: 0.5,
   },
-  noEpg: {
-    color: "#6b7280",
+  noEpgText: {
     fontSize: 12,
     fontStyle: "italic",
+  },
+
+  // Live Pulse
+  liveDotOuter: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 1.5,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  liveDotInner: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+
+  arrowContainer: {
+    marginLeft: 8,
   },
 });

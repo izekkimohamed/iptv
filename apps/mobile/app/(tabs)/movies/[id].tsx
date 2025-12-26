@@ -1,7 +1,10 @@
 import { trpc } from "@/lib/trpc";
 import { cleanName } from "@/lib/utils";
 import { usePlaylistStore } from "@/store/appStore";
+import { usePlayerTheme } from "@/theme/playerTheme";
+import { FlashList } from "@shopify/flash-list";
 import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   Calendar,
@@ -11,7 +14,7 @@ import {
   Play,
   Share2,
   Star,
-  Users,
+  User,
   Zap,
 } from "lucide-react-native";
 import React, { useCallback, useMemo } from "react";
@@ -19,15 +22,30 @@ import {
   ActivityIndicator,
   Dimensions,
   Pressable,
-  ScrollView,
   Share,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+  interpolate,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+} from "react-native-reanimated";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
-const { height } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
+const POSTER_WIDTH = width * 0.42;
+const POSTER_HEIGHT = POSTER_WIDTH * 1.5;
 
+// --- Helper Hook (Kept from your code) ---
 export const useStreamingUrls = (
   baseUrl: string,
   username: string,
@@ -54,11 +72,16 @@ export const useStreamingUrls = (
 
 export default function MovieDetailsScreen() {
   const router = useRouter();
+  const theme = usePlayerTheme();
+  const insets = useSafeAreaInsets();
   const selectPlaylist = usePlaylistStore((state) => state.selectedPlaylist);
   const { id, url } = useLocalSearchParams<{
     id: string;
     url: string;
   }>();
+
+  // Animation Shared Values
+  const scrollY = useSharedValue(0);
 
   const { data: movie, isLoading } = trpc.movies.getMovie.useQuery({
     movieId: +id,
@@ -67,32 +90,41 @@ export default function MovieDetailsScreen() {
     password: selectPlaylist?.password ?? "",
   });
 
+  // --- Animation Handlers ---
+  const scrollHandler = useAnimatedScrollHandler((event) => {
+    scrollY.value = event.contentOffset.y;
+  });
+
+  const stickyHeaderStyle = useAnimatedStyle(() => {
+    return {
+      opacity: interpolate(scrollY.value, [0, 200], [0, 1]),
+      backgroundColor: theme.bg,
+    };
+  });
+
   if (isLoading)
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size='large' color='#2563eb' />
+      <View style={[styles.centered, { backgroundColor: theme.bg }]}>
+        <View style={[styles.loadingBackdrop, { borderColor: theme.border }]}>
+          <ActivityIndicator size='large' color={theme.primary} />
+        </View>
       </View>
     );
 
   if (!movie)
     return (
-      <View style={styles.centered}>
-        <Film size={48} color='#666' />
-        <Text style={styles.errorText}>Movie not found</Text>
+      <View style={[styles.centered, { backgroundColor: theme.bg }]}>
+        <Film size={48} color={theme.textMuted} strokeWidth={1.5} />
+        <Text style={[styles.errorText, { color: theme.textMuted }]}>
+          Movie not found
+        </Text>
       </View>
     );
 
-  const onShare = async () => {
-    try {
-      await Share.share({
-        message: `Check out ${movie.name} on our IPTV app! ${movie.info?.description || ""}`,
-      });
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
+  // --- Data Mapping ---
+  const movieTitle = cleanName(movie.movie_data.name);
   const backdropUrl = movie.tmdb?.backdrop || movie.info?.cover_big;
+  const posterUrl = movie.tmdb?.poster || movie.info?.cover;
   const rating = parseFloat(movie.tmdb?.rating || movie.info?.rating || "0");
   const releaseYear =
     movie.tmdb?.releaseDate?.split("-")[0] ||
@@ -100,289 +132,611 @@ export default function MovieDetailsScreen() {
   const duration =
     movie.tmdb?.runtime || Math.floor((movie.info?.duration_secs || 0) / 60);
   const genres =
-    movie.tmdb?.genres?.map((g: any) => g.name).join(", ") || movie.info?.genre;
+    movie.tmdb?.genres
+      ?.map((g: any) => g.name)
+      .slice(0, 2)
+      .join(" • ") || movie.info?.genre?.split(",").slice(0, 2).join(" • ");
   const director = movie.tmdb?.director || movie.info?.director;
   const cast =
-    movie.tmdb?.cast || movie.info?.cast?.split(", ").slice(0, 5) || [];
+    movie.tmdb?.cast || movie.info?.cast?.split(", ").slice(0, 8) || [];
+
+  const onShare = async () => {
+    try {
+      await Share.share({
+        message: `Check out ${movieTitle} on our IPTV app!`,
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   return (
-    <View style={styles.container}>
-      <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
-        {/* Backdrop Header */}
-        <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
+      {/* --- Sticky Header (Fades in) --- */}
+      <Animated.View
+        style={[
+          styles.stickyHeader,
+          stickyHeaderStyle,
+          {
+            height: 60 + insets.top,
+            paddingTop: insets.top,
+            borderBottomColor: theme.border,
+          },
+        ]}
+      >
+        <Text
+          style={[styles.stickyTitle, { color: theme.textPrimary }]}
+          numberOfLines={1}
+        >
+          {movieTitle}
+        </Text>
+      </Animated.View>
+
+      {/* --- Floating Back Button --- */}
+      <SafeAreaView style={styles.floatingHeader} edges={["top"]}>
+        <Pressable
+          style={[
+            styles.backBtn,
+            {
+              backgroundColor: "rgba(0,0,0,0.5)",
+              borderColor: "rgba(255,255,255,0.1)",
+            },
+          ]}
+          onPress={() => router.back()}
+        >
+          <ChevronLeft color='#fff' size={26} strokeWidth={2.5} />
+        </Pressable>
+      </SafeAreaView>
+
+      <Animated.ScrollView
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* --- Parallax Backdrop --- */}
+        <View style={styles.backdropContainer}>
           <Image
             source={{ uri: backdropUrl }}
             style={styles.backdrop}
             contentFit='cover'
-            placeholder="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='225'%3E%3Crect fill='%23222'/%3E%3C/svg%3E"
+            transition={500}
           />
-          <View style={styles.gradientOverlay} />
-
-          <Pressable style={styles.backButton} onPress={() => router.back()}>
-            <ChevronLeft color='white' size={28} />
-          </Pressable>
+          <LinearGradient
+            colors={["transparent", `${theme.bg}00`, `${theme.bg}E6`, theme.bg]}
+            locations={[0, 0.4, 0.85, 1]}
+            style={styles.backdropGradient}
+          />
         </View>
 
-        {/* Content Section */}
-        <View style={styles.content}>
-          {/* Title */}
-          <Text style={styles.title}>{cleanName(movie.movie_data.name)}</Text>
-
-          {/* Meta Info Row */}
-          <View style={styles.metaRow}>
-            {rating > 0 && (
-              <View style={styles.badge}>
-                <Star size={14} color='#fbbf24' fill='#fbbf24' />
-                <Text style={styles.badgeText}>{rating.toFixed(1)}</Text>
-              </View>
-            )}
-            {releaseYear && (
-              <View style={styles.badge}>
-                <Calendar size={14} color='#9CA3AF' />
-                <Text style={styles.badgeText}>{releaseYear}</Text>
-              </View>
-            )}
-            {duration > 0 && (
-              <View style={styles.badge}>
-                <Clock size={14} color='#9CA3AF' />
-                <Text style={styles.badgeText}>
-                  {Math.floor(duration / 60)}h {duration % 60}m
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {/* Genre */}
-          {genres && (
-            <View style={styles.genreContainer}>
-              <Text style={styles.genreText}>{genres}</Text>
+        {/* --- Hero Section --- */}
+        <View style={styles.heroWrapper}>
+          <Animated.View
+            entering={FadeInDown.duration(600)}
+            style={styles.heroContent}
+          >
+            {/* 1. Large Poster */}
+            <View style={styles.posterContainer}>
+              <View
+                style={[styles.posterShadow, { shadowColor: theme.primary }]}
+              />
+              <Image
+                source={{ uri: posterUrl }}
+                style={[styles.poster, { borderColor: theme.border }]}
+                contentFit='cover'
+                transition={300}
+              />
+              {rating > 0 && (
+                <View style={styles.ratingBadge}>
+                  <View
+                    style={[
+                      styles.ratingBlur,
+                      { backgroundColor: theme.glassStrong },
+                    ]}
+                  />
+                  <Star size={12} color='#fbbf24' fill='#fbbf24' />
+                  <Text
+                    style={[styles.ratingText, { color: theme.textPrimary }]}
+                  >
+                    {rating.toFixed(1)}
+                  </Text>
+                </View>
+              )}
             </View>
-          )}
 
-          {/* Action Buttons */}
-          <View style={styles.actionRow}>
-            <Pressable
-              style={styles.playButton}
-              onPress={() =>
-                router.push({
-                  pathname: "/player",
-                  params: { url: url, title: movie.name, mediaType: "vod" },
-                })
-              }
-            >
-              <Play size={20} color='white' fill='white' />
-              <Text style={styles.playButtonText}>Watch Now</Text>
-            </Pressable>
+            {/* 2. Info Column */}
+            <View style={styles.infoColumn}>
+              <Text style={[styles.title, { color: theme.textPrimary }]}>
+                {movieTitle}
+              </Text>
 
-            <Pressable style={styles.iconButton} onPress={onShare}>
-              <Share2 size={22} color='white' />
-            </Pressable>
-          </View>
-
-          {/* Overview Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Overview</Text>
-            <Text style={styles.overview}>
-              {movie.info?.description ||
-                movie.tmdb?.overview ||
-                "No description available."}
-            </Text>
-          </View>
-
-          {/* Director Info */}
-          {director && (
-            <View style={styles.infoSection}>
-              <Zap size={16} color='#2563eb' />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Director</Text>
-                <Text style={styles.infoValue}>{director}</Text>
-              </View>
-            </View>
-          )}
-
-          {/* Cast Section */}
-          {Array.isArray(cast) && cast.length > 0 && (
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Users size={18} color='#2563eb' />
-                <Text style={styles.sectionTitle}>Cast</Text>
-              </View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.castScroll}
-              >
-                {cast.slice(0, 8).map((member: any, idx: number) => (
-                  <View key={idx} style={styles.castCard}>
-                    {member.profilePath && (
-                      <Image
-                        source={{ uri: member.profilePath }}
-                        style={styles.castImage}
-                      />
-                    )}
-                    <Text style={styles.castName} numberOfLines={2}>
-                      {typeof member === "string" ? member : member.name}
+              <View style={styles.metaRow}>
+                {releaseYear && (
+                  <View
+                    style={[
+                      styles.metaTag,
+                      { backgroundColor: theme.surfaceSecondary },
+                    ]}
+                  >
+                    <Calendar size={12} color={theme.textSecondary} />
+                    <Text
+                      style={[styles.metaText, { color: theme.textSecondary }]}
+                    >
+                      {releaseYear}
                     </Text>
                   </View>
-                ))}
-              </ScrollView>
-            </View>
-          )}
+                )}
+                {duration > 0 && (
+                  <View
+                    style={[
+                      styles.metaTag,
+                      { backgroundColor: theme.surfaceSecondary },
+                    ]}
+                  >
+                    <Clock size={12} color={theme.textSecondary} />
+                    <Text
+                      style={[styles.metaText, { color: theme.textSecondary }]}
+                    >
+                      {Math.floor(duration / 60)}h {duration % 60}m
+                    </Text>
+                  </View>
+                )}
+              </View>
 
-          {/* Stream Quality Info */}
-          <View style={styles.qualityBox}>
-            <View style={styles.qualityDot} />
-            <View style={styles.qualityContent}>
-              <Text style={styles.qualityLabel}>High Quality Stream</Text>
-              <Text style={styles.qualitySubtext}>
-                {movie.movie_data?.container_extension?.toUpperCase() || "MKV"}{" "}
+              {genres ?
+                <Text
+                  style={[styles.genreText, { color: theme.primary }]}
+                  numberOfLines={1}
+                >
+                  {genres}
+                </Text>
+              : null}
+
+              {/* Mini Action - Share */}
+              <View style={styles.miniActions}>
+                <Pressable
+                  onPress={onShare}
+                  style={[
+                    styles.circleBtn,
+                    { backgroundColor: theme.surfaceSecondary },
+                  ]}
+                >
+                  <Share2 size={18} color={theme.textMuted} />
+                </Pressable>
+              </View>
+            </View>
+          </Animated.View>
+        </View>
+
+        {/* --- Main Play Button --- */}
+        <Animated.View
+          entering={FadeInUp.delay(200)}
+          style={styles.actionSection}
+        >
+          <Pressable
+            style={({ pressed }) => [
+              styles.playButton,
+              pressed && { transform: [{ scale: 0.98 }] },
+            ]}
+            onPress={() =>
+              router.push({
+                pathname: "/player",
+                params: { url: url, title: movieTitle, mediaType: "vod" },
+              })
+            }
+          >
+            <LinearGradient
+              colors={[theme.primary, theme.primaryDark]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.playGradient}
+            />
+            <Play size={24} color='#000' fill='#000' />
+            <Text style={styles.playText}>Watch Now</Text>
+          </Pressable>
+        </Animated.View>
+
+        {/* --- Overview --- */}
+        <Animated.View
+          entering={FadeIn.delay(300)}
+          style={styles.sectionContainer}
+        >
+          <Text style={[styles.sectionHeader, { color: theme.textPrimary }]}>
+            Overview
+          </Text>
+          <Text style={[styles.bodyText, { color: theme.textSecondary }]}>
+            {movie.info?.description ||
+              movie.tmdb?.overview ||
+              "No synopsis available."}
+          </Text>
+        </Animated.View>
+
+        {/* --- Director Info (If available) --- */}
+        {director && (
+          <Animated.View
+            entering={FadeIn.delay(350)}
+            style={[
+              styles.infoBox,
+              {
+                backgroundColor: theme.surfaceSecondary,
+                borderColor: theme.border,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.infoIcon,
+                { backgroundColor: `${theme.primary}20` },
+              ]}
+            >
+              <Zap size={18} color={theme.primary} />
+            </View>
+            <View>
+              <Text style={[styles.infoLabel, { color: theme.textMuted }]}>
+                Director
+              </Text>
+              <Text style={[styles.infoValue, { color: theme.textPrimary }]}>
+                {director}
+              </Text>
+            </View>
+          </Animated.View>
+        )}
+
+        {/* --- Cast List --- */}
+        {Array.isArray(cast) && cast.length > 0 && (
+          <Animated.View
+            entering={FadeIn.delay(400)}
+            style={styles.sectionContainer}
+          >
+            <Text
+              style={[
+                styles.sectionHeader,
+                { color: theme.textPrimary, marginBottom: 16 },
+              ]}
+            >
+              Top Cast
+            </Text>
+
+            <FlashList
+              horizontal
+              data={cast}
+              showsHorizontalScrollIndicator={false}
+              renderItem={({ item: member }) => {
+                const hasImage =
+                  typeof member === "object" && member.profilePath;
+                const name = typeof member === "string" ? member : member.name;
+
+                return (
+                  <View style={styles.castCard}>
+                    <View
+                      style={[
+                        styles.castImgFrame,
+                        {
+                          backgroundColor: theme.surfaceSecondary,
+                          borderColor: theme.border,
+                        },
+                      ]}
+                    >
+                      {hasImage ?
+                        <Image
+                          source={{ uri: member.profilePath }}
+                          style={styles.castImg}
+                          contentFit='cover'
+                        />
+                      : <User size={24} color={theme.textMuted} />}
+                    </View>
+                    <Text
+                      style={[styles.castName, { color: theme.textSecondary }]}
+                      numberOfLines={2}
+                    >
+                      {name}
+                    </Text>
+                  </View>
+                );
+              }}
+            />
+          </Animated.View>
+        )}
+
+        {/* --- Tech Specs / Quality --- */}
+        <View style={styles.sectionContainer}>
+          <View
+            style={[
+              styles.qualityBox,
+              {
+                backgroundColor: `${theme.primary}10`,
+                borderColor: `${theme.primary}30`,
+              },
+            ]}
+          >
+            <View style={styles.qualityLeft}>
+              <Text style={[styles.qualityLabel, { color: theme.primary }]}>
+                STREAM DETAILS
+              </Text>
+              <Text
+                style={[styles.qualityValue, { color: theme.textSecondary }]}
+              >
+                {movie.movie_data?.container_extension?.toUpperCase() || "MP4"}{" "}
                 • 1080p
+              </Text>
+            </View>
+            <View style={[styles.hdBadge, { borderColor: theme.primary }]}>
+              <Text
+                style={{
+                  color: theme.primary,
+                  fontSize: 10,
+                  fontWeight: "900",
+                }}
+              >
+                HD
               </Text>
             </View>
           </View>
         </View>
-      </ScrollView>
+
+        <View style={{ height: 40 }} />
+      </Animated.ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0a0a0a" },
-  centered: {
-    flex: 1,
+  container: { flex: 1 },
+  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
+  loadingBackdrop: { padding: 20, borderRadius: 16, borderWidth: 1 },
+  errorText: { marginTop: 12, fontSize: 16 },
+
+  // --- Header ---
+  stickyHeader: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    alignItems: "center",
+    justifyContent: "flex-end",
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+  },
+  stickyTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    width: "60%",
+    textAlign: "center",
+  },
+  floatingHeader: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 101,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    pointerEvents: "box-none", // Let touches pass through except on button
+  },
+  backBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#0a0a0a",
+    borderWidth: 1,
+    backdropFilter: "blur(10px)",
   },
-  errorText: { color: "#999", fontSize: 16, marginTop: 12 },
-  header: { height: height * 0.45, width: "100%", position: "relative" },
-  backdrop: { width: "100%", height: "100%" },
-  gradientOverlay: {
+
+  contentContainer: { paddingBottom: 50 },
+
+  // --- Backdrop ---
+  backdropContainer: {
+    height: height * 0.55,
+    width: "100%",
+  },
+  backdrop: {
+    width: "100%",
+    height: "100%",
+  },
+  backdropGradient: {
     ...StyleSheet.absoluteFillObject,
-    backgroundImage:
-      "linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(10,10,10,0.8) 80%)",
-    backgroundColor: "rgba(0,0,0,0.4)",
   },
-  backButton: {
-    position: "absolute",
-    top: 50,
-    left: 20,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    borderRadius: 20,
-    padding: 8,
-  },
-  content: {
-    marginTop: -40,
-    backgroundColor: "#0a0a0a",
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+
+  // --- Hero Section ---
+  heroWrapper: {
     paddingHorizontal: 20,
-    paddingTop: 30,
-    paddingBottom: 40,
+    marginTop: -160, // The negative margin for overlap
   },
-  title: { color: "white", fontSize: 28, fontWeight: "800", marginBottom: 16 },
+  heroContent: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 16,
+  },
+  posterContainer: {
+    width: POSTER_WIDTH,
+    height: POSTER_HEIGHT,
+    position: "relative",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  poster: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  posterShadow: {
+    position: "absolute",
+    top: 10,
+    left: 0,
+    right: 0,
+    bottom: -10,
+    borderRadius: 12,
+    opacity: 0.6,
+  },
+  ratingBadge: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  ratingBlur: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.9,
+  },
+  ratingText: {
+    fontSize: 12,
+    fontWeight: "800",
+  },
+
+  // --- Info Column ---
+  infoColumn: {
+    flex: 1,
+    paddingBottom: 4,
+    gap: 10,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "800",
+    lineHeight: 28,
+    letterSpacing: -0.5,
+    textShadowColor: "rgba(0,0,0,0.8)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
   metaRow: {
     flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-    gap: 10,
+    flexWrap: "wrap",
+    gap: 8,
   },
-  badge: {
+  metaTag: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1a1a1a",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    gap: 6,
-    borderWidth: 1,
-    borderColor: "#333",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
-  badgeText: { color: "white", fontSize: 13, fontWeight: "600" },
-  genreContainer: { marginBottom: 24 },
-  genreText: { color: "#9CA3AF", fontSize: 14, fontWeight: "500" },
-  actionRow: {
+  metaText: { fontSize: 11, fontWeight: "700" },
+  genreText: { fontSize: 13, fontWeight: "600" },
+
+  miniActions: {
     flexDirection: "row",
-    alignItems: "center",
     gap: 12,
-    marginBottom: 32,
+    marginTop: 4,
+  },
+  circleBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  // --- Actions ---
+  actionSection: {
+    paddingHorizontal: 20,
+    marginTop: 24,
   },
   playButton: {
-    flex: 1,
+    width: "100%",
+    height: 56,
+    borderRadius: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#2563eb",
-    paddingVertical: 15,
-    borderRadius: 14,
-    gap: 8,
-  },
-  playButtonText: { color: "white", fontSize: 16, fontWeight: "700" },
-  iconButton: {
-    backgroundColor: "#1a1a1a",
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#333",
-  },
-  section: { marginBottom: 28 },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
     gap: 10,
-    marginBottom: 12,
+    overflow: "hidden",
   },
-  sectionTitle: {
-    color: "white",
+  playGradient: { ...StyleSheet.absoluteFillObject },
+  playText: {
+    color: "#000",
+    fontSize: 16,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+
+  // --- Content Sections ---
+  sectionContainer: {
+    marginTop: 32,
+    paddingHorizontal: 20,
+  },
+  sectionHeader: {
     fontSize: 18,
     fontWeight: "700",
+    letterSpacing: 0.3,
+    marginBottom: 8,
   },
-  overview: { color: "#CCCCCC", fontSize: 15, lineHeight: 24 },
-  infoSection: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    backgroundColor: "#111",
+  bodyText: {
+    fontSize: 15,
+    lineHeight: 24,
+    opacity: 0.8,
+  },
+
+  // Director Box
+  infoBox: {
+    marginHorizontal: 20,
+    marginTop: 24,
     padding: 16,
     borderRadius: 12,
-    gap: 12,
-    marginBottom: 24,
     borderWidth: 1,
-    borderColor: "#222",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
-  infoContent: { flex: 1 },
+  infoIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   infoLabel: {
-    color: "#9CA3AF",
-    fontSize: 12,
-    fontWeight: "600",
-    marginBottom: 4,
+    fontSize: 11,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    marginBottom: 2,
   },
-  infoValue: { color: "white", fontSize: 14, fontWeight: "600" },
-  castScroll: { gap: 12, paddingRight: 20 },
-  castCard: { alignItems: "center", width: 90 },
-  castImage: { width: 80, height: 120, borderRadius: 12, marginBottom: 8 },
-  castName: {
-    color: "#CCCCCC",
-    fontSize: 12,
-    textAlign: "center",
-    fontWeight: "600",
+  infoValue: { fontSize: 15, fontWeight: "600" },
+
+  // Cast
+  castCard: { width: 90, marginRight: 12 },
+  castImgFrame: {
+    width: 90,
+    height: 135,
+    borderRadius: 8,
+    overflow: "hidden",
+    borderWidth: 1,
+    marginBottom: 8,
+    justifyContent: "center",
+    alignItems: "center",
   },
+  castImg: { width: "100%", height: "100%" },
+  castName: { fontSize: 12, fontWeight: "600" },
+
+  // Quality
   qualityBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(37, 99, 235, 0.1)",
+    justifyContent: "space-between",
     padding: 16,
     borderRadius: 12,
-    gap: 12,
     borderWidth: 1,
-    borderColor: "rgba(37, 99, 235, 0.3)",
   },
-  qualityDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: "#2563eb",
+  qualityLeft: { gap: 4 },
+  qualityLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1 },
+  qualityValue: { fontSize: 13, fontWeight: "600" },
+  hdBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1.5,
   },
-  qualityContent: { flex: 1 },
-  qualityLabel: { color: "#60a5fa", fontSize: 14, fontWeight: "700" },
-  qualitySubtext: { color: "#9CA3AF", fontSize: 12, marginTop: 2 },
 });

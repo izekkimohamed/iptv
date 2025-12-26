@@ -52,104 +52,124 @@ export const VideoControls = ({
 }: VideoControlsProps) => {
   const theme = usePlayerTheme();
 
-  const progress = duration > 0 ? currentTime / duration : 0;
+  // Protect against NaN
+  const safeDuration = duration > 0 ? duration : 1;
+  const progress = currentTime / safeDuration;
 
   return (
     <LinearGradient
       colors={[
-        "rgba(0,0,0,0.6)",
+        "rgba(10, 10, 15, 0.85)",
+        "rgba(10, 10, 15, 0.4)",
         "transparent",
-        "transparent",
-        "rgba(0,0,0,0.6)",
+        "rgba(10, 10, 15, 0.4)",
+        "rgba(10, 10, 15, 0.9)",
       ]}
+      locations={[0, 0.12, 0.5, 0.88, 1]}
       style={styles.fullOverlay}
     >
-      {/* Top Bar */}
+      {/* --- Top Bar --- */}
       <View style={styles.header}>
-        <Text style={styles.title} numberOfLines={1}>
-          {title}
-        </Text>
+        <View
+          style={[styles.headerContent, { backgroundColor: theme.glassLight }]}
+        >
+          <View style={styles.titleRow}>
+            <View
+              style={[
+                styles.titleIndicator,
+                { backgroundColor: theme.primary },
+              ]}
+            />
+            <Text
+              style={[styles.title, { color: theme.textPrimary }]}
+              numberOfLines={1}
+            >
+              {title}
+            </Text>
+          </View>
+        </View>
+
         {isFullScreen && (
           <BorderlessButton
-            style={styles.closeBtn}
             onPress={onToggleFullScreen}
+            style={styles.closeBtn}
           >
-            <MaterialCommunityIcons
-              name='close'
-              size={24}
-              color={theme.primary}
-            />
+            <View
+              style={[
+                styles.closeBtnWrapper,
+                { backgroundColor: theme.glassLight },
+              ]}
+            >
+              <MaterialCommunityIcons
+                name='close'
+                size={24}
+                color={theme.textPrimary}
+              />
+            </View>
           </BorderlessButton>
         )}
       </View>
 
-      {/* Center Group */}
-      <View style={styles.centerRow}>
+      {/* --- Center Controls --- */}
+      <View style={styles.centerControls}>
         {!isLive && (
-          <BorderlessButton
-            onPress={onSkipBackward}
-            style={styles.secondaryCircle}
-          >
+          <BorderlessButton onPress={onSkipBackward} style={styles.skipButton}>
             <View
               style={[
-                styles.buttonInner,
-                {
-                  backgroundColor: theme.glassLight,
-                  borderColor: theme.trackBg,
-                },
+                styles.skipButtonWrapper,
+                { backgroundColor: theme.glassLight },
               ]}
             >
               <MaterialCommunityIcons
                 name='rewind-10'
-                size={30}
-                color={theme.primary}
+                size={28}
+                color={theme.textPrimary}
               />
             </View>
           </BorderlessButton>
         )}
 
-        <BorderlessButton onPress={onPlayPause} style={styles.mainPlayBtn}>
+        <BorderlessButton onPress={onPlayPause} style={styles.playButton}>
           <View
             style={[
-              styles.buttonInner,
+              styles.playBackdrop,
               {
                 backgroundColor: theme.glassMedium,
-                borderColor: theme.primaryDark,
+                borderColor: theme.borderMuted,
               },
             ]}
           >
+            <View
+              style={[styles.playGlow, { backgroundColor: theme.primaryGlow }]}
+            />
             <MaterialCommunityIcons
               name={isPlaying ? "pause" : "play"}
-              size={45}
-              color={theme.textSecondary}
+              size={42}
+              color={theme.textPrimary}
+              style={{ marginLeft: isPlaying ? 0 : 4 }}
             />
           </View>
         </BorderlessButton>
+
         {!isLive && (
-          <BorderlessButton
-            onPress={onSkipForward}
-            style={styles.secondaryCircle}
-          >
+          <BorderlessButton onPress={onSkipForward} style={styles.skipButton}>
             <View
               style={[
-                styles.buttonInner,
-                {
-                  backgroundColor: theme.glassLight,
-                  borderColor: theme.trackBg,
-                },
+                styles.skipButtonWrapper,
+                { backgroundColor: theme.glassLight },
               ]}
             >
               <MaterialCommunityIcons
                 name='fast-forward-10'
-                size={30}
-                color={theme.primary}
+                size={28}
+                color={theme.textPrimary}
               />
             </View>
           </BorderlessButton>
         )}
       </View>
 
-      {/* Bottom Progress Area */}
+      {/* --- Bottom Section --- */}
       <View style={styles.footer}>
         <VideoProgress
           progress={progress}
@@ -174,43 +194,98 @@ const styles = StyleSheet.create({
   fullOverlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: "space-between",
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    zIndex: 100,
   },
+
+  // Header
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    paddingTop: 10,
+    alignItems: "flex-start",
+    paddingTop: 4,
+    gap: 12,
   },
-  title: { color: "white", fontSize: 16, fontWeight: "bold", flex: 1 },
-  centerRow: {
+  headerContent: {
+    flex: 1,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backdropFilter: "blur(10px)",
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  titleIndicator: {
+    width: 3,
+    height: 16,
+    borderRadius: 1.5,
+  },
+  title: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+  },
+  closeBtn: {
+    padding: 0,
+  },
+  closeBtnWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: "center",
+    alignItems: "center",
+    backdropFilter: "blur(10px)",
+  },
+
+  // Center Controls
+  centerControls: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 40,
+    width: "100%",
   },
-  mainPlayBtn: {
-    width: 70,
-    height: 70,
+  skipButton: {
+    padding: 0,
+  },
+  skipButtonWrapper: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     justifyContent: "center",
     alignItems: "center",
+    backdropFilter: "blur(10px)",
   },
-  buttonInner: {
-    width: 70,
-    height: 70,
-    borderRadius: 80,
+  playButton: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  playBackdrop: {
+    position: "relative",
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
+    backdropFilter: "blur(10px)",
+    overflow: "hidden",
   },
-  secondaryCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    justifyContent: "center",
-    alignItems: "center",
+  playGlow: {
+    position: "absolute",
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    opacity: 0.3,
   },
-  footer: { width: "100%" },
-  closeBtn: { padding: 8 },
+
+  // Footer
+  footer: {
+    width: "100%",
+  },
 });

@@ -3,7 +3,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { VideoContentFit } from "expo-video";
 import { useCallback, useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, Text, View } from "react-native";
 import { Slider } from "react-native-awesome-slider";
 import { BorderlessButton } from "react-native-gesture-handler";
 import { useSharedValue } from "react-native-reanimated";
@@ -24,6 +24,7 @@ interface VideoProgressProps {
 }
 
 const formatTime = (timeInSeconds: number) => {
+  if (!timeInSeconds || isNaN(timeInSeconds)) return "00:00";
   const hours = Math.floor(timeInSeconds / 3600);
   const minutes = Math.floor((timeInSeconds % 3600) / 60);
   const seconds = Math.floor(timeInSeconds % 60);
@@ -35,14 +36,15 @@ const formatTime = (timeInSeconds: number) => {
   }
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 };
+
 const getResizeIcon = (mode: VideoContentFit) => {
   switch (mode) {
     case "contain":
-      return "arrow-collapse"; // Indicates fitting inside
+      return "fit-to-page-outline";
     case "cover":
-      return "arrow-expand"; // Indicates filling/cropping
+      return "arrow-expand-all";
     case "fill":
-      return "stretch-to-page"; // Indicates stretching
+      return "stretch-to-page-outline";
     default:
       return "fullscreen";
   }
@@ -64,15 +66,15 @@ export const VideoProgress = ({
   const theme = usePlayerTheme();
   const [isSeeking, setIsSeeking] = useState(false);
 
+  const progressData = useSharedValue(0);
+  const min = useSharedValue(0);
+  const max = useSharedValue(1);
+
   const handleSeek = (value: number) => {
     setIsSeeking(false);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onSeek?.(value * duration);
   };
-
-  const progressData = useSharedValue(0);
-  const min = useSharedValue(0);
-  const max = useSharedValue(1);
 
   useEffect(() => {
     if (!isSeeking) {
@@ -83,150 +85,157 @@ export const VideoProgress = ({
   }, [progress, duration, progressData, min, max, isSeeking]);
 
   const handleButtonPress = useCallback((action: () => void) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     action();
   }, []);
 
   return (
     <View style={styles.container}>
-      {/* Progress Slider */}
-      <View style={styles.sliderSection}>
-        {!isLive && (
-          <>
-            <Slider
-              style={styles.slider}
-              minimumValue={min}
-              maximumValue={max}
-              progress={progressData}
-              onSlidingStart={() => {
-                setIsSeeking(true);
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              }}
-              onSlidingComplete={handleSeek}
-              renderThumb={() => (
+      {/* Slider Section */}
+      {!isLive && (
+        <View style={styles.sliderContainer}>
+          <Slider
+            style={styles.slider}
+            minimumValue={min}
+            maximumValue={max}
+            progress={progressData}
+            onSlidingStart={() => {
+              setIsSeeking(true);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            }}
+            onSlidingComplete={handleSeek}
+            renderThumb={() => (
+              <View style={styles.thumbContainer}>
+                <View
+                  style={[
+                    styles.thumbGlow,
+                    { backgroundColor: theme.primaryGlow },
+                  ]}
+                />
                 <View
                   style={[
                     styles.customThumb,
                     {
                       backgroundColor: theme.primary,
-                      borderColor: theme.primaryDark,
+                      shadowColor: theme.glow,
                     },
                   ]}
                 />
-              )}
-              containerStyle={{
-                width: "100%",
-                height: 8,
-                borderRadius: 4,
-                overflow: "hidden",
-                backgroundColor: theme.trackBg,
-              }}
-              theme={{
-                minimumTrackTintColor: theme.primary,
-                maximumTrackTintColor: theme.trackBg,
-                cacheTrackTintColor: theme.trackBg,
-                disableMinTrackTintColor: theme.trackBg,
-                bubbleBackgroundColor: theme.primary,
-              }}
-            />
-          </>
-        )}
-      </View>
+              </View>
+            )}
+            containerStyle={styles.sliderTrackContainer}
+            theme={{
+              minimumTrackTintColor: theme.primary,
+              maximumTrackTintColor: theme.trackBg,
+              bubbleBackgroundColor: theme.primary,
+            }}
+          />
+        </View>
+      )}
 
-      {/* Bottom Controls */}
-      <View style={styles.controlsRow}>
-        {isLive ?
-          <View style={styles.liveContainer}>
-            <View style={styles.liveIndicator}>
-              <Text style={[styles.liveText, { color: theme.accentSuccess }]}>
+      {/* Bottom Controls Row */}
+      <View style={[styles.controlsRow, { backgroundColor: theme.glassLight }]}>
+        {/* Left Side: Time or Live Badge */}
+        <View style={styles.leftGroup}>
+          {isLive ?
+            <View
+              style={[
+                styles.liveContainer,
+                {
+                  backgroundColor: "rgba(239, 68, 68, 0.15)",
+                  borderColor: "rgba(239, 68, 68, 0.3)",
+                },
+              ]}
+            >
+              <View style={styles.liveDotContainer}>
+                <View
+                  style={[
+                    styles.liveDot,
+                    { backgroundColor: theme.accentError },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.livePulse,
+                    { backgroundColor: theme.accentError },
+                  ]}
+                />
+              </View>
+              <Text style={[styles.liveText, { color: theme.textPrimary }]}>
                 LIVE
               </Text>
             </View>
-          </View>
-        : <View style={styles.timeInfo}>
-            <Text style={[styles.currentTime, { color: theme.primary }]}>
-              {formatTime(currentTime)}
-            </Text>
-            <Text style={[styles.separator, { color: theme.textMuted }]}>
-              /
-            </Text>
-            <Text style={[styles.duration, { color: theme.textSecondary }]}>
-              {formatTime(duration)}
-            </Text>
-          </View>
-        }
-        <View
-          style={{
-            flexDirection: "row",
-            gap: 10,
-          }}
-        >
+          : <View style={styles.timeContainer}>
+              <Text style={[styles.timeText, { color: theme.textPrimary }]}>
+                {formatTime(currentTime)}
+              </Text>
+              <Text style={[styles.timeSeparator, { color: theme.textMuted }]}>
+                /
+              </Text>
+              <Text style={[styles.timeText, { color: theme.textSecondary }]}>
+                {formatTime(duration)}
+              </Text>
+            </View>
+          }
+        </View>
+
+        {/* Right Side: Action Icons */}
+        <View style={styles.rightGroup}>
+          {/* Volume */}
           <BorderlessButton
-            style={styles.controlButton}
-            onPress={(e) => {
-              handleButtonPress(() => onVolumeChange(volume === 0 ? 1 : 0));
-            }}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            onPress={() =>
+              handleButtonPress(() => onVolumeChange(volume === 0 ? 1 : 0))
+            }
+            style={styles.iconButton}
           >
             <View
               style={[
-                styles.buttonInner,
-                {
-                  backgroundColor: theme.glassLight,
-                  borderColor: theme.border,
-                },
+                styles.iconWrapper,
+                { backgroundColor: theme.glassLight },
               ]}
             >
               <MaterialCommunityIcons
                 name={volume === 0 ? "volume-mute" : "volume-high"}
                 size={20}
-                color={theme.primary}
+                color={theme.textPrimary}
               />
             </View>
           </BorderlessButton>
 
+          {/* Resize */}
           <BorderlessButton
-            style={styles.controlButton}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onToggleResizeMode();
-            }}
+            onPress={() => handleButtonPress(onToggleResizeMode)}
+            style={styles.iconButton}
           >
             <View
               style={[
-                styles.buttonInner,
-                {
-                  backgroundColor: theme.glassLight,
-                  borderColor: theme.border,
-                },
+                styles.iconWrapper,
+                { backgroundColor: theme.glassLight },
               ]}
             >
               <MaterialCommunityIcons
                 name={getResizeIcon(resizeMode)}
                 size={20}
-                color={theme.primary}
+                color={theme.textPrimary}
               />
             </View>
           </BorderlessButton>
 
+          {/* Fullscreen */}
           <BorderlessButton
-            style={styles.controlButton}
             onPress={() => handleButtonPress(onToggleFullScreen)}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={styles.iconButton}
           >
             <View
               style={[
-                styles.buttonInner,
-                {
-                  backgroundColor: theme.glassLight,
-                  borderColor: theme.border,
-                },
+                styles.iconWrapper,
+                { backgroundColor: theme.glassLight },
               ]}
             >
               <MaterialCommunityIcons
                 name={isFullScreen ? "fullscreen-exit" : "fullscreen"}
-                size={20}
-                color={theme.primary}
+                size={22}
+                color={theme.textPrimary}
               />
             </View>
           </BorderlessButton>
@@ -238,120 +247,129 @@ export const VideoProgress = ({
 
 const styles = StyleSheet.create({
   container: {
-    gap: 12,
+    gap: 10,
   },
-  sliderSection: {
-    gap: 8,
+  sliderContainer: {
+    paddingHorizontal: 4,
+    height: 24,
+    justifyContent: "center",
   },
   slider: {
-    height: 8,
-    marginTop: 4,
+    height: 5,
+    width: "100%",
   },
-  timeInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-start",
-    gap: 6,
-    paddingHorizontal: 4,
+  sliderTrackContainer: {
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
   },
-  currentTime: {
-    fontSize: 12,
-    fontWeight: "700",
-    fontFamily: "monospace",
-    letterSpacing: 0.3,
-  },
-  separator: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  duration: {
-    fontSize: 12,
-    fontWeight: "600",
-    fontFamily: "monospace",
-    letterSpacing: 0.3,
-  },
-  customThumb: {
+  thumbContainer: {
+    position: "relative",
     width: 18,
     height: 18,
-    borderRadius: 9,
-    borderWidth: 3,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  liveContainer: {
-    gap: 8,
-  },
-  liveBar: {
-    width: "100%",
-    height: 8,
-    borderRadius: 4,
-    overflow: "hidden",
-    marginTop: 4,
-  },
-  liveProgress: {
-    height: "100%",
-    borderRadius: 4,
-  },
-  liveIndicator: {
-    flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
-    justifyContent: "flex-start",
-    gap: 6,
-    paddingHorizontal: 4,
   },
-  livePulse: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
+  thumbGlow: {
+    position: "absolute",
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    opacity: 0.4,
+  },
+  customThumb: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "white",
+    borderWidth: 2,
+    borderColor: "white",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
     shadowRadius: 4,
-    elevation: 4,
-  },
-  liveText: {
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 1.2,
+    elevation: 5,
   },
   controlsRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 16,
+    backdropFilter: "blur(10px)",
   },
-  controlButton: {
-    justifyContent: "center",
-    alignItems: "center",
-    width: 44,
-    height: 44,
-  },
-  buttonInner: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-  },
-  resizeButton: {
-    padding: 8,
-    borderRadius: 12,
-    backgroundColor: "rgba(255, 255, 255, 0.1)", // Glass effect
-    minWidth: 44,
-    justifyContent: "center",
+  leftGroup: {
+    flexDirection: "row",
     alignItems: "center",
   },
-  resizeButtonContent: {
+  rightGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  // Time Styles
+  timeContainer: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+    paddingHorizontal: 4,
   },
-  resizeText: {
-    fontSize: 12,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
+  timeText: {
+    fontSize: 13,
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+    fontWeight: "600",
+    letterSpacing: 0.3,
+  },
+  timeSeparator: {
+    fontSize: 13,
+    opacity: 0.5,
+  },
+  // Live Styles
+  liveContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  liveDotContainer: {
+    position: "relative",
+    width: 10,
+    height: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    zIndex: 2,
+  },
+  livePulse: {
+    position: "absolute",
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    opacity: 0.4,
+    zIndex: 1,
+  },
+  liveText: {
+    fontWeight: "800",
+    fontSize: 11,
+    letterSpacing: 1,
+  },
+  // Icon Buttons
+  iconButton: {
+    padding: 2,
+  },
+  iconWrapper: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+    backdropFilter: "blur(10px)",
   },
 });

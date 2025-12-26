@@ -31,7 +31,7 @@ export default function RootLayout() {
 
                 {/* Fullscreen Video Player */}
                 <Stack.Screen
-                  name='player'
+                  name='player/index'
                   options={{
                     orientation: "landscape",
                     headerShown: false,

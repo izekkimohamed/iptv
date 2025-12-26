@@ -1,20 +1,26 @@
 import { trpc } from "@/lib/trpc";
 import { usePlaylistStore } from "@/store/appStore";
+import { usePlayerTheme } from "@/theme/playerTheme";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import {
   AlertCircle,
-  BarChart3,
-  CheckCircle2,
-  Eye,
-  EyeOff,
+  Check,
   Globe,
-  Loader,
+  KeyRound,
+  LayoutList,
+  Link as LinkIcon,
+  Loader2,
   Lock,
   Server,
+  User,
+  Wifi,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -22,10 +28,13 @@ import {
   TextInput,
   View,
 } from "react-native";
+import Animated, { FadeInDown, Layout } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function PlaylistLoginForm() {
   const router = useRouter();
+  const theme = usePlayerTheme();
+
   const [formData, setFormData] = useState({
     url: "",
     username: "",
@@ -61,443 +70,397 @@ export default function PlaylistLoginForm() {
       new URL(url);
       return url.startsWith("https://") || url.startsWith("http://") ?
           ""
-        : "URL should use HTTPS for security";
+        : "Secure connection (HTTPS) recommended";
     } catch {
-      return "Please enter a valid URL";
+      return "Invalid server URL";
     }
   };
 
   useEffect(() => {
-    const error = validateUrl(formData.url);
-    setUrlError(error);
+    const err = validateUrl(formData.url);
+    setUrlError(err);
 
-    if (formData.url && !error) {
-      const timer = setTimeout(() => {
-        setUrlStatus("verified");
-      }, 1000);
+    if (formData.url && !err) {
       setUrlStatus("checking");
+      const timer = setTimeout(() => setUrlStatus("verified"), 800); // Simulate check
       return () => clearTimeout(timer);
     } else {
       setUrlStatus("");
     }
   }, [formData.url]);
 
-  const handleUrlBlur = () => {
-    setUrlTouched(true);
-  };
-
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (isFormValid) {
-      createPlaylist({
-        url: formData.url,
-        username: formData.username,
-        password: formData.password,
-      });
+      createPlaylist(formData);
     }
   };
 
   const isFormValid =
-    formData.url &&
-    formData.username &&
-    formData.password &&
-    !urlError &&
-    urlStatus === "verified";
+    formData.url && formData.username && formData.password && !urlError;
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
-      <ScrollView
-        style={styles.formContainer}
-        contentContainerStyle={styles.formContent}
-        showsVerticalScrollIndicator={false}
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.bg }]}
+      edges={["top"]}
+    >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
       >
-        {/* Header */}
-        <View style={styles.formHeader}>
-          <View style={styles.iconContainer}>
-            <Server size={40} color='#2563eb' />
-          </View>
-        </View>
-
-        {/* Error Message */}
-        {error && (
-          <View style={styles.errorBox}>
-            <AlertCircle size={18} color='#ef4444' />
-            <Text style={styles.errorText}>{error.message}</Text>
-          </View>
-        )}
-
-        <View style={styles.center}>
-          <Pressable
-            style={styles.submitButton}
-            onPress={() => router.push("/playlists/manage")}
-          >
-            <Text style={styles.submitButtonText}>Manage Playlists</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.dividerContainer}>
-          <View style={styles.divider} />
-          <Text style={styles.dividerText}>Or add new</Text>
-          <View style={styles.divider} />
-        </View>
-        <View style={styles.center}>
-          <Text style={styles.formTitle}>Add Playlist</Text>
-          <Text style={styles.formSubtitle}>
-            Enter your Xtream Codes credentials
-          </Text>
-        </View>
-
-        <View style={styles.inputsContainer}>
-          {/* URL Input */}
-          <View style={styles.inputGroup}>
-            <View style={styles.inputLabel}>
-              <Globe size={16} color='#2563eb' />
-              <Text style={styles.inputLabelText}>Server URL</Text>
-            </View>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header */}
+          <View style={styles.header}>
             <View
               style={[
-                styles.inputWrapper,
-                urlError && urlTouched && styles.inputErrorBorder,
+                styles.iconCircle,
+                {
+                  backgroundColor: theme.surfaceSecondary,
+                  borderColor: theme.border,
+                },
               ]}
             >
-              <TextInput
-                style={styles.input}
-                placeholder='https://api.example.com'
-                placeholderTextColor='#6b7280'
-                value={formData.url}
-                onChangeText={(text) => setFormData({ ...formData, url: text })}
-                onBlur={handleUrlBlur}
-                autoCapitalize='none'
-                keyboardType='url'
-                editable={!isPending}
-              />
-              {urlStatus === "checking" && (
-                <Loader size={16} color='#eab308' style={styles.statusIcon} />
-              )}
-              {urlStatus === "verified" && (
-                <CheckCircle2
-                  size={16}
-                  color='#10b981'
-                  style={styles.statusIcon}
+              <Server size={32} color={theme.primary} />
+            </View>
+            <Text style={[styles.title, { color: theme.textPrimary }]}>
+              Connect Server
+            </Text>
+            <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+              Enter your Xtream Codes details
+            </Text>
+          </View>
+
+          {/* Manage Button */}
+          <Pressable
+            style={[
+              styles.manageBtn,
+              {
+                backgroundColor: theme.surfaceSecondary,
+                borderColor: theme.border,
+              },
+            ]}
+            onPress={() => router.push("/playlists/manage")}
+          >
+            <LayoutList size={16} color={theme.textMuted} />
+            <Text style={[styles.manageText, { color: theme.textPrimary }]}>
+              Manage Existing Playlists
+            </Text>
+          </Pressable>
+
+          {/* Error Banner */}
+          {error && (
+            <Animated.View
+              entering={FadeInDown}
+              style={[
+                styles.errorBanner,
+                {
+                  backgroundColor: "rgba(239, 68, 68, 0.1)",
+                  borderColor: "rgba(239, 68, 68, 0.2)",
+                },
+              ]}
+            >
+              <AlertCircle size={18} color='#ef4444' />
+              <Text style={styles.errorText}>{error.message}</Text>
+            </Animated.View>
+          )}
+
+          {/* Form Fields */}
+          <View style={styles.formGroup}>
+            {/* URL Input */}
+            <View style={styles.inputContainer}>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>
+                Server URL
+              </Text>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  {
+                    backgroundColor: theme.surfaceSecondary,
+                    borderColor: urlError ? theme.accentError : theme.border,
+                  },
+                  urlStatus === "verified" && {
+                    borderColor: theme.accentSuccess,
+                  },
+                ]}
+              >
+                <Globe size={18} color={theme.primary} />
+                <TextInput
+                  style={[styles.input, { color: theme.textPrimary }]}
+                  placeholder='http://example.com:8080'
+                  placeholderTextColor={theme.textMuted}
+                  value={formData.url}
+                  onChangeText={(t) => setFormData({ ...formData, url: t })}
+                  onBlur={() => setUrlTouched(true)}
+                  autoCapitalize='none'
+                  keyboardType='url'
+                  editable={!isPending}
                 />
+                {urlStatus === "checking" && (
+                  <ActivityIndicator size='small' color={theme.primary} />
+                )}
+                {urlStatus === "verified" && (
+                  <Check size={18} color={theme.accentSuccess} />
+                )}
+              </View>
+              {urlError && urlTouched && (
+                <Text style={[styles.helperText, { color: theme.accentError }]}>
+                  {urlError}
+                </Text>
               )}
             </View>
-            {urlError && urlTouched && (
-              <Text style={styles.inputError}>{urlError}</Text>
-            )}
-          </View>
 
-          {/* Username Input */}
-          <View style={styles.inputGroup}>
-            <View style={styles.inputLabel}>
-              <Globe size={16} color='#2563eb' />
-              <Text style={styles.inputLabelText}>Username</Text>
-            </View>
-            <View style={styles.inputWrapper}>
-              <TextInput
-                style={styles.input}
-                placeholder='Enter your username'
-                placeholderTextColor='#6b7280'
-                value={formData.username}
-                onChangeText={(text) =>
-                  setFormData({ ...formData, username: text })
-                }
-                autoCapitalize='none'
-                editable={!isPending}
-              />
-            </View>
-          </View>
-
-          {/* Password Input */}
-          <View style={styles.inputGroup}>
-            <View style={styles.inputLabel}>
-              <Lock size={16} color='#2563eb' />
-              <Text style={styles.inputLabelText}>Password</Text>
-            </View>
-            <View style={styles.inputWrapper}>
-              <TextInput
-                style={styles.input}
-                placeholder='Enter your password'
-                placeholderTextColor='#6b7280'
-                value={formData.password}
-                onChangeText={(text) =>
-                  setFormData({ ...formData, password: text })
-                }
-                secureTextEntry={!showPassword}
-                editable={!isPending}
-              />
-              <Pressable
-                onPress={() => setShowPassword(!showPassword)}
-                style={styles.passwordToggle}
-              >
-                {showPassword ?
-                  <EyeOff size={18} color='#6b7280' />
-                : <Eye size={18} color='#6b7280' />}
-              </Pressable>
-            </View>
-          </View>
-        </View>
-
-        {/* Connection Status */}
-        <View style={styles.statusBox}>
-          <View style={styles.statusHeader}>
-            <BarChart3 size={16} color='#60a5fa' />
-            <Text style={styles.statusTitle}>Connection Status</Text>
-          </View>
-          <View style={styles.statusItems}>
-            <View style={styles.statusItem}>
-              <Text style={styles.statusLabel}>URL Validation:</Text>
-              <Text
+            {/* Username */}
+            <View style={styles.inputContainer}>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>
+                Username
+              </Text>
+              <View
                 style={[
-                  styles.statusValue,
+                  styles.inputWrapper,
                   {
-                    color:
-                      urlStatus === "verified" ? "#10b981"
-                      : urlStatus === "checking" ? "#eab308"
-                      : "#6b7280",
+                    backgroundColor: theme.surfaceSecondary,
+                    borderColor: theme.border,
                   },
                 ]}
               >
-                {urlStatus === "verified" ?
-                  "✓ Valid"
-                : urlStatus === "checking" ?
-                  "⏳ Checking"
-                : "◦ Pending"}
+                <User size={18} color={theme.textMuted} />
+                <TextInput
+                  style={[styles.input, { color: theme.textPrimary }]}
+                  placeholder='Username'
+                  placeholderTextColor={theme.textMuted}
+                  value={formData.username}
+                  onChangeText={(t) =>
+                    setFormData({ ...formData, username: t })
+                  }
+                  autoCapitalize='none'
+                  editable={!isPending}
+                />
+              </View>
+            </View>
+
+            {/* Password */}
+            <View style={styles.inputContainer}>
+              <Text style={[styles.label, { color: theme.textSecondary }]}>
+                Password
+              </Text>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  {
+                    backgroundColor: theme.surfaceSecondary,
+                    borderColor: theme.border,
+                  },
+                ]}
+              >
+                <KeyRound size={18} color={theme.textMuted} />
+                <TextInput
+                  style={[styles.input, { color: theme.textPrimary }]}
+                  placeholder='Password'
+                  placeholderTextColor={theme.textMuted}
+                  value={formData.password}
+                  onChangeText={(t) =>
+                    setFormData({ ...formData, password: t })
+                  }
+                  secureTextEntry={!showPassword}
+                  editable={!isPending}
+                />
+                <Pressable
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={{ padding: 4 }}
+                >
+                  {showPassword ?
+                    <Lock size={18} color={theme.primary} />
+                  : <Lock size={18} color={theme.textMuted} />}
+                </Pressable>
+              </View>
+            </View>
+          </View>
+
+          {/* Connection HUD */}
+          <Animated.View
+            layout={Layout}
+            style={[
+              styles.hudContainer,
+              {
+                backgroundColor: theme.surfaceSecondary,
+                borderColor: theme.border,
+              },
+            ]}
+          >
+            <View style={styles.hudHeader}>
+              <Wifi size={14} color={theme.primary} />
+              <Text style={[styles.hudTitle, { color: theme.textSecondary }]}>
+                PRE-FLIGHT CHECKS
               </Text>
             </View>
-            <View style={styles.statusItem}>
-              <Text style={styles.statusLabel}>Form Completion:</Text>
-              <Text
+
+            <View style={styles.hudRow}>
+              <View
                 style={[
-                  styles.statusValue,
+                  styles.dot,
                   {
-                    color:
+                    backgroundColor:
+                      urlStatus === "verified" ?
+                        theme.accentSuccess
+                      : theme.textMuted,
+                  },
+                ]}
+              />
+              <Text style={[styles.hudText, { color: theme.textMuted }]}>
+                Valid Server URL
+              </Text>
+            </View>
+            <View style={styles.hudRow}>
+              <View
+                style={[
+                  styles.dot,
+                  {
+                    backgroundColor:
                       formData.username && formData.password ?
-                        "#10b981"
-                      : "#6b7280",
+                        theme.accentSuccess
+                      : theme.textMuted,
                   },
                 ]}
-              >
-                {formData.username && formData.password ?
-                  "✓ Complete"
-                : "◦ Incomplete"}
+              />
+              <Text style={[styles.hudText, { color: theme.textMuted }]}>
+                Credentials Entered
               </Text>
             </View>
-            <View style={styles.statusItem}>
-              <Text style={styles.statusLabel}>Ready to Connect:</Text>
-              <Text
-                style={[
-                  styles.statusValue,
-                  {
-                    color: isFormValid && !isPending ? "#10b981" : "#6b7280",
-                  },
-                ]}
-              >
-                {isFormValid && !isPending ? "🚀 Ready" : "⏳ Waiting"}
-              </Text>
-            </View>
-          </View>
-        </View>
+          </Animated.View>
 
-        {/* Submit Button */}
-        <Pressable
-          style={[
-            styles.submitButton,
-            (!isFormValid || isPending) && styles.submitButtonDisabled,
-          ]}
-          onPress={handleSubmit}
-          disabled={!isFormValid || isPending}
-        >
-          {isPending ?
-            <>
-              <ActivityIndicator color='white' size='small' />
-              <Text style={styles.submitButtonText}>Connecting...</Text>
-            </>
-          : <>
-              <Text style={styles.submitButtonText}>Add Playlist</Text>
-            </>
-          }
-        </Pressable>
-      </ScrollView>
+          {/* Submit Button */}
+          <Pressable
+            onPress={handleSubmit}
+            disabled={!isFormValid || isPending}
+            style={[
+              styles.submitBtn,
+              (!isFormValid || isPending) && { opacity: 0.5 },
+            ]}
+          >
+            <LinearGradient
+              colors={[theme.primary, theme.primaryDark]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.gradientBtn}
+            >
+              {isPending ?
+                <View style={styles.row}>
+                  <Loader2 size={20} color='white' style={styles.spin} />
+                  <Text style={styles.btnText}>Authenticating...</Text>
+                </View>
+              : <View style={styles.row}>
+                  <LinkIcon size={20} color='white' />
+                  <Text style={styles.btnText}>Connect Playlist</Text>
+                </View>
+              }
+            </LinearGradient>
+          </Pressable>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#0a0a0a",
-  },
-  formContainer: {
-    flex: 1,
-  },
-  formContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-  },
-  formHeader: {
-    alignItems: "center",
-    marginBottom: 40,
-    gap: 12,
-  },
-  iconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: "#111",
+  container: { flex: 1 },
+  scrollContent: { padding: 24, paddingBottom: 50 },
+
+  header: { alignItems: "center", marginBottom: 32 },
+  iconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     justifyContent: "center",
     alignItems: "center",
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#222",
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 5,
   },
-  center: {
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 10,
-  },
-  formTitle: {
-    color: "white",
-    fontSize: 20,
-    fontWeight: "800",
-    marginTop: 12,
-  },
-  formSubtitle: {
-    color: "#9CA3AF",
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  errorBox: {
+  title: { fontSize: 24, fontWeight: "800", marginBottom: 8 },
+  subtitle: { fontSize: 14, textAlign: "center" },
+
+  manageBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(239, 68, 68, 0.1)",
-    borderWidth: 1,
-    borderColor: "rgba(239, 68, 68, 0.3)",
+    justifyContent: "center",
+    padding: 12,
     borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderWidth: 1,
     marginBottom: 24,
-    gap: 10,
+    gap: 8,
   },
-  errorText: {
-    color: "#fca5a5",
-    fontSize: 13,
-    fontWeight: "500",
-    flex: 1,
-  },
-  dividerContainer: {
+  manageText: { fontSize: 13, fontWeight: "600" },
+
+  errorBanner: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    marginVertical: 10,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 20,
   },
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "#222",
-  },
-  dividerText: {
-    color: "#6b7280",
+  errorText: { color: "#ef4444", fontSize: 13, flex: 1 },
+
+  formGroup: { gap: 20, marginBottom: 32 },
+  inputContainer: { gap: 8 },
+  label: {
     fontSize: 12,
-    fontWeight: "500",
-  },
-  inputsContainer: {
-    marginBottom: 24,
-    gap: 20,
-  },
-  inputGroup: {
-    gap: 8,
-  },
-  inputLabel: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  inputLabelText: {
-    color: "white",
-    fontSize: 14,
     fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#111",
+    height: 54,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#222",
-    borderRadius: 12,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  input: { flex: 1, fontSize: 15, fontWeight: "500", height: "100%" },
+  helperText: { fontSize: 11, marginTop: 4 },
+
+  hudContainer: {
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 32,
     gap: 10,
   },
-  inputErrorBorder: {
-    borderColor: "#ef4444",
-  },
-  input: {
-    flex: 1,
-    paddingVertical: 14,
-    color: "white",
-    fontSize: 15,
-    fontWeight: "500",
-  },
-  statusIcon: {
-    marginLeft: 4,
-  },
-  passwordToggle: {
-    padding: 8,
-  },
-  inputError: {
-    color: "#ef4444",
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  statusBox: {
-    backgroundColor: "#111",
-    borderWidth: 1,
-    borderColor: "#222",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
-  },
-  statusHeader: {
+  hudHeader: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginBottom: 12,
+    marginBottom: 4,
   },
-  statusTitle: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "700",
+  hudTitle: { fontSize: 11, fontWeight: "800", letterSpacing: 1 },
+  hudRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  dot: { width: 6, height: 6, borderRadius: 3 },
+  hudText: { fontSize: 13 },
+
+  submitBtn: {
+    height: 56,
+    borderRadius: 16,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  statusItems: {
-    gap: 10,
-  },
-  statusItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  statusLabel: {
-    color: "#6b7280",
-    fontSize: 12,
-  },
-  statusValue: {
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  submitButton: {
-    backgroundColor: "#2563eb",
-    borderRadius: 12,
-    paddingVertical: 16,
+  gradientBtn: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    flexDirection: "row",
-    gap: 10,
-    width: "100%",
   },
-  submitButtonDisabled: {
-    opacity: 0.6,
-  },
-  submitButtonText: {
-    color: "white",
-    fontSize: 15,
-    fontWeight: "700",
-  },
+  row: { flexDirection: "row", alignItems: "center", gap: 10 },
+  btnText: { color: "white", fontSize: 16, fontWeight: "700" },
+  spin: { transform: [{ rotate: "45deg" }] }, // Basic rotate placeholder, use Reanimated for real spin
 });

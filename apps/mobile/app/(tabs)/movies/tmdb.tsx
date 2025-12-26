@@ -1,37 +1,58 @@
 import { trpc } from "@/lib/trpc";
 import { usePlaylistStore } from "@/store/appStore";
+import { usePlayerTheme } from "@/theme/playerTheme";
+import { FlashList } from "@shopify/flash-list";
+import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
-  Calendar,
   ChevronDown,
   ChevronLeft,
-  Clock,
   Film,
   Play,
+  Star,
   User,
-  Youtube,
 } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  FlatList,
+  Dimensions,
   Image,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+  interpolate,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+} from "react-native-reanimated";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+
+const { width, height } = Dimensions.get("window");
+const POSTER_WIDTH = width * 0.42; // Much larger poster (42% of screen width)
+const POSTER_HEIGHT = POSTER_WIDTH * 1.5;
 
 export default function MovieDetailsScreen() {
   const router = useRouter();
+  const theme = usePlayerTheme();
+  const insets = useSafeAreaInsets();
+  const scrollY = useSharedValue(0);
+
   const { movieId } = useLocalSearchParams<{
     movieId: string;
   }>();
   const playlistId = usePlaylistStore((state) => state.selectedPlaylist?.id);
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [selectedSource, setSelectedSource] = useState(0);
 
   const { data, isLoading, error } = trpc.movies.getTmdbMovieDetails.useQuery(
     {
@@ -43,20 +64,38 @@ export default function MovieDetailsScreen() {
 
   const movie = data?.[0];
 
+  // Animated Scroll Handler for Parallax
+  const scrollHandler = useAnimatedScrollHandler((event) => {
+    scrollY.value = event.contentOffset.y;
+  });
+
+  const headerAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: interpolate(scrollY.value, [0, 200], [0, 1]),
+      backgroundColor: theme.bg,
+    };
+  });
+
   if (isLoading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size='large' />
-        <Text style={styles.muted}>Loading movie details…</Text>
+      <View style={[styles.centered, { backgroundColor: theme.bg }]}>
+        <ActivityIndicator size='large' color={theme.primary} />
       </View>
     );
   }
 
   if (error || !movie) {
     return (
-      <View style={styles.centered}>
-        <Film size={48} color='#ef4444' />
-        <Text style={styles.error}>Failed to load movie</Text>
+      <View style={[styles.centered, { backgroundColor: theme.bg }]}>
+        <Film size={48} color={theme.accentError} strokeWidth={1.5} />
+        <Text
+          style={[
+            styles.errorText,
+            { color: theme.textSecondary, marginTop: 16 },
+          ]}
+        >
+          Content unavailable
+        </Text>
       </View>
     );
   }
@@ -68,297 +107,688 @@ export default function MovieDetailsScreen() {
         url: item.url,
         title: item.name,
         mediaType: "vod",
-        overview: item.info?.description || "No description available.",
+        overview: item.info?.description,
       },
     });
   };
 
+  const rating = 0; // Replace with actual rating if available
+  const runtime = movie.tmdb.runtime || 0;
+
   return (
-    <SafeAreaView style={styles.container}>
-      {/* BACKDROP */}
-      <Image
-        source={{ uri: movie.tmdb.backdrop || "" }}
-        style={styles.backdrop}
-        blurRadius={2}
-      />
-      <View style={styles.backdropOverlay} />
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
+      {/* --- Sticky Header (Fades in) --- */}
+      <Animated.View
+        style={[
+          styles.stickyHeader,
+          headerAnimatedStyle,
+          { height: 60 + insets.top, paddingTop: insets.top },
+        ]}
+      >
+        <Text
+          style={[styles.stickyTitle, { color: theme.textPrimary }]}
+          numberOfLines={1}
+        >
+          {movie.tmdb.title}
+        </Text>
+      </Animated.View>
 
-      {/* HEADER */}
-      <Pressable style={styles.backBtn} onPress={router.back}>
-        <ChevronLeft color='white' size={24} />
-        <Text style={styles.backText}>Back</Text>
-      </Pressable>
+      {/* --- Floating Back Button --- */}
+      <SafeAreaView style={styles.floatingHeader} edges={["top"]}>
+        <Pressable
+          style={[
+            styles.backBtn,
+            {
+              backgroundColor: "rgba(0,0,0,0.4)", // Always visible dark glass
+              borderColor: "rgba(255,255,255,0.1)",
+            },
+          ]}
+          onPress={router.back}
+        >
+          <ChevronLeft color='#fff' size={26} strokeWidth={2.5} />
+        </Pressable>
+      </SafeAreaView>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* POSTER */}
-        <Image
-          source={{
-            uri: movie.tmdb.poster || "https://via.placeholder.com/300x450",
-          }}
-          style={styles.poster}
-        />
-
-        {/* TITLE */}
-        <Text style={styles.title}>{movie.tmdb.title}</Text>
-
-        {/* META */}
-        <View style={styles.metaRow}>
-          <MetaItem
-            icon={<Calendar size={16} color='#d1d5db' />}
-            text={new Date(movie.tmdb.releaseDate!).toDateString()}
+      <Animated.ScrollView
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* --- BACKDROP --- */}
+        <View style={styles.backdropContainer}>
+          <Image
+            source={{ uri: movie.tmdb.backdrop || "" }}
+            style={styles.backdrop}
+            blurRadius={0}
           />
-          <MetaItem
-            icon={<Clock size={16} color='#d1d5db' />}
-            text={`${Math.floor(movie.tmdb.runtime! / 60)}h ${
-              movie.tmdb.runtime! % 60
-            }m`}
+          <LinearGradient
+            colors={["transparent", `${theme.bg}00`, `${theme.bg}E6`, theme.bg]}
+            locations={[0, 0.4, 0.85, 1]}
+            style={styles.backdropGradient}
           />
         </View>
 
-        {/* OVERVIEW */}
-        <Text style={styles.sectionTitle}>Synopsis</Text>
-        <Text style={styles.overview}>{movie.tmdb.overview}</Text>
-
-        {/* PLAY */}
-        {movie.dbMovies.length > 0 ?
-          <>
-            <Pressable
-              style={styles.playBtn}
-              onPress={() => handlePlay(movie.dbMovies[0])}
-            >
-              <Play size={20} color='white' fill='white' />
-              <Text style={styles.playText}>Watch Now</Text>
-            </Pressable>
-
-            {movie.dbMovies.length > 1 && (
-              <>
-                <Pressable
-                  style={styles.sourceBtn}
-                  onPress={() => setDropdownOpen((v) => !v)}
-                >
-                  <Text style={styles.sourceText}>
-                    Source: {movie.dbMovies[0]?.name}
+        {/* --- HERO SECTION --- */}
+        <View style={styles.heroWrapper}>
+          <Animated.View
+            entering={FadeInDown.duration(600)}
+            style={styles.heroContent}
+          >
+            {/* 1. Large Poster */}
+            <View style={styles.posterContainer}>
+              <View
+                style={[styles.posterShadow, { shadowColor: theme.primary }]}
+              />
+              <Image
+                source={{
+                  uri:
+                    movie.tmdb.poster || "https://via.placeholder.com/300x450",
+                }}
+                style={[styles.poster, { borderColor: theme.borderMuted }]}
+              />
+              {rating > 0 && (
+                <View style={styles.ratingBadge}>
+                  <View
+                    style={[
+                      styles.ratingBlur,
+                      { backgroundColor: theme.glassStrong },
+                    ]}
+                  />
+                  <Star size={12} color='#fbbf24' fill='#fbbf24' />
+                  <Text
+                    style={[styles.ratingText, { color: theme.textPrimary }]}
+                  >
+                    {rating.toFixed(1)}
                   </Text>
-                  <ChevronDown color='white' size={16} />
-                </Pressable>
-
-                {dropdownOpen &&
-                  movie.dbMovies.map((m) => (
-                    <Pressable
-                      key={m.id}
-                      style={styles.sourceItem}
-                      onPress={() => handlePlay(m)}
-                    >
-                      <Text style={styles.sourceItemText}>{m.name}</Text>
-                    </Pressable>
-                  ))}
-              </>
-            )}
-          </>
-        : <Text style={styles.muted}>No video sources available</Text>}
-
-        {/* CAST */}
-        {movie.tmdb.cast?.length > 0 && (
-          <>
-            <Text style={styles.sectionTitle}>Cast</Text>
-            <FlatList
-              horizontal
-              data={movie.tmdb.cast.slice(0, 12)}
-              keyExtractor={(i, idx) => idx.toString()}
-              renderItem={({ item }) => (
-                <View style={styles.castItem}>
-                  {item.profilePath ?
-                    <Image
-                      source={{ uri: item.profilePath }}
-                      style={styles.castImage}
-                    />
-                  : <User size={32} color='#9ca3af' />}
-                  <Text style={styles.castName}>{item.name}</Text>
                 </View>
               )}
+            </View>
+
+            {/* 2. Title & Metadata */}
+            <View style={styles.infoColumn}>
+              <Text style={[styles.title, { color: theme.textPrimary }]}>
+                {movie.tmdb.title}
+              </Text>
+
+              <View style={styles.metaRow}>
+                {movie.tmdb.releaseDate && (
+                  <Text
+                    style={[styles.metaText, { color: theme.textSecondary }]}
+                  >
+                    {new Date(movie.tmdb.releaseDate).getFullYear()}
+                  </Text>
+                )}
+                <View
+                  style={[
+                    styles.dotSeparator,
+                    { backgroundColor: theme.textMuted },
+                  ]}
+                />
+                {runtime > 0 && (
+                  <Text
+                    style={[styles.metaText, { color: theme.textSecondary }]}
+                  >
+                    {Math.floor(runtime / 60)}h {runtime % 60}m
+                  </Text>
+                )}
+                {/* Optional: Add Genre here if available */}
+              </View>
+
+              {/* Action Buttons (Inline) */}
+              <View style={styles.miniActions}>
+                <Pressable
+                  style={[
+                    styles.circleBtn,
+                    { backgroundColor: theme.surfaceSecondary },
+                  ]}
+                >
+                  <Star size={20} color={theme.textSecondary} />
+                </Pressable>
+                {/* Can add 'Share' or 'Add to List' here */}
+              </View>
+            </View>
+          </Animated.View>
+        </View>
+
+        {/* --- MAIN ACTIONS --- */}
+        <Animated.View
+          entering={FadeInUp.delay(200)}
+          style={styles.actionSection}
+        >
+          {movie.dbMovies.length > 0 ?
+            <>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.playButton,
+                  pressed && { transform: [{ scale: 0.98 }] },
+                ]}
+                onPress={() => handlePlay(movie.dbMovies[selectedSource])}
+              >
+                <LinearGradient
+                  colors={[theme.primary, theme.primaryDark]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.playGradient}
+                />
+                <Play size={24} color='#000' fill='#000' />
+                <Text style={styles.playText}>Watch Movie</Text>
+              </Pressable>
+
+              {/* Source Dropdown */}
+              {movie.dbMovies.length > 1 && (
+                <View style={styles.sourceWrapper}>
+                  <Pressable
+                    onPress={() => setDropdownOpen(!dropdownOpen)}
+                    style={[
+                      styles.sourceSelector,
+                      {
+                        backgroundColor: theme.surfacePrimary,
+                        borderColor: theme.border,
+                      },
+                    ]}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[styles.sourceLabel, { color: theme.textMuted }]}
+                      >
+                        SOURCE
+                      </Text>
+                      <Text
+                        style={[
+                          styles.sourceValue,
+                          { color: theme.textPrimary },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {movie.dbMovies[selectedSource]?.name}
+                      </Text>
+                    </View>
+                    <ChevronDown size={20} color={theme.textSecondary} />
+                  </Pressable>
+
+                  {dropdownOpen && (
+                    <View
+                      style={[
+                        styles.dropdownList,
+                        {
+                          backgroundColor: theme.bg,
+                          borderColor: theme.border,
+                        },
+                      ]}
+                    >
+                      {movie.dbMovies.map((m, idx) => (
+                        <Pressable
+                          key={m.id}
+                          style={[
+                            styles.dropdownItem,
+                            selectedSource === idx && {
+                              backgroundColor: theme.bg,
+                            },
+                            { borderBottomColor: theme.border },
+                          ]}
+                          onPress={() => {
+                            setSelectedSource(idx);
+                            setDropdownOpen(false);
+                          }}
+                        >
+                          <Text
+                            style={{
+                              color:
+                                selectedSource === idx ?
+                                  theme.primary
+                                : theme.textSecondary,
+                              fontWeight:
+                                selectedSource === idx ? "700" : "400",
+                            }}
+                          >
+                            {m.name}
+                          </Text>
+                          {selectedSource === idx && (
+                            <View
+                              style={[
+                                styles.activeDot,
+                                { backgroundColor: theme.primary },
+                              ]}
+                            />
+                          )}
+                        </Pressable>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              )}
+            </>
+          : <View
+              style={[styles.unavailableBox, { borderColor: theme.border }]}
+            >
+              <Text style={{ color: theme.textMuted }}>No sources found</Text>
+            </View>
+          }
+        </Animated.View>
+
+        {/* --- SYNOPSIS --- */}
+        <Animated.View
+          entering={FadeIn.delay(300)}
+          style={styles.sectionContainer}
+        >
+          <Text style={[styles.sectionHeader, { color: theme.textPrimary }]}>
+            Synopsis
+          </Text>
+          <Text style={[styles.bodyText, { color: theme.textSecondary }]}>
+            {movie.tmdb.overview}
+          </Text>
+        </Animated.View>
+
+        {/* --- CAST --- */}
+        {movie.tmdb.cast?.length > 0 && (
+          <Animated.View
+            entering={FadeIn.delay(400)}
+            style={styles.sectionContainer}
+          >
+            <View style={styles.sectionTitleRow}>
+              <Text
+                style={[styles.sectionHeader, { color: theme.textPrimary }]}
+              >
+                Top Cast
+              </Text>
+            </View>
+
+            <FlashList
+              horizontal
+              data={movie.tmdb.cast.slice(0, 15)}
               showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 20 }}
+              renderItem={({ item }) => (
+                <View style={styles.castCard}>
+                  <View
+                    style={[
+                      styles.castImgFrame,
+                      { backgroundColor: theme.surfaceSecondary },
+                    ]}
+                  >
+                    {item.profilePath ?
+                      <Image
+                        source={{ uri: item.profilePath }}
+                        style={styles.castImg}
+                      />
+                    : <User size={24} color={theme.textMuted} />}
+                  </View>
+                  <Text
+                    style={[styles.castName, { color: theme.textPrimary }]}
+                    numberOfLines={1}
+                  >
+                    {item.name}
+                  </Text>
+                </View>
+              )}
             />
-          </>
+          </Animated.View>
         )}
 
-        {/* TRAILERS */}
+        {/* --- TRAILERS --- */}
         {movie.tmdb.videos?.length > 0 && (
-          <>
-            <Text style={styles.sectionTitle}>
-              <Youtube size={20} color='red' /> Videos & Trailers
+          <Animated.View
+            entering={FadeIn.delay(500)}
+            style={[styles.sectionContainer, { paddingBottom: 50 }]}
+          >
+            <Text
+              style={[
+                styles.sectionHeader,
+                { color: theme.textPrimary, marginBottom: 12 },
+              ]}
+            >
+              Videos
             </Text>
             {movie.tmdb.videos
               .filter((v) => v.site === "YouTube")
+              .slice(0, 3)
               .map((v) => (
                 <Pressable
                   key={v.id}
-                  style={styles.trailerItem}
-                  // onPress={() => setSelectedTrailer(v.key)}
+                  style={[
+                    styles.trailerRow,
+                    { backgroundColor: theme.surfaceSecondary },
+                  ]}
                 >
-                  <Text style={styles.trailerText}>{v.name}</Text>
+                  <View style={styles.trailerThumbnail}>
+                    <Image
+                      source={{
+                        uri: `https://img.youtube.com/vi/${v.key}/mqdefault.jpg`,
+                      }}
+                      style={styles.trailerImg}
+                    />
+                    <View style={styles.playOverlay}>
+                      <Play size={16} fill='white' color='white' />
+                    </View>
+                  </View>
+                  <View style={styles.trailerInfo}>
+                    <Text
+                      style={[
+                        styles.trailerTitle,
+                        { color: theme.textPrimary },
+                      ]}
+                      numberOfLines={2}
+                    >
+                      {v.name}
+                    </Text>
+                    <Text
+                      style={[styles.trailerType, { color: theme.textMuted }]}
+                    >
+                      {v.type}
+                    </Text>
+                  </View>
                 </Pressable>
               ))}
-          </>
+          </Animated.View>
         )}
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-/* ---------- HELPERS ---------- */
-
-function MetaItem({ icon, text }: { icon: React.ReactNode; text: string }) {
-  return (
-    <View style={styles.metaItem}>
-      {icon}
-      <Text style={styles.metaText}>{text}</Text>
+      </Animated.ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000" },
+  container: { flex: 1 },
+  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
+  errorText: { fontSize: 16, fontWeight: "500" },
 
+  // Header
+  stickyHeader: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    alignItems: "center",
+    justifyContent: "flex-end",
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.05)",
+  },
+  stickyTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    width: "60%",
+    textAlign: "center",
+  },
+  floatingHeader: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 101, // Above sticky header
+    paddingHorizontal: 20,
+    paddingTop: 10,
+  },
+  backBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    backdropFilter: "blur(10px)",
+  },
+
+  content: { paddingBottom: 50 },
+
+  // Backdrop
+  backdropContainer: {
+    height: height * 0.55, // Taller backdrop
+    width: "100%",
+  },
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%",
     resizeMode: "cover",
   },
-
-  backdropOverlay: {
+  backdropGradient: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.75)",
   },
 
-  backBtn: {
+  // Hero
+  heroWrapper: {
+    paddingHorizontal: 20,
+    marginTop: -160, // Heavy overlap
+  },
+  heroContent: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 20,
+  },
+  posterContainer: {
+    width: POSTER_WIDTH,
+    height: POSTER_HEIGHT,
+    position: "relative",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  poster: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 12,
+    borderWidth: 1,
+    resizeMode: "cover",
+  },
+  posterShadow: {
+    position: "absolute",
+    top: 10,
+    left: 0,
+    right: 0,
+    bottom: -10,
+    borderRadius: 12,
+    opacity: 0.6,
+  },
+  ratingBadge: {
+    position: "absolute",
+    top: 8,
+    right: 8,
     flexDirection: "row",
     alignItems: "center",
-    padding: 16,
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  ratingBlur: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.9,
+  },
+  ratingText: {
+    fontSize: 12,
+    fontWeight: "800",
   },
 
-  backText: { color: "white", marginLeft: 6 },
-
-  content: {
-    padding: 16,
-    paddingBottom: 40,
+  // Info Column (Right of poster)
+  infoColumn: {
+    flex: 1,
+    paddingBottom: 4, // Align with bottom of poster
+    gap: 12,
   },
-
-  poster: {
-    width: 180,
-    height: 270,
-    alignSelf: "center",
-    borderRadius: 12,
-    marginBottom: 16,
-  },
-
   title: {
     fontSize: 26,
-    fontWeight: "bold",
-    color: "white",
-    textAlign: "center",
+    fontWeight: "800",
+    lineHeight: 30,
+    letterSpacing: -0.5,
+    textShadowColor: "rgba(0,0,0,0.8)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
-
   metaRow: {
     flexDirection: "row",
-    justifyContent: "center",
-    gap: 12,
-    marginVertical: 12,
-  },
-
-  metaItem: {
-    flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-  },
-
-  metaText: { color: "#d1d5db", fontSize: 12 },
-
-  sectionTitle: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "600",
-    marginTop: 20,
-    marginBottom: 6,
-  },
-
-  overview: { color: "#d1d5db", lineHeight: 20 },
-
-  playBtn: {
-    flexDirection: "row",
-    backgroundColor: "#f59e0b",
-    padding: 14,
-    borderRadius: 30,
-    justifyContent: "center",
-    alignItems: "center",
+    flexWrap: "wrap",
     gap: 8,
-    marginTop: 16,
   },
-
-  playText: { color: "white", fontWeight: "700" },
-
-  sourceBtn: {
-    marginTop: 10,
-    padding: 12,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#444",
+  metaText: {
+    fontSize: 13,
+    fontWeight: "600",
+    opacity: 0.8,
+  },
+  dotSeparator: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    opacity: 0.6,
+  },
+  miniActions: {
     flexDirection: "row",
-    justifyContent: "space-between",
-  },
-
-  sourceText: { color: "white" },
-
-  sourceItem: {
-    padding: 12,
-    backgroundColor: "#111",
-    borderBottomWidth: 1,
-    borderBottomColor: "#222",
-  },
-
-  sourceItemText: { color: "white" },
-
-  castItem: {
-    width: 90,
-    alignItems: "center",
-    marginRight: 12,
-  },
-
-  castImage: {
-    width: 70,
-    height: 100,
-    borderRadius: 8,
-  },
-
-  castName: {
-    color: "#e5e7eb",
-    fontSize: 10,
-    textAlign: "center",
+    gap: 12,
     marginTop: 4,
   },
-
-  trailerItem: {
-    padding: 12,
-    backgroundColor: "#111",
-    borderRadius: 8,
-    marginTop: 8,
-  },
-
-  trailerText: { color: "white" },
-
-  centered: {
-    flex: 1,
+  circleBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#000",
   },
 
-  muted: { color: "#9ca3af", marginTop: 8 },
+  // Actions
+  actionSection: {
+    paddingHorizontal: 20,
+    marginTop: 24,
+    gap: 12,
+  },
+  playButton: {
+    width: "100%",
+    height: 56,
+    borderRadius: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    overflow: "hidden",
+  },
+  playGradient: { ...StyleSheet.absoluteFillObject },
+  playText: {
+    color: "#000",
+    fontSize: 16,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  unavailableBox: {
+    padding: 20,
+    alignItems: "center",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderStyle: "dashed",
+  },
 
-  error: { color: "#ef4444", marginTop: 8 },
-
-  modalClose: {
+  // Source Selector
+  sourceWrapper: {
+    zIndex: 10,
+  },
+  sourceSelector: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    position: "relative",
+  },
+  sourceLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.5 },
+  sourceValue: { fontSize: 14, fontWeight: "600", marginTop: 2 },
+  dropdownList: {
+    position: "absolute",
+    top: "105%",
+    left: 0,
+    right: 0,
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: "hidden",
+    zIndex: 50,
+    backgroundColor: "black",
+  },
+  dropdownItem: {
     padding: 16,
-    backgroundColor: "#000",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottomWidth: 1,
+  },
+  activeDot: { width: 6, height: 6, borderRadius: 3 },
+
+  // Generic Sections
+  sectionContainer: {
+    marginTop: 32,
+    paddingHorizontal: 20,
+  },
+  sectionTitleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  sectionHeader: {
+    fontSize: 18,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+  },
+  bodyText: {
+    fontSize: 15,
+    lineHeight: 24,
+    opacity: 0.8,
   },
 
-  modalCloseText: { color: "white", fontWeight: "600" },
+  // Cast
+  castCard: {
+    width: 100, // Wider for 2:3 ratio
+    marginRight: 12,
+  },
+  castImgFrame: {
+    width: 100,
+    height: 150, // 2:3 Aspect Ratio
+    borderRadius: 8,
+    overflow: "hidden",
+    marginBottom: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  castImg: { width: "100%", height: "100%", resizeMode: "cover" },
+  castName: { fontSize: 12, fontWeight: "600", marginBottom: 2 },
+  castRole: { fontSize: 11, opacity: 0.6 },
+
+  // Trailers
+  trailerRow: {
+    flexDirection: "row",
+    marginBottom: 12,
+    borderRadius: 12,
+    overflow: "hidden",
+    height: 80,
+  },
+  trailerThumbnail: {
+    width: 120,
+    height: "100%",
+    position: "relative",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  trailerImg: { width: "100%", height: "100%", resizeMode: "cover" },
+  playOverlay: {
+    position: "absolute",
+    backgroundColor: "rgba(0,0,0,0.6)",
+    padding: 8,
+    borderRadius: 20,
+  },
+  trailerInfo: {
+    flex: 1,
+    padding: 12,
+    justifyContent: "center",
+    gap: 4,
+  },
+  trailerTitle: { fontSize: 13, fontWeight: "600", lineHeight: 18 },
+  trailerType: {
+    fontSize: 11,
+    fontWeight: "700",
+    opacity: 0.5,
+    textTransform: "uppercase",
+  },
 });

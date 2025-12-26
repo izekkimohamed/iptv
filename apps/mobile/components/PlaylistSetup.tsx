@@ -1,16 +1,22 @@
 import { trpc } from "@/lib/trpc";
 import { usePlaylistStore } from "@/store/appStore";
+import { usePlayerTheme } from "@/theme/playerTheme";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+  AlertCircle,
+  CheckCircle2,
+  ChevronRight,
+  Database,
+  Film,
+  Loader2,
+  Tv,
+} from "lucide-react-native";
+import React, { useEffect, useState } from "react";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import Animated, { FadeInUp, Layout, ZoomIn } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+// --- Types & Constants ---
 enum CreationStage {
   CHANNELS_CATEGORIES = "channels_categories",
   CHANNELS = "channels",
@@ -28,9 +34,25 @@ interface CreationState {
   error?: string;
 }
 
+// --- Icons Helper ---
+const getStageIcon = (stage: CreationStage, color: string) => {
+  switch (true) {
+    case stage.includes("CHANNELS"):
+      return <Tv size={18} color={color} />;
+    case stage.includes("MOVIES"):
+      return <Film size={18} color={color} />;
+    case stage.includes("SERIES"):
+      return <Tv size={18} color={color} />; // Clapperboard isn't in standard Lucide sometimes, Tv acts as fallback
+    default:
+      return <Database size={18} color={color} />;
+  }
+};
+
 export default function PlaylistSetupScreen() {
   const router = useRouter();
+  const theme = usePlayerTheme();
   const { finishPlaylistCreation, selectedPlaylist } = usePlaylistStore();
+
   const [creationStates, setCreationStates] = useState<
     Record<CreationStage, CreationState>
   >({
@@ -76,6 +98,7 @@ export default function PlaylistSetupScreen() {
   );
   const [totalProgress, setTotalProgress] = useState(0);
 
+  // --- Logic Helpers ---
   const updateStageState = (
     stage: CreationStage,
     updates: Partial<CreationState>
@@ -106,75 +129,65 @@ export default function PlaylistSetupScreen() {
     });
   };
 
-  // Mutations
+  // --- Mutations (Identical Logic to Original) ---
   const { mutate: createChannelsCategories } =
     trpc.channels.createChannelsCategories.useMutation({
       onSuccess: () => {
         completeStage(CreationStage.CHANNELS_CATEGORIES);
         startStage(CreationStage.CHANNELS);
       },
-      onError: (error) => {
+      onError: (e) =>
         updateStageState(CreationStage.CHANNELS_CATEGORIES, {
           isLoading: false,
-          error: error.message,
-        });
-      },
+          error: e.message,
+        }),
     });
-
   const { mutate: createChannels } = trpc.channels.createChannels.useMutation({
     onSuccess: () => {
       completeStage(CreationStage.CHANNELS);
       startStage(CreationStage.MOVIES_CATEGORIES);
     },
-    onError: (error) => {
+    onError: (e) =>
       updateStageState(CreationStage.CHANNELS, {
         isLoading: false,
-        error: error.message,
-      });
-    },
+        error: e.message,
+      }),
   });
-
   const { mutate: createMoviesCategories } =
     trpc.movies.createMoviesCategories.useMutation({
       onSuccess: () => {
         completeStage(CreationStage.MOVIES_CATEGORIES);
         startStage(CreationStage.MOVIES);
       },
-      onError: (error) => {
+      onError: (e) =>
         updateStageState(CreationStage.MOVIES_CATEGORIES, {
           isLoading: false,
-          error: error.message,
-        });
-      },
+          error: e.message,
+        }),
     });
-
   const { mutate: createMovies } = trpc.movies.createMovie.useMutation({
     onSuccess: () => {
       completeStage(CreationStage.MOVIES);
       startStage(CreationStage.SERIES_CATEGORIES);
     },
-    onError: (error) => {
+    onError: (e) =>
       updateStageState(CreationStage.MOVIES, {
         isLoading: false,
-        error: error.message,
-      });
-    },
+        error: e.message,
+      }),
   });
-
   const { mutate: createSeriesCategories } =
     trpc.series.createSeriesCategories.useMutation({
       onSuccess: () => {
         completeStage(CreationStage.SERIES_CATEGORIES);
         startStage(CreationStage.SERIES);
       },
-      onError: (error) => {
+      onError: (e) =>
         updateStageState(CreationStage.SERIES_CATEGORIES, {
           isLoading: false,
-          error: error.message,
-        });
-      },
+          error: e.message,
+        }),
     });
-
   const { mutate: createSeries } = trpc.series.createSerie.useMutation({
     onSuccess: () => {
       completeStage(CreationStage.SERIES);
@@ -182,49 +195,41 @@ export default function PlaylistSetupScreen() {
       updateStageState(CreationStage.COMPLETED, { isCompleted: true });
       setTotalProgress(100);
     },
-    onError: (error) => {
+    onError: (e) =>
       updateStageState(CreationStage.SERIES, {
         isLoading: false,
-        error: error.message,
-      });
-    },
+        error: e.message,
+      }),
   });
 
+  // --- Effects ---
   useEffect(() => {
     if (!selectedPlaylist) return;
-
     const { baseUrl: url, username, password, id } = selectedPlaylist;
+
+    const payload = { url, username, password, playlistId: id };
 
     switch (currentStage) {
       case CreationStage.CHANNELS_CATEGORIES:
-        createChannelsCategories({ url, username, password, playlistId: id });
+        createChannelsCategories(payload);
         break;
       case CreationStage.CHANNELS:
-        createChannels({ url, username, password, playlistId: id });
+        createChannels(payload);
         break;
       case CreationStage.MOVIES_CATEGORIES:
-        createMoviesCategories({ url, username, password, playlistId: id });
+        createMoviesCategories(payload);
         break;
       case CreationStage.MOVIES:
-        createMovies({ url, username, password, playlistId: id });
+        createMovies(payload);
         break;
       case CreationStage.SERIES_CATEGORIES:
-        createSeriesCategories({ url, username, password, playlistId: id });
+        createSeriesCategories(payload);
         break;
       case CreationStage.SERIES:
-        createSeries({ url, username, password, playlistId: id });
+        createSeries(payload);
         break;
     }
-  }, [
-    createChannels,
-    createChannelsCategories,
-    createMovies,
-    createMoviesCategories,
-    createSeries,
-    createSeriesCategories,
-    currentStage,
-    selectedPlaylist,
-  ]);
+  }, [currentStage, selectedPlaylist]);
 
   useEffect(() => {
     if (
@@ -235,294 +240,219 @@ export default function PlaylistSetupScreen() {
         finishPlaylistCreation();
         router.replace("/(tabs)/channels");
       }, 2500);
-
       return () => clearTimeout(timeout);
     }
-  }, [currentStage, creationStates, finishPlaylistCreation, router]);
+  }, [currentStage, creationStates]);
 
-  const getStageTitle = (stage: CreationStage): string => {
-    switch (stage) {
-      case CreationStage.CHANNELS_CATEGORIES:
-        return "Channel Categories";
-      case CreationStage.CHANNELS:
-        return "Channels";
-      case CreationStage.MOVIES_CATEGORIES:
-        return "Movie Categories";
-      case CreationStage.MOVIES:
-        return "Movies";
-      case CreationStage.SERIES_CATEGORIES:
-        return "Series Categories";
-      case CreationStage.SERIES:
-        return "Series";
-      default:
-        return "";
-    }
-  };
-
-  const getStageIcon = (state: CreationState) => {
-    if (state.error) return "❌";
-    if (state.isCompleted) return "✅";
-    if (state.isLoading) return "⏳";
-    return "⚪";
+  // --- Render Helpers ---
+  const getStageTitle = (stage: CreationStage) => {
+    return stage.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
   return (
-    <SafeAreaView style={styles.setupContainer} edges={["top"]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.bg }]}
+      edges={["top"]}
+    >
       <ScrollView
-        style={styles.setupContent}
-        contentContainerStyle={styles.setupContentInner}
+        contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View style={styles.setupHeader}>
-          <Text style={styles.setupTitle}>Creating Your Playlist</Text>
-          <Text style={styles.setupSubtitle}>
-            Setting up your content library
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>
+            Setting Up Library
+          </Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+            Syncing content from your provider
           </Text>
         </View>
 
-        {/* Overall Progress */}
+        {/* Progress Circle/Bar */}
         <View style={styles.progressSection}>
-          <View style={styles.progressHeader}>
-            <Text style={styles.progressLabel}>Overall Progress</Text>
-            <Text style={styles.progressPercent}>
+          <View style={styles.progressLabels}>
+            <Text style={[styles.progressText, { color: theme.textSecondary }]}>
+              Overall Progress
+            </Text>
+            <Text style={[styles.progressValue, { color: theme.primary }]}>
               {Math.round(totalProgress)}%
             </Text>
           </View>
-          <View style={styles.progressBarContainer}>
-            <View
-              style={[styles.progressBar, { width: `${totalProgress}%` }]}
+          <View style={[styles.track, { backgroundColor: theme.trackBg }]}>
+            <Animated.View
+              layout={Layout.springify()}
+              style={[
+                styles.fill,
+                { width: `${totalProgress}%`, backgroundColor: theme.primary },
+              ]}
             />
           </View>
         </View>
 
-        {/* Stage List */}
-        <View style={styles.stagesList}>
+        {/* Stages List */}
+        <View style={styles.stagesContainer}>
           {Object.values(CreationStage)
             .filter((stage) => stage !== CreationStage.COMPLETED)
-            .map((stage) => {
+            .map((stage, index) => {
               const state = creationStates[stage];
               const isActive = currentStage === stage;
+              const isDone = state.isCompleted;
 
               return (
-                <View
+                <Animated.View
                   key={stage}
+                  layout={Layout.springify()}
+                  entering={FadeInUp.delay(index * 50)}
                   style={[
-                    styles.stageItem,
-                    isActive && styles.stageItemActive,
-                    state.isCompleted && styles.stageItemCompleted,
-                    state.error && styles.stageItemError,
+                    styles.stageCard,
+                    {
+                      backgroundColor:
+                        isActive ?
+                          `${theme.primary}10`
+                        : theme.surfaceSecondary,
+                      borderColor: isActive ? theme.primary : theme.border,
+                      opacity: isDone || isActive ? 1 : 0.5,
+                    },
                   ]}
                 >
-                  <Text style={styles.stageIcon}>{getStageIcon(state)}</Text>
-                  <View style={styles.stageContent}>
+                  <View style={styles.iconBox}>
+                    {state.error ?
+                      <AlertCircle size={20} color={theme.accentError} />
+                    : isDone ?
+                      <CheckCircle2 size={20} color={theme.accentSuccess} />
+                    : isActive ?
+                      <Loader2
+                        size={20}
+                        color={theme.primary}
+                        style={styles.spin}
+                      />
+                    : getStageIcon(stage, theme.textMuted)}
+                  </View>
+
+                  <View style={styles.stageInfo}>
                     <Text
                       style={[
-                        styles.stageTitle,
-                        isActive && styles.stageTitleActive,
+                        styles.stageName,
+                        { color: isActive ? theme.primary : theme.textPrimary },
                       ]}
                     >
                       {getStageTitle(stage)}
                     </Text>
-                    {state.error && (
-                      <Text style={styles.stageError}>{state.error}</Text>
-                    )}
+                    {state.error ?
+                      <Text
+                        style={[
+                          styles.stageStatus,
+                          { color: theme.accentError },
+                        ]}
+                      >
+                        {state.error}
+                      </Text>
+                    : <Text
+                        style={[
+                          styles.stageStatus,
+                          { color: theme.textSecondary },
+                        ]}
+                      >
+                        {isDone ?
+                          "Synced"
+                        : isActive ?
+                          "Syncing..."
+                        : "Pending"}
+                      </Text>
+                    }
                   </View>
-                  {state.isLoading && (
-                    <ActivityIndicator color='#a78bfa' size='small' />
+
+                  {isDone && (
+                    <ChevronRight size={16} color={theme.accentSuccess} />
                   )}
-                </View>
+                </Animated.View>
               );
             })}
         </View>
 
-        {/* Completion State */}
-        {currentStage === CreationStage.COMPLETED &&
-          creationStates[CreationStage.COMPLETED].isCompleted && (
-            <View style={styles.completionContainer}>
-              <Text style={styles.completionEmoji}>🎉</Text>
-              <Text style={styles.completionTitle}>
-                Playlist Created Successfully!
-              </Text>
-              <Text style={styles.completionSubtitle}>
-                Redirecting to your dashboard...
-              </Text>
-              <View style={styles.readyBadge}>
-                <Text style={styles.readyBadgeText}>Ready to stream! 🚀</Text>
-              </View>
+        {/* Completion Success Overlay */}
+        {currentStage === CreationStage.COMPLETED && (
+          <Animated.View
+            entering={ZoomIn}
+            style={[
+              styles.successBox,
+              {
+                backgroundColor: theme.surfaceSecondary,
+                borderColor: theme.accentSuccess,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.successIcon,
+                { backgroundColor: `${theme.accentSuccess}20` },
+              ]}
+            >
+              <CheckCircle2 size={40} color={theme.accentSuccess} />
             </View>
-          )}
-
-        {/* Warning */}
-        <View style={styles.warningBox}>
-          <Text style={styles.warningEmoji}>⚠️</Text>
-          <Text style={styles.warningText}>
-            This process may take several minutes. Please keep this page open.
-          </Text>
-        </View>
+            <Text style={[styles.successTitle, { color: theme.textPrimary }]}>
+              All Systems Go!
+            </Text>
+            <Text style={[styles.successSub, { color: theme.textSecondary }]}>
+              Redirecting to dashboard...
+            </Text>
+          </Animated.View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#0a0a0a",
-  },
-  setupContainer: {
-    flex: 1,
-    backgroundColor: "#0a0a0a",
-  },
-  setupContent: {
-    flex: 1,
-  },
-  setupContentInner: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-  },
-  setupHeader: {
-    alignItems: "center",
-    marginBottom: 32,
-    gap: 8,
-  },
-  setupTitle: {
-    color: "white",
-    fontSize: 28,
-    fontWeight: "800",
-  },
-  setupSubtitle: {
-    color: "#9CA3AF",
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  progressSection: {
-    marginBottom: 32,
-  },
-  progressHeader: {
+  container: { flex: 1 },
+  content: { padding: 24, paddingBottom: 50 },
+
+  header: { alignItems: "center", marginBottom: 32 },
+  title: { fontSize: 24, fontWeight: "800", marginBottom: 8 },
+  subtitle: { fontSize: 14 },
+
+  progressSection: { marginBottom: 32 },
+  progressLabels: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
     marginBottom: 8,
   },
-  progressLabel: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  progressPercent: {
-    color: "#a78bfa",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  progressBarContainer: {
-    height: 8,
-    backgroundColor: "#222",
-    borderRadius: 4,
-    overflow: "hidden",
-  },
-  progressBar: {
-    height: "100%",
-    backgroundColor: "#a78bfa",
-    borderRadius: 4,
-  },
-  stagesList: {
-    gap: 12,
-    marginBottom: 24,
-  },
-  stageItem: {
+  progressText: { fontSize: 13, fontWeight: "600" },
+  progressValue: { fontSize: 14, fontWeight: "800" },
+  track: { height: 8, borderRadius: 4, overflow: "hidden" },
+  fill: { height: "100%", borderRadius: 4 },
+
+  stagesContainer: { gap: 12 },
+  stageCard: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    backgroundColor: "#111",
+    padding: 16,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#222",
+    gap: 16,
+  },
+  iconBox: { width: 24, alignItems: "center" },
+  stageInfo: { flex: 1 },
+  stageName: { fontSize: 15, fontWeight: "700", marginBottom: 2 },
+  stageStatus: { fontSize: 12 },
+  spin: { transform: [{ rotate: "45deg" }] }, // Placeholder, Reanimated rotation recommended
+
+  successBox: {
+    marginTop: 24,
+    padding: 24,
+    borderRadius: 24,
+    borderWidth: 1,
+    alignItems: "center",
     gap: 12,
   },
-  stageItemActive: {
-    backgroundColor: "rgba(167, 139, 250, 0.1)",
-    borderColor: "rgba(167, 139, 250, 0.5)",
-  },
-  stageItemCompleted: {
-    backgroundColor: "rgba(16, 185, 129, 0.1)",
-    borderColor: "rgba(16, 185, 129, 0.5)",
-  },
-  stageItemError: {
-    backgroundColor: "rgba(239, 68, 68, 0.1)",
-    borderColor: "rgba(239, 68, 68, 0.5)",
-  },
-  stageIcon: {
-    fontSize: 18,
-  },
-  stageContent: {
-    flex: 1,
-  },
-  stageTitle: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  stageTitleActive: {
-    color: "#a78bfa",
-  },
-  stageError: {
-    color: "#fca5a5",
-    fontSize: 12,
-    fontWeight: "500",
-    marginTop: 4,
-  },
-  completionContainer: {
+  successIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 32,
-    gap: 12,
+    marginBottom: 4,
   },
-  completionEmoji: {
-    fontSize: 48,
-  },
-  completionTitle: {
-    color: "#10b981",
-    fontSize: 20,
-    fontWeight: "700",
-  },
-  completionSubtitle: {
-    color: "#9CA3AF",
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  readyBadge: {
-    backgroundColor: "rgba(16, 185, 129, 0.1)",
-    borderWidth: 1,
-    borderColor: "rgba(16, 185, 129, 0.5)",
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginTop: 12,
-  },
-  readyBadgeText: {
-    color: "#10b981",
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  warningBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(234, 179, 8, 0.1)",
-    borderWidth: 1,
-    borderColor: "rgba(234, 179, 8, 0.3)",
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 10,
-  },
-  warningEmoji: {
-    fontSize: 16,
-  },
-  warningText: {
-    color: "#fde047",
-    fontSize: 13,
-    fontWeight: "500",
-    flex: 1,
-  },
+  successTitle: { fontSize: 20, fontWeight: "800" },
+  successSub: { fontSize: 14 },
 });

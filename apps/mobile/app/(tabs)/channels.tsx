@@ -1,43 +1,76 @@
 import { ChannelRow } from "@/components/ChannelRow";
 import { trpc } from "@/lib/trpc";
 import { usePlaylistStore } from "@/store/appStore";
-import { useRouter } from "expo-router";
+import { usePlayerTheme } from "@/theme/playerTheme";
+import { FlashList } from "@shopify/flash-list";
 import { Search, Tv, X } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  FlatList,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+// --- Skeleton Component for Loading State ---
+const ChannelSkeleton = () => {
+  const theme = usePlayerTheme();
+
+  return (
+    <View style={[styles.skeletonRow, { borderBottomColor: theme.border }]}>
+      <View
+        style={[
+          styles.skeletonLogo,
+          { backgroundColor: theme.surfaceSecondary },
+        ]}
+      />
+      <View style={{ flex: 1, gap: 10 }}>
+        <View
+          style={[
+            styles.skeletonText,
+            { width: "60%", backgroundColor: theme.surfaceSecondary },
+          ]}
+        />
+        <View
+          style={[
+            styles.skeletonText,
+            {
+              width: "40%",
+              height: 10,
+              backgroundColor: theme.surfaceSecondary,
+            },
+          ]}
+        />
+      </View>
+    </View>
+  );
+};
+
 export default function ChannelsScreen() {
-  const router = useRouter();
+  const theme = usePlayerTheme();
   const selectPlaylist = usePlaylistStore((state) => state.selectedPlaylist);
 
   const [selectedCatId, setSelectedCatId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // 1. Fetch Channel Categories
+  // 1. Fetch Categories
   const { data: categories, isLoading: loadingCats } =
     trpc.channels.getCategories.useQuery({
       playlistId: selectPlaylist?.id ?? 0,
     });
 
-  // 2. Fetch Channels for selected category
+  // 2. Fetch Channels
   const { data: channels, isLoading: loadingChannels } =
     trpc.channels.getChannels.useQuery(
       {
         playlistId: selectPlaylist?.id ?? 0,
         categoryId: selectedCatId ?? 0,
       },
-      {
-        enabled: !!selectedCatId,
-      }
+      { enabled: !!selectedCatId }
     );
 
   useEffect(() => {
@@ -46,7 +79,6 @@ export default function ChannelsScreen() {
     }
   }, [categories, selectedCatId]);
 
-  // Filter categories based on search query
   const filteredCategories = useMemo(() => {
     if (!categories) return [];
     return categories.filter((cat) =>
@@ -54,102 +86,138 @@ export default function ChannelsScreen() {
     );
   }, [categories, searchQuery]);
 
-  useEffect(() => {
-    if (categories?.length && !selectedCatId) {
-      setSelectedCatId(categories[0].categoryId);
-    }
-  }, [categories, selectedCatId]);
-
   const renderChannelItem = ({ item, index }: { item: any; index: number }) => (
-    <ChannelRow
-      channel={item}
-      playlist={{
-        url: selectPlaylist?.baseUrl ?? "",
-        username: selectPlaylist?.username ?? "",
-        password: selectPlaylist?.password ?? "",
-      }}
-    />
+    <Animated.View entering={FadeInDown.delay((index % 15) * 30)}>
+      <ChannelRow
+        channel={item}
+        playlist={{
+          url: selectPlaylist?.baseUrl ?? "",
+          username: selectPlaylist?.username ?? "",
+          password: selectPlaylist?.password ?? "",
+        }}
+      />
+    </Animated.View>
   );
 
-  if (loadingCats) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size='large' color='#2563eb' style={styles.center} />
-      </View>
-    );
-  }
-
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
-      <View style={styles.mainList}>
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <Search size={14} color='#6b7280' />
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.bg }]}
+      edges={["top"]}
+    >
+      {/* --- Search Header --- */}
+      <View
+        style={[styles.headerContainer, { borderBottomColor: theme.border }]}
+      >
+        <View
+          style={[
+            styles.searchBar,
+            {
+              backgroundColor: theme.surfaceSecondary,
+              borderColor: theme.border,
+            },
+          ]}
+        >
+          <Search size={18} color={theme.textMuted} />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: theme.textPrimary }]}
             placeholder='Search categories...'
-            placeholderTextColor='#6b7280'
+            placeholderTextColor={theme.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
           {searchQuery.length > 0 && (
-            <Pressable onPress={() => setSearchQuery("")}>
-              <X size={14} color='#6b7280' />
+            <Pressable onPress={() => setSearchQuery("")} hitSlop={10}>
+              <View
+                style={[styles.clearBtn, { backgroundColor: theme.border }]}
+              >
+                <X size={12} color={theme.textSecondary} />
+              </View>
             </Pressable>
           )}
         </View>
+      </View>
 
-        {/* Categories Horizontal Scroll */}
-        <View style={styles.categoriesContainer}>
-          <FlatList
+      {/* --- Categories (Pills) --- */}
+      <View style={styles.categoriesWrapper}>
+        {loadingCats ?
+          <ActivityIndicator
+            size='small'
+            color={theme.primary}
+            style={{ margin: 20 }}
+          />
+        : <FlashList
             horizontal
             data={filteredCategories}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => (
-              <Pressable
-                style={[
-                  styles.catChip,
-                  selectedCatId === item.categoryId && styles.catChipActive,
-                ]}
-                onPress={() => setSelectedCatId(item.categoryId)}
-              >
-                <Text
-                  style={[
-                    styles.catChipText,
-                    selectedCatId === item.categoryId &&
-                      styles.catChipTextActive,
-                  ]}
-                  numberOfLines={1}
-                >
-                  {item.categoryName}
-                </Text>
-              </Pressable>
-            )}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.categoriesContent}
-            ListEmptyComponent={
-              <Text style={styles.noCategoriesText}>No categories found</Text>
-            }
+            keyExtractor={(item) => item.categoryId.toString()}
+            renderItem={({ item }) => {
+              const isActive = selectedCatId === item.categoryId;
+              return (
+                <Pressable
+                  style={[
+                    styles.categoryPill,
+                    {
+                      backgroundColor:
+                        isActive ? theme.primary : theme.surfaceSecondary,
+                      borderColor: isActive ? theme.primary : theme.border,
+                    },
+                  ]}
+                  onPress={() => setSelectedCatId(item.categoryId)}
+                >
+                  <Text
+                    style={[
+                      styles.categoryText,
+                      {
+                        color: isActive ? "#000" : theme.textSecondary,
+                        fontWeight: isActive ? "700" : "500",
+                      },
+                    ]}
+                  >
+                    {item.categoryName}
+                  </Text>
+                </Pressable>
+              );
+            }}
           />
-        </View>
+        }
+      </View>
 
-        {/* Channels List */}
+      {/* --- Channel List --- */}
+      <View style={styles.listContainer}>
         {loadingChannels ?
-          <View style={styles.center}>
-            <ActivityIndicator size='large' color='#2563eb' />
+          // Render Skeletons while loading
+          <View style={{ padding: 16 }}>
+            {[...Array(8)].map((_, i) => (
+              <ChannelSkeleton key={i} />
+            ))}
           </View>
         : channels && channels.length > 0 ?
-          <FlatList
+          <FlashList
             data={channels}
             renderItem={renderChannelItem}
-            keyExtractor={(item) => item.id.toString()}
+            keyExtractor={(item) => item.streamId.toString()}
+            contentContainerStyle={{
+              paddingBottom: 40,
+              paddingHorizontal: 10,
+            }}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContent}
-            scrollIndicatorInsets={{ right: 1 }}
           />
         : <View style={styles.emptyState}>
-            <Tv size={48} color='#4b5563' />
-            <Text style={styles.emptyText}>No channels available</Text>
+            <View
+              style={[
+                styles.emptyIconCircle,
+                { backgroundColor: `${theme.primary}15` },
+              ]}
+            >
+              <Tv size={48} color={theme.primary} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>
+              No channels found
+            </Text>
+            <Text style={[styles.emptySub, { color: theme.textMuted }]}>
+              Try a different category
+            </Text>
           </View>
         }
       </View>
@@ -158,182 +226,96 @@ export default function ChannelsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0a0a0a" },
-  mainList: { flex: 1 },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#111",
+  container: {
+    flex: 1,
   },
-  headerTitle: {
-    color: "white",
-    fontSize: 32,
-    fontWeight: "800",
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    color: "#9CA3AF",
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  categoriesContainer: {
-    backgroundColor: "#111",
-    borderBottomWidth: 1,
-    borderBottomColor: "#1a1a1a",
-  },
-  categoriesContent: {
+
+  // Header
+  headerContainer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    gap: 8,
+    borderBottomWidth: 1,
   },
-  catChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: "#1a1a1a",
-    borderWidth: 1,
-    borderColor: "#333",
-  },
-  catChipActive: {
-    backgroundColor: "#2563eb",
-    borderColor: "#2563eb",
-  },
-  catChipText: {
-    color: "#9CA3AF",
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  catChipTextActive: {
-    color: "#fff",
-  },
-  searchContainer: {
+  searchBar: {
     flexDirection: "row",
     alignItems: "center",
-    marginHorizontal: 16,
-    marginVertical: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    backgroundColor: "#111",
+    height: 44,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#222",
+    paddingHorizontal: 12,
     gap: 10,
+    borderWidth: 1,
   },
   searchInput: {
     flex: 1,
-    color: "white",
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  noCategoriesText: {
-    color: "#6b7280",
-    fontSize: 13,
-    fontWeight: "500",
-  },
-  listContent: { paddingBottom: 20 },
-  channelRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: "#111",
-  },
-  channelRowPressed: {
-    backgroundColor: "rgba(37, 99, 235, 0.1)",
-  },
-  channelNumber: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: "#1a1a1a",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  numberText: {
-    color: "#60a5fa",
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  logoContainer: {
-    width: 56,
-    height: 56,
-    backgroundColor: "#111",
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "#222",
-  },
-  channelLogo: { width: "85%", height: "85%" },
-  channelInfo: { flex: 1, marginLeft: 14, justifyContent: "center" },
-  channelName: {
-    color: "white",
     fontSize: 15,
-    fontWeight: "700",
-    marginBottom: 6,
-  },
-  epgContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 6,
-  },
-  epgText: {
-    color: "#60a5fa",
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  progressTrack: {
-    height: 4,
-    backgroundColor: "#222",
-    borderRadius: 2,
-    width: "90%",
-    overflow: "hidden",
-  },
-  progressFill: {
     height: "100%",
-    backgroundColor: "#2563eb",
-    borderRadius: 2,
   },
-  liveIndicator: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginRight: 8,
-  },
-  liveDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#ef4444",
-  },
-  liveText: {
-    color: "#ef4444",
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 0.5,
-  },
-  center: {
-    flex: 1,
+  clearBtn: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
   },
+
+  // Categories
+  categoriesWrapper: {
+    height: 56,
+  },
+  categoriesContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  categoryPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 8,
+    borderWidth: 1,
+    justifyContent: "center",
+  },
+  categoryText: {
+    fontSize: 13,
+  },
+
+  // List
+  listContainer: {
+    flex: 1,
+  },
+
+  // Empty State
   emptyState: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     gap: 12,
+    marginTop: 40,
   },
-  emptyText: {
-    color: "#6b7280",
-    fontSize: 16,
-    fontWeight: "500",
+  emptyIconCircle: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emptyTitle: { fontSize: 18, fontWeight: "700" },
+  emptySub: { fontSize: 14 },
+
+  // Skeleton
+  skeletonRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    gap: 16,
+  },
+  skeletonLogo: {
+    width: 60,
+    height: 40,
+    borderRadius: 8,
+  },
+  skeletonText: {
+    height: 14,
+    borderRadius: 4,
   },
 });
