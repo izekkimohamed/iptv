@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
-import { createJSONStorage, persist, StateStorage } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 interface Playlist {
   id: number;
@@ -26,20 +26,6 @@ interface PlaylistState {
   removePlaylist: (id: number) => void;
   selectPlaylist: (playlist: Playlist | null) => void;
 }
-
-// Custom storage adapter for React Native
-const asyncStorageAdapter: StateStorage = {
-  getItem: async (name: string): Promise<string | null> => {
-    const item = await AsyncStorage.getItem(name);
-    return item;
-  },
-  setItem: async (name: string, value: string): Promise<void> => {
-    await AsyncStorage.setItem(name, value);
-  },
-  removeItem: async (name: string): Promise<void> => {
-    await AsyncStorage.removeItem(name);
-  },
-};
 
 export const usePlaylistStore = create<PlaylistState>()(
   persist(

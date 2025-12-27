@@ -46,7 +46,6 @@ export async function insertMovies(newMovies: (typeof movies.$inferInsert)[]) {
     chunkSize: 3000,
     concurrency: 5,
   });
-  console.log(results);
   return results;
 }
 

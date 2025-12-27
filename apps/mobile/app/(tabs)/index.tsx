@@ -17,7 +17,7 @@ import {
   Tv,
   User,
 } from "lucide-react-native";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -42,7 +42,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const theme = usePlayerTheme();
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const currentDate = new Date();
   const [selectedGameId, setSelectedGameId] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -54,28 +54,24 @@ export default function HomeScreen() {
   } = usePlaylistStore();
 
   // 1. Fetch Home Data (Featured, Movies)
-  const {
-    data: homeData,
-    isLoading,
-    refetch: refetchHome,
-  } = trpc.home.getHome.useQuery(undefined, {
+  const { data: homeData, isLoading } = trpc.home.getHome.useQuery(undefined, {
     enabled: !!selectedPlaylist,
   });
 
   // 2. Fetch Playlists (Initial Setup)
-  const { data: playlists } = trpc.playlists.getPlaylists.useQuery();
+  const { data: playlists, refetch: refreshPlaylists } =
+    trpc.playlists.getPlaylists.useQuery();
 
   // 3. Fetch Favorite Channels
-  const { data: favoriteChannels, refetch: refetchChannels } =
-    trpc.channels.getChannels.useQuery(
-      {
-        favorites: true,
-        playlistId: selectedPlaylist?.id || 0,
-      },
-      {
-        enabled: !!selectedPlaylist,
-      }
-    );
+  const { data: favoriteChannels } = trpc.channels.getChannels.useQuery(
+    {
+      favorites: true,
+      playlistId: selectedPlaylist?.id || 0,
+    },
+    {
+      enabled: !!selectedPlaylist,
+    }
+  );
 
   const apiUrl = `${process.env.EXPO_PUBLIC_API_URL}/live-matches?date=${formatDateForAPI(currentDate)}`;
 
@@ -104,22 +100,41 @@ export default function HomeScreen() {
   );
 
   useEffect(() => {
-    if (storePlaylists.length === 0 && playlists) {
-      playlists.forEach((playlist) => {
+    if (!playlists || playlists.length === 0) return;
+    // Get existing playlist IDs from store
+    const existingPlaylistIds = new Set(storePlaylists.map((p) => p.id));
+
+    // Find playlists that don't exist in the store
+    const newPlaylists = playlists.filter(
+      (playlist) => !existingPlaylistIds.has(playlist.id)
+    );
+
+    // Add new playlists to store
+    if (newPlaylists.length > 0) {
+      newPlaylists.forEach((playlist) => {
         addPlaylist(playlist);
       });
+    }
+
+    // Select the first playlist if none is selected
+    if (!selectedPlaylist && playlists.length > 0) {
       selectPlaylist(playlists[0]);
     }
-  }, [addPlaylist, playlists, selectPlaylist, storePlaylists.length]);
+  }, [
+    addPlaylist,
+    playlists,
+    selectPlaylist,
+    selectedPlaylist,
+    storePlaylists,
+  ]);
 
   // Pull-to-refresh handler
-  const onRefresh = useCallback(async () => {
+  const onRefresh = async () => {
     setRefreshing(true);
     try {
       // Refresh all data sources in parallel
       await Promise.all([
-        refetchHome(),
-        refetchChannels(),
+        refreshPlaylists(),
         mutateGames(), // Revalidate SWR data
       ]);
     } catch (error) {
@@ -127,7 +142,7 @@ export default function HomeScreen() {
     } finally {
       setRefreshing(false);
     }
-  }, [refetchHome, refetchChannels, mutateGames]);
+  };
 
   // --- Render Functions ---
 

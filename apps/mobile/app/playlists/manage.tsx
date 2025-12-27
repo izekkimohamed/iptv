@@ -1,11 +1,12 @@
+import { trpc } from "@/lib/trpc";
 import { usePlaylistStore } from "@/store/appStore";
 import { usePlayerTheme } from "@/theme/playerTheme";
 import { FlashList } from "@shopify/flash-list";
 import { useRouter } from "expo-router";
-import { Plus, Server, Trash2, User } from "lucide-react-native";
+import { Loader, Plus, Server, Trash2, User } from "lucide-react-native";
 import React from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
-import Animated, { FadeInDown, Layout } from "react-native-reanimated";
+import Animated, { FadeIn, FadeInDown, Layout } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function PlaylistsSelectScreen() {
@@ -14,6 +15,14 @@ export default function PlaylistsSelectScreen() {
 
   const { playlists, removePlaylist, selectPlaylist, selectedPlaylist } =
     usePlaylistStore();
+
+  const { mutateAsync: deletePlaylist, isPending } =
+    trpc.playlists.deletePlaylist.useMutation({
+      onSuccess: (data, variables) => {
+        removePlaylist(variables.playlistId);
+        Alert.alert(data.success);
+      },
+    });
 
   const handleSelect = (playlist: any) => {
     selectPlaylist(playlist);
@@ -28,7 +37,11 @@ export default function PlaylistsSelectScreen() {
         { text: "Cancel", style: "cancel" },
         {
           text: "Disconnect",
-          onPress: () => removePlaylist(playlistId),
+          onPress: async () =>
+            await deletePlaylist({
+              playlistId,
+            }),
+
           style: "destructive",
         },
       ]
@@ -55,6 +68,7 @@ export default function PlaylistsSelectScreen() {
         <Pressable
           style={[styles.addBtn, { backgroundColor: theme.primary }]}
           onPress={() => router.push("/playlists")}
+          disabled={isPending}
         >
           <Plus size={24} color='#000' />
         </Pressable>
@@ -66,6 +80,7 @@ export default function PlaylistsSelectScreen() {
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        scrollEnabled={!isPending}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <View
@@ -96,12 +111,14 @@ export default function PlaylistsSelectScreen() {
                   backgroundColor:
                     isSelected ? `${theme.primary}08` : theme.surfaceSecondary,
                   borderColor: isSelected ? theme.primary : theme.border,
+                  opacity: isPending ? 0.6 : 1,
                 },
               ]}
             >
               <Pressable
                 style={styles.cardContent}
                 onPress={() => handleSelect(item)}
+                disabled={isPending}
               >
                 {/* Icon */}
                 <View
@@ -174,15 +191,17 @@ export default function PlaylistsSelectScreen() {
                 <Pressable
                   style={({ pressed }) => [
                     styles.deleteAction,
-                    pressed && { opacity: 0.7 },
+                    pressed && !isPending && { opacity: 0.7 },
+                    isPending && { opacity: 0.5 },
                   ]}
                   onPress={() => handleDelete(item.id)}
+                  disabled={isPending}
                 >
                   <Trash2 size={16} color={theme.accentError} />
                   <Text
                     style={[styles.deleteText, { color: theme.accentError }]}
                   >
-                    Disconnect
+                    Delete
                   </Text>
                 </Pressable>
               </View>
@@ -190,6 +209,33 @@ export default function PlaylistsSelectScreen() {
           );
         }}
       />
+
+      {/* Loading Overlay */}
+      {isPending && (
+        <Animated.View
+          entering={FadeIn.duration(200)}
+          style={[styles.loadingOverlay, { backgroundColor: `${theme.bg}cc` }]}
+        >
+          <View
+            style={[
+              styles.loadingContent,
+              { backgroundColor: theme.surfaceSecondary },
+            ]}
+          >
+            <Animated.View style={styles.spinnerWrapper} entering={FadeIn}>
+              <Loader size={48} color={theme.primary} />
+            </Animated.View>
+            <Text style={[styles.loadingTitle, { color: theme.textPrimary }]}>
+              Disconnecting Server
+            </Text>
+            <Text
+              style={[styles.loadingSubtitle, { color: theme.textSecondary }]}
+            >
+              Please wait while we remove your playlist...
+            </Text>
+          </View>
+        </Animated.View>
+      )}
     </SafeAreaView>
   );
 }
@@ -341,4 +387,32 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { fontSize: 18, fontWeight: "700", marginBottom: 8 },
   emptyText: { fontSize: 14, textAlign: "center", lineHeight: 20 },
+
+  // Loading Overlay
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 0,
+  },
+  loadingContent: {
+    alignItems: "center",
+    paddingHorizontal: 32,
+    paddingVertical: 40,
+    borderRadius: 20,
+  },
+  spinnerWrapper: {
+    marginBottom: 24,
+  },
+  loadingTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  loadingSubtitle: {
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 20,
+  },
 });

@@ -9,7 +9,6 @@ export const useTauri = () => {
       try {
         const { Window } = await import('@tauri-apps/api/window');
         const windowNames = await Window.getAll();
-        console.log('Window names:', windowNames);
         if (windowNames.some((window) => window.label === 'main')) {
           setIsDesktopApp(true);
         } else {

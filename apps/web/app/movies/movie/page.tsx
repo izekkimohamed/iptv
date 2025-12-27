@@ -61,8 +61,6 @@ export default function Page() {
     );
   }, [movieDetails, srcUrl]);
 
-  console.log(pathname);
-
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center ">
@@ -119,7 +117,7 @@ export default function Page() {
           backgroundAttachment: 'fixed',
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-black/60 to-black/20" />
+        <div className="absolute inset-0 bg-linear-to-t from-slate-950 via-black/60 to-black/20" />
       </div>
 
       {/* Content */}
@@ -244,7 +242,7 @@ export default function Page() {
                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                         className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-white bg-white/10 border border-white/20 rounded-full hover:bg-white/20 transition duration-200"
                       >
-                        <span className="max-w-[150px] truncate">
+                        <span className="max-w-37.5 truncate">
                           Source: {currentMovieSource?.name || 'Select Source'}
                         </span>
                         <ChevronDown
@@ -309,7 +307,7 @@ export default function Page() {
                         />
                       </div>
                     ) : (
-                      <div className="h-48 flex items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
+                      <div className="h-48 flex items-center justify-center bg-linear-to-br from-slate-800 to-slate-900">
                         <User className="w-12 h-12 text-gray-600" />
                       </div>
                     )}
@@ -352,7 +350,7 @@ export default function Page() {
                           <Play className="w-6 h-6 text-white fill-white" />
                         </div>
                       </div>
-                      <p className="absolute bottom-0 left-0 right-0 px-3 py-2 text-xs font-medium text-white bg-gradient-to-t from-black/80 to-transparent line-clamp-2">
+                      <p className="absolute bottom-0 left-0 right-0 px-3 py-2 text-xs font-medium text-white bg-linear-to-t from-black/80 to-transparent line-clamp-2">
                         {video.name}
                       </p>
                     </Button>

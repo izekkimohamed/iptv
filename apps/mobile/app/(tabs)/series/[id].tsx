@@ -5,20 +5,13 @@ import { usePlayerTheme } from "@/theme/playerTheme";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Play,
-  Share2,
-  Tv,
-} from "lucide-react-native";
+import { ChevronLeft, ChevronRight, Play, Tv } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
   Pressable,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   View,
@@ -99,16 +92,6 @@ export default function SeriesDetailScreen() {
   const activeSeason =
     seasons.includes(selectedSeason) ? selectedSeason : seasons[0];
   const currentEpisodes = seriesInfo.episodes[activeSeason] || [];
-
-  const onShare = async () => {
-    try {
-      await Share.share({
-        message: `Check out ${seriesInfo.info.name} on our IPTV app!`,
-      });
-    } catch (error) {
-      console.log(error);
-    }
-  };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
@@ -218,19 +201,6 @@ export default function SeriesDetailScreen() {
                   {seriesInfo.info.genre}
                 </Text>
               )}
-
-              {/* Share Button */}
-              <View style={styles.miniActions}>
-                <Pressable
-                  onPress={onShare}
-                  style={[
-                    styles.circleBtn,
-                    { backgroundColor: theme.surfaceSecondary },
-                  ]}
-                >
-                  <Share2 size={18} color={theme.textMuted} />
-                </Pressable>
-              </View>
             </View>
           </Animated.View>
         </View>

@@ -12,7 +12,6 @@ import {
   Clock,
   Film,
   Play,
-  Share2,
   Star,
   User,
   Zap,
@@ -22,7 +21,6 @@ import {
   ActivityIndicator,
   Dimensions,
   Pressable,
-  Share,
   StyleSheet,
   Text,
   View,
@@ -139,16 +137,6 @@ export default function MovieDetailsScreen() {
   const director = movie.tmdb?.director || movie.info?.director;
   const cast =
     movie.tmdb?.cast || movie.info?.cast?.split(", ").slice(0, 8) || [];
-
-  const onShare = async () => {
-    try {
-      await Share.share({
-        message: `Check out ${movieTitle} on our IPTV app!`,
-      });
-    } catch (error) {
-      console.log(error);
-    }
-  };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
@@ -291,19 +279,6 @@ export default function MovieDetailsScreen() {
                   {genres}
                 </Text>
               : null}
-
-              {/* Mini Action - Share */}
-              <View style={styles.miniActions}>
-                <Pressable
-                  onPress={onShare}
-                  style={[
-                    styles.circleBtn,
-                    { backgroundColor: theme.surfaceSecondary },
-                  ]}
-                >
-                  <Share2 size={18} color={theme.textMuted} />
-                </Pressable>
-              </View>
             </View>
           </Animated.View>
         </View>

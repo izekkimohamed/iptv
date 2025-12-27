@@ -1,7 +1,7 @@
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
 import { FlatCompat } from '@eslint/eslintrc';
 import prettierPlugin from 'eslint-plugin-prettier'; // Import the plugin
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -11,23 +11,27 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
-  ...compat.extends('next/core-web-vitals', 'next/typescript'),
   {
-    ignores: ['node_modules/**', '.next/**', 'out/**', 'build/**', 'next-env.d.ts'],
+    ignores: [
+    'node_modules/**',
+    '.next/**',
+    'dist/**',
+    'build/**',
+    'out/**',
+    "src-tauri/**"
+  ],
   },
   {
-    // Configuration for eslint-plugin-prettier
-    files: ['**/*.{js,jsx,ts,tsx,mjs,cjs}'], // Apply to common code files
+    files: ['**/*.{js,jsx,ts,tsx}'],
     plugins: {
       prettier: prettierPlugin,
     },
     rules: {
-      'prettier/prettier': 'error', // Report Prettier errors as ESLint errors
+      'prettier/prettier': 'error',
     },
   },
-  // eslint-config-prettier: disables ESLint rules that would conflict with Prettier
-  // This must be the last configuration in the extends array.
   ...compat.extends('prettier'),
 ];
+
 
 export default eslintConfig;

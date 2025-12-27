@@ -33,7 +33,6 @@ export async function GET(request: Request) {
     });
 
     const data = await response.json();
-    console.log("data", data);
 
     // We return just the Game object which contains:
     // .events (Goals, Cards, Subs)

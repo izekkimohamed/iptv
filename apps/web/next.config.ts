@@ -6,7 +6,6 @@ const internalHost = process.env.TAURI_DEV_HOST || 'localhost';
 
 require('dotenv').config({ path: '../../.env' });
 
-
 const nextConfig: NextConfig = {
   /* config options here */
   reactStrictMode: false,
