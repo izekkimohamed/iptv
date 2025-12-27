@@ -27,7 +27,6 @@ export async function GET(request: Request) {
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         Referer: "https://www.365scores.com/",
       },
-      next: { revalidate: 60 },
     });
 
     if (!response.ok) throw new Error("Upstream API failure");

@@ -17,6 +17,8 @@ import {
   ActivityIndicator,
   Dimensions,
   Image,
+  Linking,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -76,6 +78,28 @@ export default function MovieDetailsScreen() {
     };
   });
 
+  // ... existing hooks
+
+  const handleTrailerPress = async (key: string) => {
+    // 1. Define the specific App URL for each platform
+    const appUrl = Platform.select({
+      ios: `youtube://watch?v=${key}`,
+      android: `vnd.youtube:${key}`,
+      default: `https://www.youtube.com/watch?v=${key}`,
+    });
+
+    // 2. Define the fallback Web URL
+    const webUrl = `https://www.youtube.com/watch?v=${key}`;
+
+    try {
+      // 3. Try opening the App URL
+      await Linking.openURL(appUrl);
+    } catch (err) {
+      // 4. If that fails (App not installed), open the Web URL
+      await Linking.openURL(webUrl);
+    }
+  };
+
   if (isLoading) {
     return (
       <View style={[styles.centered, { backgroundColor: theme.bg }]}>
@@ -106,7 +130,6 @@ export default function MovieDetailsScreen() {
       params: {
         url: item.url,
         title: item.name,
-        mediaType: "vod",
         overview: item.info?.description,
       },
     });
@@ -430,7 +453,7 @@ export default function MovieDetailsScreen() {
         {movie.tmdb.videos?.length > 0 && (
           <Animated.View
             entering={FadeIn.delay(500)}
-            style={[styles.sectionContainer, { paddingBottom: 50 }]}
+            style={[styles.sectionContainer, { paddingBottom: 50, zIndex: 1 }]}
           >
             <Text
               style={[
@@ -450,6 +473,8 @@ export default function MovieDetailsScreen() {
                     styles.trailerRow,
                     { backgroundColor: theme.surfaceSecondary },
                   ]}
+                  // UPDATE THIS LINE:
+                  onPress={() => handleTrailerPress(v.key)}
                 >
                   <View style={styles.trailerThumbnail}>
                     <Image
@@ -653,6 +678,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginTop: 24,
     gap: 12,
+    zIndex: 100,
+    elevation: 10, // Required for Android
   },
   playButton: {
     width: "100%",
@@ -682,7 +709,8 @@ const styles = StyleSheet.create({
 
   // Source Selector
   sourceWrapper: {
-    zIndex: 10,
+    zIndex: 200, // Keep this higher than its parent's base
+    elevation: 20, // Android
   },
   sourceSelector: {
     flexDirection: "row",

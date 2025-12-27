@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     flex: 1,
-    borderRadius: 16,
+    borderRadius: 160,
     paddingHorizontal: 16,
     paddingVertical: 12,
     backdropFilter: "blur(10px)",

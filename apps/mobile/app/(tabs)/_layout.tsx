@@ -1,5 +1,5 @@
 import { Tabs, useRouter } from "expo-router";
-import { Home, Library, PlaySquare, Tv } from "lucide-react-native";
+import { Home, Library, PlaySquare, Tv, Volleyball } from "lucide-react-native";
 import { StyleSheet } from "react-native";
 
 export default function TabsLayout() {
@@ -59,6 +59,20 @@ export default function TabsLayout() {
         listeners={{
           tabPress: (e) => {
             router.push("/channels");
+          },
+        }}
+      />
+      <Tabs.Screen
+        name='365'
+        options={{
+          title: "365",
+          tabBarIcon: ({ color, size }) => (
+            <Volleyball size={size} color={color} />
+          ),
+        }}
+        listeners={{
+          tabPress: (e) => {
+            router.push("/365");
           },
         }}
       />

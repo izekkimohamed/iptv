@@ -1,4 +1,6 @@
-import LiveScoresScreen from "@/components/LiveScores";
+import MatchDetailsModal from "@/components/365/Details";
+import { formatDateForAPI, Game } from "@/components/365/LiveScores";
+import MatchCard from "@/components/365/MatchCard";
 import { trpc } from "@/lib/trpc";
 import { usePlaylistStore } from "@/store/appStore";
 import { usePlayerTheme } from "@/theme/playerTheme";
@@ -6,13 +8,22 @@ import { FlashList } from "@shopify/flash-list";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { Database, Play, Search, Star, Tv, User } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import {
+  Database,
+  Play,
+  RefreshCcw,
+  Search,
+  Star,
+  Tv,
+  User,
+} from "lucide-react-native";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
   FlatList,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -21,14 +32,19 @@ import {
 } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+import useSWR from "swr";
 
 const { width } = Dimensions.get("window");
 const FEATURED_WIDTH = width - 40;
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export default function HomeScreen() {
   const router = useRouter();
   const theme = usePlayerTheme();
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedGameId, setSelectedGameId] = useState<number | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const {
     selectedPlaylist,
@@ -38,7 +54,11 @@ export default function HomeScreen() {
   } = usePlaylistStore();
 
   // 1. Fetch Home Data (Featured, Movies)
-  const { data: homeData, isLoading } = trpc.home.getHome.useQuery(undefined, {
+  const {
+    data: homeData,
+    isLoading,
+    refetch: refetchHome,
+  } = trpc.home.getHome.useQuery(undefined, {
     enabled: !!selectedPlaylist,
   });
 
@@ -46,14 +66,41 @@ export default function HomeScreen() {
   const { data: playlists } = trpc.playlists.getPlaylists.useQuery();
 
   // 3. Fetch Favorite Channels
-  const { data: favoriteChannels } = trpc.channels.getChannels.useQuery(
-    {
-      favorites: true,
-      playlistId: selectedPlaylist?.id || 0,
+  const { data: favoriteChannels, refetch: refetchChannels } =
+    trpc.channels.getChannels.useQuery(
+      {
+        favorites: true,
+        playlistId: selectedPlaylist?.id || 0,
+      },
+      {
+        enabled: !!selectedPlaylist,
+      }
+    );
+
+  const apiUrl = `${process.env.EXPO_PUBLIC_API_URL}/live-matches?date=${formatDateForAPI(currentDate)}`;
+
+  // 2. Optimized SWR Configuration for "Live" Data
+  const {
+    data: games = [], // Default to empty array
+    error,
+    isLoading: LoadingLiveScores,
+    mutate: mutateGames,
+  } = useSWR<Game[]>(apiUrl, fetcher, {
+    // Dynamic Polling: If there are live games, poll every 10s. If not, every 60s.
+    refreshInterval: (latestData) => {
+      const hasLiveAction = latestData?.some((g) => g.statusGroup === 3);
+      return hasLiveAction ? 30000 : 60000;
     },
-    {
-      enabled: !!selectedPlaylist,
-    }
+    revalidateOnFocus: true, // Update when app comes to foreground
+    revalidateOnReconnect: true, // Update when internet returns
+    dedupingInterval: 2000, // Don't use cache if request is older than 2 seconds
+    keepPreviousData: true, // Keep showing old list while fetching new one (prevents flicker)
+  });
+
+  // 3. Derived State
+  const liveMatches = useMemo(
+    () => games.filter((g) => g.statusGroup === 3),
+    [games]
   );
 
   useEffect(() => {
@@ -64,6 +111,23 @@ export default function HomeScreen() {
       selectPlaylist(playlists[0]);
     }
   }, [addPlaylist, playlists, selectPlaylist, storePlaylists.length]);
+
+  // Pull-to-refresh handler
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      // Refresh all data sources in parallel
+      await Promise.all([
+        refetchHome(),
+        refetchChannels(),
+        mutateGames(), // Revalidate SWR data
+      ]);
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refetchHome, refetchChannels, mutateGames]);
 
   // --- Render Functions ---
 
@@ -186,6 +250,14 @@ export default function HomeScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.primary}
+            colors={[theme.primary]}
+          />
+        }
       >
         {!selectedPlaylist ?
           <View style={styles.emptyState}>
@@ -273,10 +345,80 @@ export default function HomeScreen() {
                 />
               </View>
             )}
-            <LiveScoresScreen />
+
+            {/* Loading State (Initial Load Only) */}
+            {LoadingLiveScores && games.length === 0 ?
+              <ActivityIndicator
+                size='large'
+                color={theme.primary}
+                style={{ marginTop: 50 }}
+              />
+            : games.length === 0 && !error ?
+              // 6. Empty State
+              <View style={styles.emptyContainer}>
+                <RefreshCcw
+                  size={48}
+                  color={theme.textMuted}
+                  style={{ opacity: 0.5, marginBottom: 10 }}
+                />
+                <Text style={{ color: theme.textSecondary, fontWeight: "600" }}>
+                  No matches scheduled
+                </Text>
+                <Text style={{ color: theme.textMuted, fontSize: 12 }}>
+                  Try changing the date
+                </Text>
+              </View>
+            : <>
+                {/* Live Section */}
+                {liveMatches.length > 0 && (
+                  <View style={styles.section}>
+                    <View
+                      style={{
+                        padding: 20,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 5,
+                      }}
+                    >
+                      {/* Assuming LivePulse is a component you have */}
+                      <View style={styles.liveIndicator}>
+                        <View
+                          style={[
+                            styles.dot,
+                            { backgroundColor: theme.accentError },
+                          ]}
+                        />
+                      </View>
+                      <Text
+                        style={[
+                          styles.sectionTitle,
+                          { color: theme.accentError },
+                        ]}
+                      >
+                        LIVE NOW
+                      </Text>
+                    </View>
+                    <FlashList
+                      horizontal
+                      data={liveMatches}
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.horizontalList}
+                      renderItem={({ item }) => (
+                        <MatchCard game={item} onPress={setSelectedGameId} />
+                      )}
+                    />
+                  </View>
+                )}
+              </>
+            }
           </>
         }
       </ScrollView>
+      <MatchDetailsModal
+        gameId={selectedGameId}
+        visible={!!selectedGameId}
+        onClose={() => setSelectedGameId(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -284,6 +426,21 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { paddingBottom: 2 },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 100,
+  },
+  liveIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "rgba(255,0,0,0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  dot: { width: 4, height: 4, borderRadius: 2 },
+  sectionTitle: { fontSize: 14, fontWeight: "800", letterSpacing: 0.5 },
 
   // Header
   header: {

@@ -95,25 +95,13 @@ export function usePlayer(url?: string, mediaType?: "live" | "vod") {
   };
 
   const toggleFullScreen = async () => {
-    if (isFullScreen && mediaType === "live") {
-      setIsFullScreen(false);
-      await ScreenOrientation.lockAsync(
-        ScreenOrientation.OrientationLock.PORTRAIT_UP
-      );
-      StatusBar.setHidden(false);
-    } else if (isFullScreen && mediaType === "vod") {
+    if (isFullScreen) {
       router.dismiss();
       setIsFullScreen(false);
       await ScreenOrientation.lockAsync(
         ScreenOrientation.OrientationLock.PORTRAIT_UP
       );
       StatusBar.setHidden(false);
-    } else if (!isFullScreen && mediaType === "vod") {
-      setIsFullScreen(true);
-      await ScreenOrientation.lockAsync(
-        ScreenOrientation.OrientationLock.LANDSCAPE
-      );
-      StatusBar.setHidden(true);
     } else {
       setIsFullScreen(true);
       await ScreenOrientation.lockAsync(

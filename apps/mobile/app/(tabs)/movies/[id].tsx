@@ -321,7 +321,7 @@ export default function MovieDetailsScreen() {
             onPress={() =>
               router.push({
                 pathname: "/player",
-                params: { url: url, title: movieTitle, mediaType: "vod" },
+                params: { url: url, title: movieTitle },
               })
             }
           >

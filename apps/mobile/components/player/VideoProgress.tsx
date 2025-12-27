@@ -3,7 +3,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { VideoContentFit } from "expo-video";
 import { useCallback, useEffect, useState } from "react";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { Slider } from "react-native-awesome-slider";
 import { BorderlessButton } from "react-native-gesture-handler";
 import { useSharedValue } from "react-native-reanimated";
@@ -293,14 +293,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 16,
+    // paddingHorizontal: 12,
+    // paddingVertical: 10,
+    borderRadius: 160,
     backdropFilter: "blur(10px)",
   },
   leftGroup: {
     flexDirection: "row",
     alignItems: "center",
+    marginLeft: 12,
   },
   rightGroup: {
     flexDirection: "row",
@@ -316,8 +317,8 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 13,
-    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
-    fontWeight: "600",
+    fontFamily: "mono",
+    fontWeight: "900",
     letterSpacing: 0.3,
   },
   timeSeparator: {

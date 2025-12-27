@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc";
+import { cleanName } from "@/lib/utils";
 import { usePlaylistStore } from "@/store/appStore";
 import { usePlayerTheme } from "@/theme/playerTheme";
 import { Image } from "expo-image";
@@ -347,8 +348,9 @@ function EpisodeItem({ episode, seasonNumber, seriesCover, theme }: any) {
           pathname: "/player",
           params: {
             url: getEpisodeSrcUrl(episode),
-            mediaType: "vod",
-            title: episode.title || `S${seasonNumber} E${episode.episode_num}`,
+            title:
+              cleanName(episode.title) ||
+              `S${seasonNumber} E${episode.episode_num}`,
           },
         });
       }}
@@ -381,7 +383,7 @@ function EpisodeItem({ episode, seasonNumber, seriesCover, theme }: any) {
           style={[styles.epTitle, { color: theme.textPrimary }]}
           numberOfLines={2}
         >
-          {episode.title || `Episode ${episode.episode_num}`}
+          {cleanName(episode.title)}
         </Text>
       </View>
 

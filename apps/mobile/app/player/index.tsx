@@ -183,12 +183,7 @@ export default function Player() {
               { opacity: leftDoubleTapAnim },
             ]}
           >
-            <View
-              style={[
-                styles.rippleArcLeft,
-                { backgroundColor: theme.glassMedium },
-              ]}
-            />
+            <View style={[styles.rippleArcLeft]} />
 
             <View style={styles.rippleContent}>
               <View
@@ -217,12 +212,7 @@ export default function Player() {
               { opacity: rightDoubleTapAnim },
             ]}
           >
-            <View
-              style={[
-                styles.rippleArcRight,
-                { backgroundColor: theme.glassMedium },
-              ]}
-            />
+            <View style={[styles.rippleArcRight]} />
 
             <View style={styles.rippleContent}>
               <View

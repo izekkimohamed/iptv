@@ -133,7 +133,7 @@ export const ChannelRow = ({ channel, playlist }: ChannelRowProps) => {
       onPress={() =>
         router.push({
           pathname: "/player",
-          params: { url: channel.url, title: channel.name, mediaType: "vod" },
+          params: { url: channel.url, title: channel.name },
         })
       }
     >
