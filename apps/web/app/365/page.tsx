@@ -1,4 +1,4 @@
-import LiveScores from '@/components/home/LiveScores';
+import LiveScores from '@/components/365/LiveScores';
 
 function page() {
   return <LiveScores />;
