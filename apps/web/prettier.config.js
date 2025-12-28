@@ -22,6 +22,7 @@ const prettierConfig = {
   endOfLine: 'lf',
   // Enable Prettier to format embedded code if a parser is available
   embeddedLanguageFormatting: 'auto',
+  plugins: ['prettier-plugin-tailwindcss'],
 };
 
 export default prettierConfig;

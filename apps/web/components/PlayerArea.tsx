@@ -1,5 +1,6 @@
 import VideoPlayer from '@/features/player/components/VideoPlayer';
 import { usePlaylistStore } from '@/store/appStore';
+
 import ChannelInfoPanel from './channels/ChannelInfoPanel';
 import PlayerHeader from './iptv/PlayerHeader';
 
@@ -22,12 +23,12 @@ function PlayerArea({ selectedChannel }: { selectedChannel: SelectedChannel | un
     return null;
   }
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex flex-1 flex-col">
       <PlayerHeader selectedChannel={selectedChannel} />
 
       <div className="flex-1 overflow-y-auto">
         {selectedChannel ? (
-          <div className="h-full flex flex-col md:flex-row">
+          <div className="flex h-full flex-col md:flex-row">
             <div className="h-2/3 md:h-1/2">
               <VideoPlayer
                 src={selectedChannel?.url}
@@ -41,7 +42,7 @@ function PlayerArea({ selectedChannel }: { selectedChannel: SelectedChannel | un
               />
             </div>
 
-            <div className="h-1/3 md:h-1/2 overflow-y-auto">
+            <div className="h-1/3 overflow-y-auto md:h-1/2">
               <ChannelInfoPanel
                 selectedChannel={selectedChannel}
                 playlistProps={{
@@ -53,11 +54,11 @@ function PlayerArea({ selectedChannel }: { selectedChannel: SelectedChannel | un
             </div>
           </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center h-full">
+          <div className="flex h-full flex-1 items-center justify-center">
             <div className="text-center">
-              <div className="text-6xl mb-4 opacity-50">🎬</div>
-              <h4 className="text-xl font-semibold text-white mb-2">Ready to Stream</h4>
-              <p className="text-gray-400 max-w-md">
+              <div className="mb-4 text-6xl opacity-50">🎬</div>
+              <h4 className="mb-2 text-xl font-semibold text-white">Ready to Stream</h4>
+              <p className="max-w-md text-gray-400">
                 Select a category and channel to start watching your favorite content
               </p>
             </div>

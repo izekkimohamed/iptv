@@ -1,18 +1,21 @@
 'use client';
 
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import '@vidstack/react/player/styles/default/layouts/video.css';
+import '@vidstack/react/player/styles/default/theme.css';
+
+import { MediaPlayer, MediaProvider } from '@vidstack/react';
+import { AlertTriangle, Pause, Play } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
 import { Button } from '@/components/ui/button';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { usePlayer } from '@/features/player/hooks/player';
 import { cn, getVideoType } from '@/lib/utils';
 import { usePlaylistStore } from '@/store/appStore';
 import { usePlayerStore } from '@/store/player-store';
 import { useWatchedMoviesStore, useWatchedSeriesStore } from '@/store/watchedStore';
-import { MediaPlayer, MediaProvider } from '@vidstack/react';
-import '@vidstack/react/player/styles/default/layouts/video.css';
-import '@vidstack/react/player/styles/default/theme.css';
-import { AlertTriangle, Pause, Play } from 'lucide-react';
-import { usePathname } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+
 import { CustomControls } from './CustomControls';
 
 interface VideoPlayerProps {
@@ -349,22 +352,22 @@ export function VideoPlayer({
     }
 
     return (
-      <div className="flex flex-col items-center justify-center w-full h-full bg-slate-900 rounded-lg p-8">
-        <AlertTriangle className="w-16 h-16 text-red-500 mb-4" />
-        <h2 className="text-xl font-bold text-white mb-2">{errorMessage}</h2>
-        <p className="text-gray-400 text-center max-w-lg mb-6">{detailedMessage}</p>
+      <div className="flex h-full w-full flex-col items-center justify-center rounded-lg bg-slate-900 p-8">
+        <AlertTriangle className="mb-4 h-16 w-16 text-red-500" />
+        <h2 className="mb-2 text-xl font-bold text-white">{errorMessage}</h2>
+        <p className="mb-6 max-w-lg text-center text-gray-400">{detailedMessage}</p>
         <Button
           onClick={() => setPlaybackError(null)}
-          className="flex items-center gap-2 px-6 py-3 bg-white/10 text-white rounded-full hover:bg-white/20 transition-colors"
+          className="flex items-center gap-2 rounded-full bg-white/10 px-6 py-3 text-white transition-colors hover:bg-white/20"
         >
-          <Play className="w-4 h-4" /> Try Again
+          <Play className="h-4 w-4" /> Try Again
         </Button>
       </div>
     );
   }
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative h-full w-full">
       <MediaPlayer
         key={src}
         ref={player.playerRef}
@@ -398,7 +401,7 @@ export function VideoPlayer({
         }}
         onDoubleClick={() => toggleFullScreen(!fullScreen)}
         onClick={() => player.togglePlay()}
-        className={cn('w-full h-full overflow-hidden bg-black relative')}
+        className={cn('relative h-full w-full overflow-hidden bg-black')}
         data-isfullscreen={fullScreen}
         data-aspect-ratio={aspectRatio}
       >
@@ -407,9 +410,9 @@ export function VideoPlayer({
         </MediaProvider>
 
         {!player.isPlaying && !player.isLoading && (
-          <div className="absolute pointer-events-none flex items-center justify-center inset-0 w-full bg-gradient-to-t from-black/80 via-transparent to-black/80">
-            <div className="p-5 rounded-full bg-amber-400/20 backdrop-blur-sm">
-              <Pause className="w-10 h-10 text-white fill-white" />
+          <div className="pointer-events-none absolute inset-0 flex w-full items-center justify-center bg-gradient-to-t from-black/80 via-transparent to-black/80">
+            <div className="rounded-full bg-amber-400/20 p-5 backdrop-blur-sm">
+              <Pause className="h-10 w-10 fill-white text-white" />
             </div>
           </div>
         )}

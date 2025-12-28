@@ -1,7 +1,8 @@
-import { HeaderSectionProps } from '@/lib/types';
-import { cleanName, formatRuntime } from '@/lib/utils';
 import { Calendar, Clock, Star } from 'lucide-react';
 import { FC } from 'react';
+
+import { HeaderSectionProps } from '@/lib/types';
+import { cleanName, formatRuntime } from '@/lib/utils';
 
 export const HeaderSection: FC<HeaderSectionProps> = ({
   name,
@@ -12,14 +13,14 @@ export const HeaderSection: FC<HeaderSectionProps> = ({
 }) => (
   <div className="space-y-6">
     <div className="space-y-4">
-      <h1 className="text-4xl sm:text-6xl font-black text-white leading-[1.1] tracking-tight">
+      <h1 className="text-4xl leading-[1.1] font-black tracking-tight text-white sm:text-6xl">
         {cleanName(name)}
       </h1>
 
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex flex-wrap items-center gap-3">
         {rating && (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 backdrop-blur-md">
-            <Star className="w-4 h-4 text-green-400 fill-green-400" />
+          <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 backdrop-blur-md">
+            <Star className="h-4 w-4 fill-green-400 text-green-400" />
             <span className="text-sm font-black text-white">
               {parseFloat(String(rating)).toFixed(1)}
             </span>
@@ -34,10 +35,10 @@ export const HeaderSection: FC<HeaderSectionProps> = ({
             item.value && (
               <div
                 key={i}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/3 border border-white/5"
+                className="flex items-center gap-2 rounded-full border border-white/5 bg-white/3 px-3 py-1.5"
               >
-                <item.icon className="w-4 h-4 text-white/40" />
-                <span className="text-xs font-bold text-white/60 tracking-wide">{item.value}</span>
+                <item.icon className="h-4 w-4 text-white/40" />
+                <span className="text-xs font-bold tracking-wide text-white/60">{item.value}</span>
               </div>
             ),
         )}
@@ -49,7 +50,7 @@ export const HeaderSection: FC<HeaderSectionProps> = ({
         {genres.map((genre) => (
           <span
             key={genre.id}
-            className="px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white/40 border border-white/10 rounded-full bg-white/2"
+            className="rounded-full border border-white/10 bg-white/2 px-3 py-1 text-[10px] font-black tracking-widest text-white/40 uppercase"
           >
             {cleanName(genre.name)}
           </span>

@@ -1,4 +1,5 @@
 import { Search, X } from 'lucide-react';
+
 import { Button } from '../ui/button';
 
 interface HomeSearchProps {
@@ -8,25 +9,25 @@ interface HomeSearchProps {
 
 function HomeSearch({ searchQuery, setSearchQuery }: HomeSearchProps) {
   return (
-    <div className="flex-shrink-0 py-6 border-b border-white/5 ">
-      <div className="max-w-2xl mx-auto px-4">
-        <div className="relative group">
-          <div className="absolute inset-0  /50 rounded-full blur opacity-60 group-hover:opacity-100 transition duration-500 animate-pulse" />
-          <form className="relative rounded-full px-6 py-3 flex items-center gap-4 border border-amber-500/20 group-hover:border-amber-500/50 transition-all duration-300">
-            <Search className="w-10 h-5 text-amber-400 flex-shrink-0" />
+    <div className="flex-shrink-0 border-b border-white/5 py-6">
+      <div className="mx-auto max-w-2xl px-4">
+        <div className="group relative">
+          <div className="/50 absolute inset-0 animate-pulse rounded-full opacity-60 blur transition duration-500 group-hover:opacity-100" />
+          <form className="relative flex items-center gap-4 rounded-full border border-amber-500/20 px-6 py-3 transition-all duration-300 group-hover:border-amber-500/50">
+            <Search className="h-5 w-10 flex-shrink-0 text-amber-400" />
             <input
               type="text"
               placeholder="Search channels, movies, series..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 bg-transparent text-white placeholder-gray-500 outline-none text-sm font-medium"
+              className="flex-1 bg-transparent text-sm font-medium text-white placeholder-gray-500 outline-none"
             />
             {searchQuery && (
               <Button
                 onClick={() => setSearchQuery('')}
-                className="text-gray-400 bg-transparent border border-white/10 rounded-full hover:text-amber-400 transition-colors flex-shrink-0"
+                className="flex-shrink-0 rounded-full border border-white/10 bg-transparent text-gray-400 transition-colors hover:text-amber-400"
               >
-                <X className="w-10 h-5" />
+                <X className="h-5 w-10" />
               </Button>
             )}
           </form>

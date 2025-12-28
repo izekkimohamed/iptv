@@ -1,6 +1,7 @@
 import { trpc } from '@/lib/trpc';
 import { Channel, PlaylistProps } from '@/lib/types';
 import { decodeBase64, getProgress } from '@/lib/utils';
+
 import LoadingSpinner from '../ui/LoadingSpinner';
 
 interface ChannelInfoPanelProps {
@@ -23,12 +24,12 @@ export default function ChannelInfoPanel(props: ChannelInfoPanelProps) {
   }
 
   return (
-    <div className="flex-1 bg-black/20 border-t border-white/10 p-6 flex flex-col h-full overflow-y-auto">
-      <h5 className="text-sm font-medium text-gray-400 mb-4">
+    <div className="flex h-full flex-1 flex-col overflow-y-auto border-t border-white/10 bg-black/20 p-6">
+      <h5 className="mb-4 text-sm font-medium text-gray-400">
         Now & Next on {selectedChannel.name}
       </h5>
 
-      <div className="flex-1 overflow-y-auto space-y-3 pr-2 no-scrollbar">
+      <div className="no-scrollbar flex-1 space-y-3 overflow-y-auto pr-2">
         {epg?.length ? (
           epg.map((listing: any) => {
             const progress = getProgress(listing.start, listing.end);
@@ -37,11 +38,11 @@ export default function ChannelInfoPanel(props: ChannelInfoPanelProps) {
             return (
               <div
                 key={listing.id}
-                className={`relative group rounded-2xl transition-all border ${
+                className={`group relative rounded-2xl border transition-all ${
                   isLive
-                    ? 'bg-white/10 border-white/20 shadow-lg'
-                    : 'bg-white/3 border-white/5 hover:bg-white/5'
-                } p-4 flex flex-col`}
+                    ? 'border-white/20 bg-white/10 shadow-lg'
+                    : 'border-white/5 bg-white/3 hover:bg-white/5'
+                } flex flex-col p-4`}
               >
                 {/* Progress Background (Subtle fill for Live) */}
                 {isLive && (
@@ -52,15 +53,15 @@ export default function ChannelInfoPanel(props: ChannelInfoPanelProps) {
                 )}
 
                 <div className="relative z-10">
-                  <div className="flex justify-between items-start mb-2">
+                  <div className="mb-2 flex items-start justify-between">
                     <div className="flex flex-col gap-1">
                       {isLive && (
-                        <span className="text-[9px] font-black text-red-500 uppercase tracking-[0.2em] animate-pulse">
+                        <span className="animate-pulse text-[9px] font-black tracking-[0.2em] text-red-500 uppercase">
                           On Air Now
                         </span>
                       )}
                       <h4
-                        className={`font-bold tracking-tight ${isLive ? 'text-white text-base' : 'text-white/60 text-sm'}`}
+                        className={`font-bold tracking-tight ${isLive ? 'text-base text-white' : 'text-sm text-white/60'}`}
                       >
                         {decodeBase64(listing.title)}
                       </h4>
@@ -80,14 +81,14 @@ export default function ChannelInfoPanel(props: ChannelInfoPanelProps) {
                   </div>
 
                   <p
-                    className={`text-xs line-clamp-2 leading-relaxed ${isLive ? 'text-white/70' : 'text-white/30'}`}
+                    className={`line-clamp-2 text-xs leading-relaxed ${isLive ? 'text-white/70' : 'text-white/30'}`}
                   >
                     {decodeBase64(listing.description)}
                   </p>
 
                   {/* Subtle Progress Line */}
                   {isLive && (
-                    <div className="mt-4 w-full h-0.5 bg-white/10 rounded-full overflow-hidden">
+                    <div className="mt-4 h-0.5 w-full overflow-hidden rounded-full bg-white/10">
                       <div
                         className="h-full bg-white transition-all duration-1000"
                         style={{ width: `${progress}%` }}
@@ -100,7 +101,7 @@ export default function ChannelInfoPanel(props: ChannelInfoPanelProps) {
           })
         ) : (
           <div className="flex flex-col items-center justify-center py-10 opacity-20">
-            <span className="text-xs font-black uppercase tracking-widest">No Schedule Found</span>
+            <span className="text-xs font-black tracking-widest uppercase">No Schedule Found</span>
           </div>
         )}
       </div>

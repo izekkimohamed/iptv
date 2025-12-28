@@ -1,9 +1,16 @@
 'use client';
 
-import { formatDateForAPI, formatDisplayDate } from '@/lib/utils';
+import {
+  AlertCircle,
+  MapPin,
+  RectangleVertical,
+  Volleyball, // Web equivalent of VolleyballIcon
+  X,
+} from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import useSWR from 'swr';
 
+import { formatDateForAPI, formatDisplayDate } from '@/lib/utils';
 import { Game } from '@/trpc/types';
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -54,16 +61,16 @@ export default function LiveScores() {
   };
   if (error)
     return (
-      <div className="p-8 text-center text-green-400 font-bold">Failed to sync live data.</div>
+      <div className="p-8 text-center font-bold text-green-400">Failed to sync live data.</div>
     );
 
   return (
-    <div className="w-full space-y-8 p-4 h-full overflow-y-auto  text-white">
+    <div className="h-full w-full space-y-8 overflow-y-auto p-4 text-white">
       {/* --- DATE NAVIGATOR --- */}
       {/* --- ENHANCED DATE NAVIGATOR --- */}
-      <div className="max-w-6xl mx-auto flex items-center justify-between mb-10 border-b border-white/10 pb-6">
+      <div className="mx-auto mb-10 flex max-w-6xl items-center justify-between border-b border-white/10 pb-6">
         <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2 text-white/40 mb-1">
+          <div className="mb-1 flex items-center gap-2 text-white/40">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="14"
@@ -81,19 +88,19 @@ export default function LiveScores() {
               <rect width="18" height="18" x="3" y="4" rx="2" />
               <path d="M3 10h18" />
             </svg>
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">
+            <span className="text-[10px] font-black tracking-[0.2em] uppercase">
               Matchday Schedule
             </span>
           </div>
           <div className="flex items-center gap-4">
-            <h2 className="text-3xl font-black tracking-tight bg-linear-to-r from-white to-white/50 bg-clip-text text-transparent">
+            <h2 className="bg-linear-to-r from-white to-white/50 bg-clip-text text-3xl font-black tracking-tight text-transparent">
               {formatDisplayDate(currentDate)}
             </h2>
             {/* Visual indicator if it's not today */}
             {new Date().toDateString() !== currentDate.toDateString() && (
               <button
                 onClick={handleGoToToday}
-                className="px-3 py-1 rounded-full bg-white text-black text-[10px] font-black uppercase tracking-tighter hover:bg-white/90 transition-colors"
+                className="rounded-full bg-white px-3 py-1 text-[10px] font-black tracking-tighter text-black uppercase transition-colors hover:bg-white/90"
               >
                 Return Today
               </button>
@@ -101,10 +108,10 @@ export default function LiveScores() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-white/5 p-1 rounded-2xl border border-white/10">
+        <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 p-1">
           <button
             onClick={handlePrevDay}
-            className="p-3 hover:bg-white/10 rounded-xl transition-all active:scale-95 group"
+            className="group rounded-xl p-3 transition-all hover:bg-white/10 active:scale-95"
           >
             <span className="sr-only">Previous Day</span>
             <svg
@@ -123,11 +130,11 @@ export default function LiveScores() {
             </svg>
           </button>
 
-          <div className="w-px h-4 bg-white/10 mx-1" />
+          <div className="mx-1 h-4 w-px bg-white/10" />
 
           <button
             onClick={handleNextDay}
-            className="p-3 hover:bg-white/10 rounded-xl transition-all active:scale-95 group"
+            className="group rounded-xl p-3 transition-all hover:bg-white/10 active:scale-95"
           >
             <span className="sr-only">Next Day</span>
             <svg
@@ -149,25 +156,25 @@ export default function LiveScores() {
       </div>
 
       {isLoading && (
-        <div className="max-w-6xl mx-auto animate-pulse space-y-4">
-          <div className="h-40 bg-white/5 rounded-3xl" />
-          <div className="h-20 bg-white/5 rounded-xl" />
-          <div className="h-20 bg-white/5 rounded-xl" />
+        <div className="mx-auto max-w-6xl animate-pulse space-y-4">
+          <div className="h-40 rounded-3xl bg-white/5" />
+          <div className="h-20 rounded-xl bg-white/5" />
+          <div className="h-20 rounded-xl bg-white/5" />
         </div>
       )}
 
       {/* --- LIVE EVENTS CAROUSEL --- */}
       {!isLoading && liveMatches.length > 0 && (
-        <div className="max-w-6xl mx-auto space-y-4">
+        <div className="mx-auto max-w-6xl space-y-4">
           <div className="flex items-center gap-2 px-1">
             <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-600"></span>
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex h-3 w-3 rounded-full bg-green-600"></span>
             </span>
-            <h2 className="text-sm font-black uppercase tracking-widest">Live Now</h2>
+            <h2 className="text-sm font-black tracking-widest uppercase">Live Now</h2>
           </div>
 
-          <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar snap-x">
+          <div className="no-scrollbar flex snap-x gap-4 overflow-x-auto pb-4">
             {liveMatches.map((game) => (
               <MatchCard key={game.id} game={game} />
             ))}
@@ -177,7 +184,7 @@ export default function LiveScores() {
 
       {/* --- COMPETITION GRIDS --- */}
       {!isLoading && (
-        <div className="max-w-6xl mx-auto space-y-12">
+        <div className="mx-auto max-w-6xl space-y-12">
           {Object.entries(groupedOtherGames).map(([compName, matches]) => {
             // Get the ID from the first match to fetch the competition logo
             const compId = matches[0].competitionId;
@@ -187,21 +194,21 @@ export default function LiveScores() {
                 {/* Header with Logo */}
                 <div className="flex items-center gap-3 px-1">
                   <div className="relative">
-                    <div className="absolute -inset-1 bg-white/10 rounded-full blur-sm group-hover:bg-white/20 transition-all"></div>
+                    <div className="absolute -inset-1 rounded-full bg-white/10 blur-sm transition-all group-hover:bg-white/20"></div>
                     <img
                       src={`https://imagecache.365scores.com/image/upload/f_auto,w_48/competitions/${compId}`}
                       alt={compName}
-                      className="relative w-8 h-8 object-contain"
+                      className="relative h-8 w-8 object-contain"
                       onError={(e) => (e.currentTarget.style.display = 'none')}
                     />
                   </div>
-                  <h3 className="text-sm font-black uppercase tracking-[0.15em] text-white/80">
+                  <h3 className="text-sm font-black tracking-[0.15em] text-white/80 uppercase">
                     {compName}
                   </h3>
                 </div>
 
                 {/* Horizontal Grid / Scroll Area */}
-                <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar snap-x">
+                <div className="no-scrollbar flex snap-x gap-4 overflow-x-auto pb-4">
                   {matches.map((game) => (
                     <div key={game.id} className="snap-start">
                       <MatchCard game={game} />
@@ -247,43 +254,43 @@ function MatchCard({ game }: { game: Game }) {
     <>
       <div
         onClick={() => setIsModalOpen(true)}
-        className={`cursor-pointer group w-[320px] rounded-2xl overflow-hidden transition-all duration-500 snap-start shrink-0 border flex flex-col relative ${
+        className={`group relative flex w-[320px] shrink-0 cursor-pointer snap-start flex-col overflow-hidden rounded-2xl border transition-all duration-500 ${
           showGoalPopup
-            ? 'border-yellow-400 scale-[1.02] z-50 shadow-[0_0_40px_rgba(250,204,21,0.3)]'
+            ? 'z-50 scale-[1.02] border-yellow-400 shadow-[0_0_40px_rgba(250,204,21,0.3)]'
             : isLive
-              ? 'bg-linear-to-br from-white/10 to-transparent backdrop-blur-xl border-white/20 shadow-2xl'
-              : 'bg-white/3 border-white/10'
+              ? 'border-white/20 bg-linear-to-br from-white/10 to-transparent shadow-2xl backdrop-blur-xl'
+              : 'border-white/10 bg-white/3'
         }`}
       >
         {/* --- GOAL POPUP OVERLAY --- */}
         {showGoalPopup && (
-          <div className="absolute inset-0 z-30 bg-black/60 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-in fade-in zoom-in duration-300">
-            <div className="bg-yellow-400 text-black px-4 py-1 rounded-full font-black text-[10px] uppercase tracking-[0.3em] mb-4 animate-bounce">
+          <div className="animate-in fade-in zoom-in absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/60 p-4 backdrop-blur-md duration-300">
+            <div className="mb-4 animate-bounce rounded-full bg-yellow-400 px-4 py-1 text-[10px] font-black tracking-[0.3em] text-black uppercase">
               Goal Scored!
             </div>
-            <div className="flex items-center gap-4 w-full justify-around">
+            <div className="flex w-full items-center justify-around gap-4">
               <img
                 src={`https://imagecache.365scores.com/image/upload/f_auto,w_64/competitors/${game.homeCompetitor.id}`}
-                className="w-12 h-12"
+                className="h-12 w-12"
                 alt=""
               />
               <div className="text-center">
                 <div className="text-3xl font-black text-white">
                   {game.homeCompetitor.score} - {game.awayCompetitor.score}
                 </div>
-                <div className="text-[10px] text-yellow-400 font-bold uppercase">
+                <div className="text-[10px] font-bold text-yellow-400 uppercase">
                   {game.gameTime}' Min
                 </div>
               </div>
               <img
                 src={`https://imagecache.365scores.com/image/upload/f_auto,w_64/competitors/${game.awayCompetitor.id}`}
-                className="w-12 h-12"
+                className="h-12 w-12"
                 alt=""
               />
             </div>
             <button
               onClick={() => setShowGoalPopup(false)}
-              className="mt-6 text-[9px] text-white/40 uppercase font-bold hover:text-white"
+              className="mt-6 text-[9px] font-bold text-white/40 uppercase hover:text-white"
             >
               Dismiss
             </button>
@@ -291,22 +298,22 @@ function MatchCard({ game }: { game: Game }) {
         )}
 
         {/* Main Content */}
-        <div className="p-6 flex-1">
+        <div className="flex-1 p-6">
           {/* --- HEADER --- */}
-          <div className="flex justify-between items-center mb-6">
+          <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center gap-2">
               {isLive ? (
-                <div className="flex items-center gap-2 bg-green-500/20 px-3 py-1 rounded border border-green-500/30">
+                <div className="flex items-center gap-2 rounded border border-green-500/30 bg-green-500/20 px-3 py-1">
                   <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-600"></span>
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-green-600"></span>
                   </span>
                   <span className="text-[11px] font-black text-green-400 uppercase tabular-nums">
                     {game.gameTime}' min
                   </span>
                 </div>
               ) : (
-                <span className="text-[11px] font-black text-white/40 uppercase tracking-widest">
+                <span className="text-[11px] font-black tracking-widest text-white/40 uppercase">
                   {isFinished
                     ? 'Full Time'
                     : new Date(game.startTime).toLocaleTimeString([], {
@@ -317,7 +324,7 @@ function MatchCard({ game }: { game: Game }) {
                 </span>
               )}
             </div>
-            <span className="text-[10px] font-bold text-white/30 uppercase truncate max-w-30">
+            <span className="max-w-30 truncate text-[10px] font-bold text-white/30 uppercase">
               {game.competitionDisplayName}
             </span>
           </div>
@@ -329,12 +336,12 @@ function MatchCard({ game }: { game: Game }) {
                 isFinished &&
                 team.score > (idx === 0 ? game.awayCompetitor.score : game.homeCompetitor.score);
               return (
-                <div key={idx} className="flex justify-between items-center">
+                <div key={idx} className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className={`p-1.5 rounded-xl ${isLive ? 'bg-white/10' : 'bg-white/5'}`}>
+                    <div className={`rounded-xl p-1.5 ${isLive ? 'bg-white/10' : 'bg-white/5'}`}>
                       <img
                         src={`https://imagecache.365scores.com/image/upload/f_auto,w_48/competitors/${team.id}`}
-                        className="w-7 h-7"
+                        className="h-7 w-7"
                         alt=""
                       />
                     </div>
@@ -359,7 +366,7 @@ function MatchCard({ game }: { game: Game }) {
 
         {/* --- VISUAL PROGRESS BAR --- */}
         {!isScheduled && (
-          <div className="w-full h-1.5 bg-white/5 relative">
+          <div className="relative h-1.5 w-full bg-white/5">
             <div
               className={`h-full transition-all duration-1000 ease-out ${
                 isLive ? 'bg-green-500 shadow-[0_0_10px_#22c55e]' : 'bg-white/10'
@@ -374,8 +381,14 @@ function MatchCard({ game }: { game: Game }) {
   );
 }
 
+// 1. Helper Component for Event Icons (Ported from Mobile)
+const EventIcon = ({ type, color, size = 14 }: { type: string; color: string; size?: number }) => {
+  if (type.includes('Goal')) return <Volleyball size={size} color={color} fill={color} />;
+  if (type.includes('Card')) return <RectangleVertical size={size} color={color} fill={color} />;
+  return <AlertCircle size={size} color={color} />;
+};
+
 export function MatchCenter({ gameId, onClose }: { gameId: number; onClose: () => void }) {
-  // 2. Use the fetcher here. SWR won't fetch if the key (URL) is null.
   const {
     data: match,
     error,
@@ -383,135 +396,209 @@ export function MatchCenter({ gameId, onClose }: { gameId: number; onClose: () =
   } = useSWR(
     gameId ? `${process.env.NEXT_PUBLIC_API_URL}/match-details?id=${gameId}` : null,
     fetcher,
-    { refreshInterval: 30000 }, // Optional: Refresh stats every 30s
+    { refreshInterval: 30000 },
   );
+
+  // 2. Helper Logic (Ported from Mobile)
+  const getPlayerName = (playerId: number) => {
+    if (!match?.members) return 'Player';
+    const member = match.members.find((m: any) => m.id === playerId);
+    return member ? member.name : 'Unknown Player';
+  };
+
+  const getFilteredEvents = () => {
+    if (!match?.events) return [];
+    return match.events.filter((e: any) => {
+      const name = e.eventType?.name || '';
+      return name.includes('Goal') || name.includes('Yellow Card') || name.includes('Red Card');
+    });
+  };
+
+  const filteredEvents = getFilteredEvents();
+  const startTime = match?.startTime ? new Date(match.startTime) : null;
+
+  const formattedDate =
+    startTime?.toLocaleDateString(undefined, {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+    }) || '';
+
+  const formattedTime =
+    startTime?.toLocaleTimeString(undefined, {
+      hour: '2-digit',
+      minute: '2-digit',
+    }) || '';
 
   if (error)
     return (
       <div
-        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+        className="fixed inset-0 z-100 flex items-center justify-center bg-black/80 backdrop-blur-sm"
         onClick={onClose}
       >
-        <div className="text-white bg-red-500/20 p-6 rounded-2xl border border-red-500/50">
+        <div className="rounded-2xl border border-red-500/50 bg-red-500/20 p-6 text-white">
           Error loading match details. Click to close.
         </div>
       </div>
     );
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+      {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/90 backdrop-blur-xl animate-in fade-in"
+        className="animate-in fade-in absolute inset-0 bg-black/90 backdrop-blur-xl"
         onClick={onClose}
       />
 
-      <div className="relative w-full max-w-2xl bg-[#0c0c0c] border border-white/10 rounded-[40px] shadow-2xl flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in duration-300">
+      {/* Main Modal Content */}
+      <div className="animate-in zoom-in relative flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-[30px] border border-white/10 bg-[#0f0f0f] shadow-2xl duration-300">
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-5 right-5 z-20 rounded-full bg-white/10 p-2 transition-colors hover:bg-white/20"
+        >
+          <X className="h-5 w-5 text-white" />
+        </button>
+
         {isLoading ? (
-          <div className="p-20 flex flex-col items-center justify-center space-y-4">
-            <div className="w-12 h-12 border-4 border-green-500/20 border-t-green-500 rounded-full animate-spin" />
-            <p className="text-white/40 font-bold uppercase text-[10px] tracking-widest">
-              Loading Live Stats...
-            </p>
+          <div className="flex h-96 flex-col items-center justify-center space-y-4">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-green-500/20 border-t-green-500" />
           </div>
         ) : (
           <>
-            {/* Header Section */}
-            <div className="p-8 border-b border-white/5 bg-white/[0.02]">
-              <div className="flex justify-between items-center">
-                <div className="text-center flex-1">
-                  <img
-                    src={`https://imagecache.365scores.com/image/upload/f_auto,w_80/competitors/${match.homeCompetitor.id}`}
-                    className="w-16 h-16 mx-auto mb-3"
-                  />
-                  <div className="font-black text-white text-sm">{match.homeCompetitor.name}</div>
+            {/* Scrollable Content */}
+            <div className="no-scrollbar overflow-y-auto pb-10">
+              {/* Header Top: Competition & Date */}
+              <div className="mt-8 mb-2 flex flex-col items-center">
+                <div className="text-sm font-bold tracking-widest text-white/60 uppercase">
+                  {match.competitionDisplayName}
                 </div>
-
-                <div className="text-center px-8">
-                  <div className="text-5xl font-black tracking-tighter text-white">
-                    {match.homeCompetitor.score} - {match.awayCompetitor.score}
-                  </div>
-                  <div className="text-[10px] font-black text-green-400 mt-2 uppercase tracking-widest bg-green-500/10 px-3 py-1 rounded-full">
-                    {match.statusText || `${match.gameTime}'`}
-                  </div>
-                </div>
-
-                <div className="text-center flex-1">
-                  <img
-                    src={`https://imagecache.365scores.com/image/upload/f_auto,w_80/competitors/${match.awayCompetitor.id}`}
-                    className="w-16 h-16 mx-auto mb-3"
-                  />
-                  <div className="font-black text-white text-sm">{match.awayCompetitor.name}</div>
+                <div className="mt-1 text-xs text-white/40">
+                  {formattedDate} • {formattedTime}
                 </div>
               </div>
-            </div>
 
-            {/* Content Area */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar">
-              {/* Stats Section */}
-              {match.stats && match.stats.length > 0 && (
-                <div>
-                  <h3 className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] mb-6 text-center">
-                    Match Statistics
-                  </h3>
-                  <div className="space-y-6">
-                    {match.stats.map((stat: any, i: number) => {
-                      const home = parseFloat(stat.homeValue) || 0;
-                      const away = parseFloat(stat.awayValue) || 0;
-                      const total = home + away;
-                      const homePercent = total === 0 ? 50 : (home / total) * 100;
+              {/* Match Score Header */}
+              <div className="flex items-center justify-between border-b border-white/5 px-8 py-6">
+                {/* Home Team */}
+                <div className="flex w-24 flex-col items-center gap-2">
+                  <img
+                    src={`https://imagecache.365scores.com/image/upload/f_auto,w_80/competitors/${match.homeCompetitor.id}`}
+                    className="h-14 w-14 object-contain"
+                    alt={match.homeCompetitor.name}
+                  />
+                  <div className="line-clamp-2 text-center text-xs leading-tight font-bold text-white">
+                    {match.homeCompetitor.name}
+                  </div>
+                </div>
 
-                      return (
-                        <div key={i} className="space-y-2">
-                          <div className="flex justify-between text-[11px] font-bold px-1 uppercase tracking-tight">
-                            <span className="text-white">{stat.homeValue}</span>
-                            <span className="text-white/40">{stat.name}</span>
-                            <span className="text-white">{stat.awayValue}</span>
-                          </div>
-                          <div className="h-1.5 w-full bg-white/5 rounded-full flex overflow-hidden">
-                            <div
-                              className="h-full bg-white/40 transition-all duration-500"
-                              style={{ width: `${homePercent}%` }}
-                            />
-                            <div
-                              className="h-full bg-green-500 transition-all duration-500"
-                              style={{ width: `${100 - homePercent}%` }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
+                {/* Score & Status */}
+                <div className="flex flex-col items-center">
+                  <div className="text-4xl font-black tracking-tighter text-white">
+                    {match.homeCompetitor.score} - {match.awayCompetitor.score}
+                  </div>
+                  <div className="mt-2 rounded-md bg-white/5 px-3 py-1">
+                    <div className="text-xs font-extrabold tracking-wide text-green-500 uppercase">
+                      {match.gameTimeDisplay || match.statusText}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Away Team */}
+                <div className="flex w-24 flex-col items-center gap-2">
+                  <img
+                    src={`https://imagecache.365scores.com/image/upload/f_auto,w_80/competitors/${match.awayCompetitor.id}`}
+                    className="h-14 w-14 object-contain"
+                    alt={match.awayCompetitor.name}
+                  />
+                  <div className="line-clamp-2 text-center text-xs leading-tight font-bold text-white">
+                    {match.awayCompetitor.name}
+                  </div>
+                </div>
+              </div>
+
+              {/* Venue Info */}
+              {match.venue && (
+                <div className="mt-6 mb-8 flex justify-center">
+                  <div className="flex items-center gap-2 rounded-full border border-white/5 bg-[#1a1a1a] px-4 py-1.5">
+                    <MapPin className="h-3.5 w-3.5 text-white/60" />
+                    <span className="text-xs font-medium text-white/60">{match.venue.name}</span>
                   </div>
                 </div>
               )}
 
-              {/* Events Section */}
-              {match.events && (
-                <div>
-                  <h3 className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] mb-6 text-center">
-                    Timeline
-                  </h3>
-                  <div className="space-y-3">
-                    {match.events.map((event: any, i: number) => (
+              {/* Timeline Section */}
+              <div className="px-4">
+                <div className="mb-6 text-center text-[10px] font-extrabold tracking-[0.2em] text-white/30 uppercase">
+                  Key Moments
+                </div>
+
+                <div className="relative">
+                  {/* Vertical Center Line */}
+                  <div className="absolute top-0 bottom-0 left-1/2 -ml-px w-px bg-white/10" />
+
+                  {filteredEvents.map((event: any, i: number) => {
+                    const isHome = event.competitorId === match.homeCompetitor.id;
+                    const eventName = event.eventType?.name || 'Event';
+
+                    let eventColor = '#94a3b8';
+                    if (eventName.includes('Goal')) eventColor = '#CCCCCC';
+                    else if (eventName.includes('Yellow')) eventColor = '#FDE047';
+                    else if (eventName.includes('Red')) eventColor = '#EF4444';
+
+                    return (
                       <div
                         key={i}
-                        className={`flex items-center gap-4 ${event.isHome ? 'flex-row' : 'flex-row-reverse'}`}
+                        className={`mb-6 flex w-full items-center ${
+                          isHome ? 'flex-row' : 'flex-row-reverse'
+                        }`}
                       >
-                        <div className="text-[10px] font-black text-white/20 w-8">
-                          {event.time}'
-                        </div>
+                        {/* Event Content Side */}
                         <div
-                          className={`flex-1 p-3 rounded-2xl border border-white/5 ${event.isHome ? 'bg-white/5' : 'bg-green-500/10 border-green-500/10'}`}
+                          className={`flex flex-1 ${
+                            isHome ? 'justify-end pr-10' : 'justify-start pl-10'
+                          }`}
                         >
-                          <div className="text-xs font-bold text-white">{event.playerName}</div>
-                          <div className="text-[9px] text-white/40 uppercase font-medium">
-                            {event.typeText}
+                          <div className="flex items-center gap-4">
+                            {/* For Home: Text then Icon. For Away: Icon then Text (handled by flex-row/reverse above, but specific order needs logic if we want strict mirroring) */}
+                            {isHome ? (
+                              <>
+                                <span className="text-sm font-bold text-white">
+                                  {getPlayerName(event.playerId)}
+                                </span>
+                                <EventIcon type={eventName} color={eventColor} />
+                              </>
+                            ) : (
+                              <>
+                                <EventIcon type={eventName} color={eventColor} />
+                                <span className="text-sm font-bold text-white">
+                                  {getPlayerName(event.playerId)}
+                                </span>
+                              </>
+                            )}
                           </div>
                         </div>
+
+                        {/* Center Time Bubble */}
+                        <div className="absolute left-1/2 z-10 -ml-4.5 flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-[#1a1a1a] shadow-lg">
+                          <span className="text-[10px] font-bold text-white">
+                            {event.gameTimeDisplay}
+                          </span>
+                        </div>
+
+                        {/* Empty Space for Balance */}
+                        <div className="flex-1" />
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
+
+                  {filteredEvents.length === 0 && (
+                    <div className="py-10 text-center text-xs text-white/20">
+                      No key events recorded yet.
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </>
         )}

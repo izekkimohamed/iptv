@@ -1,9 +1,10 @@
 'use client';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
 import PlaylistForm from '@/components/PlaylistForm';
 import { trpc } from '@/lib/trpc';
 import { usePlaylistStore } from '@/store/appStore';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
 
 enum CreationStage {
   CHANNELS_CATEGORIES = 'channels_categories',
@@ -268,14 +269,14 @@ export default function Home() {
 
   if (isCreatingPlaylist) {
     return (
-      <div className="overflow-y-auto flex items-center justify-center p-4">
-        <div className="rounded-2xl p-8 border border-white/20 max-w-2xl w-full">
+      <div className="flex items-center justify-center overflow-y-auto p-4">
+        <div className="w-full max-w-2xl rounded-2xl border border-white/20 p-8">
           {/* Header */}
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-white text-2xl font-bold">📺</span>
+          <div className="mb-8 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-purple-500 to-pink-500">
+              <span className="text-2xl font-bold text-white">📺</span>
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">Creating Your Playlist</h1>
+            <h1 className="mb-2 text-3xl font-bold text-white">Creating Your Playlist</h1>
             <p className="text-gray-300">
               Please do NOT leave this page while we set up your content library
             </p>
@@ -283,13 +284,13 @@ export default function Home() {
 
           {/* Overall Progress */}
           <div className="mb-8">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-white font-medium">Overall Progress</span>
-              <span className="text-purple-300 font-bold">{Math.round(totalProgress)}%</span>
+            <div className="mb-2 flex items-center justify-between">
+              <span className="font-medium text-white">Overall Progress</span>
+              <span className="font-bold text-purple-300">{Math.round(totalProgress)}%</span>
             </div>
-            <div className="w-full bg-gray-700 rounded-full h-3">
+            <div className="h-3 w-full rounded-full bg-gray-700">
               <div
-                className="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all duration-500 ease-out"
+                className="h-3 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500 ease-out"
                 style={{ width: `${totalProgress}%` }}
               ></div>
             </div>
@@ -307,14 +308,14 @@ export default function Home() {
                 return (
                   <div
                     key={stage}
-                    className={`flex items-center p-4 rounded-xl border transition-all duration-300 ${
+                    className={`flex items-center rounded-xl border p-4 transition-all duration-300 ${
                       isActive
-                        ? 'bg-purple-500/20 border-purple-500/50'
+                        ? 'border-purple-500/50 bg-purple-500/20'
                         : state.isCompleted
-                          ? 'bg-green-500/20 border-green-500/50'
+                          ? 'border-green-500/50 bg-green-500/20'
                           : state.error
-                            ? 'bg-red-500/20 border-red-500/50'
-                            : 'bg-white/5 border-white/10'
+                            ? 'border-red-500/50 bg-red-500/20'
+                            : 'border-white/10 bg-white/5'
                     }`}
                   >
                     {/* Icon */}
@@ -343,7 +344,7 @@ export default function Home() {
                       >
                         {getStageTitle(stage)}
                       </h3>
-                      <p className="text-gray-400 text-sm mt-1">
+                      <p className="mt-1 text-sm text-gray-400">
                         {state.error ? `Error: ${state.error}` : getStageDescription(stage)}
                       </p>
                     </div>
@@ -351,7 +352,7 @@ export default function Home() {
                     {/* Spinner */}
                     {state.isLoading && (
                       <div className="ml-4">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500"></div>
+                        <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-purple-500"></div>
                       </div>
                     )}
                   </div>
@@ -362,13 +363,13 @@ export default function Home() {
           {/* Completion State */}
           {currentStage === CreationStage.COMPLETED && (
             <div className="mt-8 text-center">
-              <div className="text-4xl mb-4">🎉</div>
-              <h2 className="text-2xl font-bold text-green-300 mb-2">
+              <div className="mb-4 text-4xl">🎉</div>
+              <h2 className="mb-2 text-2xl font-bold text-green-300">
                 Playlist Created Successfully!
               </h2>
-              <p className="text-gray-300 mb-4">Redirecting to your dashboard...</p>
+              <p className="mb-4 text-gray-300">Redirecting to your dashboard...</p>
               <div className="animate-pulse">
-                <div className="bg-green-500/20 text-green-300 px-4 py-2 rounded-full inline-block">
+                <div className="inline-block rounded-full bg-green-500/20 px-4 py-2 text-green-300">
                   Ready to stream! 🚀
                 </div>
               </div>
@@ -376,10 +377,10 @@ export default function Home() {
           )}
 
           {/* Warning */}
-          <div className="mt-6 p-4 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
+          <div className="mt-6 rounded-lg border border-yellow-500/50 bg-yellow-500/20 p-4">
             <div className="flex items-center">
-              <span className="text-yellow-400 mr-2">⚠️</span>
-              <span className="text-yellow-200 text-sm">
+              <span className="mr-2 text-yellow-400">⚠️</span>
+              <span className="text-sm text-yellow-200">
                 This process may take several minutes. Please keep this page open.
               </span>
             </div>
@@ -390,7 +391,7 @@ export default function Home() {
   }
 
   return (
-    <div className="pt-4 h-full content-center overflow-y-hidden">
+    <div className="h-full content-center overflow-y-hidden pt-4">
       <PlaylistForm />
     </div>
   );

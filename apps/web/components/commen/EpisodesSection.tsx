@@ -1,11 +1,13 @@
 'use client';
 
+import { useRouter, useSearchParams } from 'next/navigation';
+import { forwardRef, useEffect, useImperativeHandle, useMemo } from 'react';
+
 import { useEpisodePlayback, useSeasonSelection, useStreamingUrls } from '@/hooks/useDetails';
 import { EpisodesSectionProps } from '@/lib/types';
 import { VideoPlayerModal } from '@/shared/components/common/VideoPlayerModal';
 import { usePlaylistStore } from '@/store/appStore';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { forwardRef, useEffect, useImperativeHandle, useMemo } from 'react';
+
 import { EpisodeCard } from './EpisodeCard';
 
 interface EpisodesSectionHandle {
@@ -124,22 +126,22 @@ export const EpisodesSection = forwardRef<EpisodesSectionHandle, EpisodesSection
     return (
       <div className="mt-20 space-y-8" data-episodes-section>
         <div className="flex items-center gap-3">
-          <div className="h-8 w-1 bg-green-500 rounded-full" /> {/* Accent bar */}
-          <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Episodes</h2>
+          <div className="h-8 w-1 rounded-full bg-green-500" /> {/* Accent bar */}
+          <h2 className="text-2xl font-black tracking-tighter text-white uppercase">Episodes</h2>
         </div>
 
         {/* Season Selector */}
-        <div className="flex gap-3 overflow-x-auto pb-4 no-scrollbar">
+        <div className="no-scrollbar flex gap-3 overflow-x-auto pb-4">
           {seasons.map((season) => {
             const isSelected = selectedSeason === season;
             return (
               <button
                 key={season}
                 onClick={() => setSelectedSeason(season)}
-                className={`px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all duration-300 border ${
+                className={`rounded-2xl border px-6 py-3 text-xs font-black tracking-widest uppercase transition-all duration-300 ${
                   isSelected
-                    ? 'bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.2)]'
-                    : 'bg-white/5 text-white/40 border-white/10 hover:bg-white/10 hover:text-white'
+                    ? 'border-white bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.2)]'
+                    : 'border-white/10 bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'
                 }`}
               >
                 Season {season}
@@ -150,7 +152,7 @@ export const EpisodesSection = forwardRef<EpisodesSectionHandle, EpisodesSection
 
         {/* Episodes Grid */}
         {sortedEpisodes.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {sortedEpisodes.map((episode) => (
               <div
                 key={episode.id}
@@ -166,8 +168,8 @@ export const EpisodesSection = forwardRef<EpisodesSectionHandle, EpisodesSection
             ))}
           </div>
         ) : (
-          <div className="py-20 text-center bg-white/2 rounded-3xl border border-dashed border-white/10">
-            <p className="text-white/20 font-bold uppercase tracking-widest text-xs">
+          <div className="rounded-3xl border border-dashed border-white/10 bg-white/2 py-20 text-center">
+            <p className="text-xs font-bold tracking-widest text-white/20 uppercase">
               No Content Found
             </p>
           </div>

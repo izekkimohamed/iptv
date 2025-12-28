@@ -1,18 +1,20 @@
-import { TrailerModalProps } from '@/lib/types';
 import { X } from 'lucide-react';
 import { FC } from 'react';
+
+import { TrailerModalProps } from '@/lib/types';
+
 import { Button } from '../ui/button';
 
 export const TrailerModal: FC<TrailerModalProps> = ({ isOpen, onClose, trailerId }) => {
   if (!isOpen || !trailerId) return null;
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center ">
+    <div className="absolute inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
-      <div className="relative z-50 w-full max-w-5xl shadow-2xl rounded-xl overflow-hidden border border-white/10">
-        <div className="flex p-2 justify-end bg-black/80 backdrop-blur-md">
+      <div className="relative z-50 w-full max-w-5xl overflow-hidden rounded-xl border border-white/10 shadow-2xl">
+        <div className="flex justify-end bg-black/80 p-2 backdrop-blur-md">
           <Button
-            className="pointer-events-auto p-2.5 text-white cursor-pointer rounded-full hover:bg-white/20 transition-colors duration-200 "
+            className="pointer-events-auto cursor-pointer rounded-full p-2.5 text-white transition-colors duration-200 hover:bg-white/20"
             onClick={onClose}
             aria-label="Close video player"
             title="Close video"
@@ -27,7 +29,7 @@ export const TrailerModal: FC<TrailerModalProps> = ({ isOpen, onClose, trailerId
           allowFullScreen
           loading="lazy"
           src={`https://www.youtube.com/embed/${trailerId}?autoplay=1&mute=1`}
-          className="w-full aspect-video"
+          className="aspect-video w-full"
         />
       </div>
     </div>

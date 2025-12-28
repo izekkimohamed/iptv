@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react';
+
 import { trpc } from '@/lib/trpc';
 import { usePlaylistStore } from '@/store/appStore';
-import { useEffect, useState } from 'react';
+
 import { Button } from './ui/button';
 
 export default function SophisticatedLoginForm() {
@@ -79,9 +81,9 @@ export default function SophisticatedLoginForm() {
   const isFormValid = formData.url && formData.username && formData.password && !urlError;
 
   return (
-    <div className="font-mono border border-white/10 rounded-2xl p-8 shadow-2xl max-w-md mx-auto w-full">
-      <div className="text-center mb-8">
-        <div className="mx-auto h-12 w-12  rounded-full flex items-center justify-center mb-4">
+    <div className="mx-auto w-full max-w-md rounded-2xl border border-white/10 p-8 font-mono shadow-2xl">
+      <div className="mb-8 text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full">
           <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               strokeLinecap="round"
@@ -91,12 +93,12 @@ export default function SophisticatedLoginForm() {
             />
           </svg>
         </div>
-        <h2 className="text-3xl font-bold text-white mb-2">Secure Access</h2>
+        <h2 className="mb-2 text-3xl font-bold text-white">Secure Access</h2>
         <p className="text-gray-300">Enter your credentials to continue</p>
       </div>
 
       {error && (
-        <p className="mt-2 text-center text-lg font-bold text-red-400 animate-fadeIn">
+        <p className="animate-fadeIn mt-2 text-center text-lg font-bold text-red-400">
           {error.message}
         </p>
       )}
@@ -104,7 +106,7 @@ export default function SophisticatedLoginForm() {
       <div className="space-y-6">
         {/* URL Field */}
         <div>
-          <label htmlFor="url" className="block text-sm font-medium text-gray-200 mb-2">
+          <label htmlFor="url" className="mb-2 block text-sm font-medium text-gray-200">
             Server URL
           </label>
           <div className="relative">
@@ -116,19 +118,18 @@ export default function SophisticatedLoginForm() {
                 value={formData.url}
                 onChange={handleChange}
                 onBlur={handleUrlBlur}
-                className={`appearance-none relative block w-full px-4 py-3 pr-12 border rounded-xl text-white placeholder-gray-400
-                 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent ${
-                   urlError && urlTouched
-                     ? 'border-red-400 focus:border-red-400 focus:ring-red-400'
-                     : 'border-gray-600 focus:border-amber-950 focus:ring-amber-950'
-                 }`}
+                className={`relative block w-full appearance-none rounded-xl border px-4 py-3 pr-12 text-white placeholder-gray-400 transition-all duration-300 focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent focus:outline-none ${
+                  urlError && urlTouched
+                    ? 'border-red-400 focus:border-red-400 focus:ring-red-400'
+                    : 'border-gray-600 focus:border-amber-950 focus:ring-amber-950'
+                }`}
                 placeholder="https://api.example.com"
               />
             </div>
             {/* URL Status Indicator */}
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3">
               {urlStatus === 'checking' && (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-400"></div>
+                <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-yellow-400"></div>
               )}
               {urlStatus === 'verified' && (
                 <svg className="h-4 w-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
@@ -142,13 +143,13 @@ export default function SophisticatedLoginForm() {
             </div>
           </div>
           {urlError && urlTouched && (
-            <p className="mt-2 text-sm text-red-400 animate-fadeIn">{urlError}</p>
+            <p className="animate-fadeIn mt-2 text-sm text-red-400">{urlError}</p>
           )}
         </div>
 
         {/* Username Field */}
         <div>
-          <label htmlFor="username" className="block text-sm font-medium text-gray-200 mb-2">
+          <label htmlFor="username" className="mb-2 block text-sm font-medium text-gray-200">
             Username
           </label>
           <div className="relative">
@@ -158,7 +159,7 @@ export default function SophisticatedLoginForm() {
               type="text"
               value={formData.username}
               onChange={handleChange}
-              className="appearance-none relative block w-full px-4 py-3 border border-gray-600 rounded-xl text-white placeholder-gray-400 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent focus:border-amber-950 focus:ring-amber-950"
+              className="relative block w-full appearance-none rounded-xl border border-gray-600 px-4 py-3 text-white placeholder-gray-400 transition-all duration-300 focus:border-amber-950 focus:ring-2 focus:ring-amber-950 focus:ring-offset-2 focus:ring-offset-transparent focus:outline-none"
               placeholder="Enter your username"
             />
           </div>
@@ -166,7 +167,7 @@ export default function SophisticatedLoginForm() {
 
         {/* Password Field */}
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-200 mb-2">
+          <label htmlFor="password" className="mb-2 block text-sm font-medium text-gray-200">
             Password
           </label>
           <div className="relative">
@@ -176,13 +177,13 @@ export default function SophisticatedLoginForm() {
               type="text"
               value={formData.password}
               onChange={handleChange}
-              className="appearance-none relative block w-full px-4 py-3 pr-12 border border-gray-600 rounded-xl text-white placeholder-gray-400  transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent focus:border-amber-950 focus:ring-amber-950"
+              className="relative block w-full appearance-none rounded-xl border border-gray-600 px-4 py-3 pr-12 text-white placeholder-gray-400 transition-all duration-300 focus:border-amber-950 focus:ring-2 focus:ring-amber-950 focus:ring-offset-2 focus:ring-offset-transparent focus:outline-none"
               placeholder="Enter your password"
             />
             <Button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-1.5 top-1.5 rounded-md bg-gray-600/10 p-1 text-white transition-all duration-300 hover:bg-gray-700 active:bg-gray-800"
+              className="absolute top-1.5 right-1.5 rounded-md bg-gray-600/10 p-1 text-white transition-all duration-300 hover:bg-gray-700 active:bg-gray-800"
             >
               {showPassword ? (
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -218,22 +219,22 @@ export default function SophisticatedLoginForm() {
           type="button"
           onClick={handleSubmit}
           disabled={!isFormValid || isPending}
-          className={`group relative w-full flex items-center justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-950 ${
+          className={`group relative flex w-full transform items-center justify-center rounded-xl border border-transparent px-4 py-3 text-sm font-medium text-white transition-all duration-300 hover:scale-105 focus:ring-2 focus:ring-amber-950 focus:ring-offset-2 focus:outline-none ${
             isFormValid && !isPending
-              ? 'bg-gradient-to-r focus:border-amber-950 focus:ring-amber-950 from-amber-950 to-amber-950 shadow-lg hover:shadow-amber-500/25 cursor-pointer'
-              : 'bg-gray-600  cursor-not-allowed'
+              ? 'cursor-pointer bg-gradient-to-r from-amber-950 to-amber-950 shadow-lg hover:shadow-amber-500/25 focus:border-amber-950 focus:ring-amber-950'
+              : 'cursor-not-allowed bg-gray-600'
           }`}
         >
           {isPending ? (
             <div className="flex items-center">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
               Adding...
             </div>
           ) : (
             <>
               <span>Add Playlist</span>
               <svg
-                className="ml-2 -mr-1 h-4 w-4 group-hover:translate-x-1 transition-transform"
+                className="-mr-1 ml-2 h-4 w-4 transition-transform group-hover:translate-x-1"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -248,9 +249,9 @@ export default function SophisticatedLoginForm() {
         </Button>
 
         {/* Form Status Display */}
-        <div className="mt-6 p-4 bg-black/20 rounded-xl border border-gray-700">
-          <h3 className="text-sm font-medium text-gray-200 mb-3 flex items-center">
-            <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="mt-6 rounded-xl border border-gray-700 bg-black/20 p-4">
+          <h3 className="mb-3 flex items-center text-sm font-medium text-gray-200">
+            <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"

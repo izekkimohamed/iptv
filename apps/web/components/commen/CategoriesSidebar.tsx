@@ -1,12 +1,14 @@
-import { useAutoScrollToSelected } from '@/hooks/useAutoScrollToSelected';
-import { Category } from '@/lib/types';
 import { ChevronRight, Folder, Search, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
-import LoadingSpinner from '../ui/LoadingSpinner';
+
+import { useAutoScrollToSelected } from '@/hooks/useAutoScrollToSelected';
+import { Category } from '@/lib/types';
+
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import LoadingSpinner from '../ui/LoadingSpinner';
 
 interface CategoriesSidebarProps {
   categories?: Category[];
@@ -45,17 +47,15 @@ export default function CategoriesSidebar(props: CategoriesSidebarProps) {
   };
 
   return (
-    <div className="w-100 h-full flex flex-col border-r border-white/10 backdrop-blur-sm">
+    <div className="flex h-full w-100 flex-col border-r border-white/10 backdrop-blur-sm">
       {/* Search */}
-      <div className="px-1 pr-4 py-3 border-b border-white/10">
+      <div className="border-b border-white/10 px-1 py-3 pr-4">
         <div className="relative flex items-center">
-          <Search className="absolute left-3 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 h-4 w-4 text-gray-400" />
           <Input
             id="search-input"
             placeholder="Search categories..."
-            className="w-full pl-10 pr-10 py-2 bg-transparent border rounded-md border-white/15
-            focus:ring-1
-            active:ring-1 text-sm text-amber-400 placeholder-gray-400 focus:border-amber-400"
+            className="w-full rounded-md border border-white/15 bg-transparent py-2 pr-10 pl-10 text-sm text-amber-400 placeholder-gray-400 focus:border-amber-400 focus:ring-1 active:ring-1"
             style={{}}
             value={searchValue}
             onChange={handleChange}
@@ -64,9 +64,9 @@ export default function CategoriesSidebar(props: CategoriesSidebarProps) {
           {searchValue && (
             <Button
               onClick={() => setSearchValue('')}
-              className="absolute bg-transparent rounded-l-none border border-amber-400/10 right-0 text-gray-400 hover:text-amber-400"
+              className="absolute right-0 rounded-l-none border border-amber-400/10 bg-transparent text-gray-400 hover:text-amber-400"
             >
-              <X className="w-4 h-4" />
+              <X className="h-4 w-4" />
             </Button>
           )}
         </div>
@@ -77,8 +77,8 @@ export default function CategoriesSidebar(props: CategoriesSidebarProps) {
         {isLoading ? (
           <LoadingSpinner />
         ) : !filteredCategories?.length ? (
-          <div className="text-center py-12 space-y-3 text-gray-400">
-            <Folder className="w-8 h-8 mx-auto opacity-40" />
+          <div className="space-y-3 py-12 text-center text-gray-400">
+            <Folder className="mx-auto h-8 w-8 opacity-40" />
             <p>{searchValue ? 'No categories found' : 'No categories available'}</p>
           </div>
         ) : (
@@ -87,17 +87,14 @@ export default function CategoriesSidebar(props: CategoriesSidebarProps) {
               href={`/${pathname.split('/')[1]}?new=true`}
               data-category-id="new"
               title="New"
-              className={`
-                    flex items-center justify-between px-1 py-3 rounded-lg border transition-all
-                    ${
-                      newChannels
-                        ? 'border-amber-500/40 bg-white/15 backdrop-blur-md shadow-md shadow-amber-500/10 text-amber-400'
-                        : 'border-white/20  hover:bg-white/5 text-gray-300 hover:text-white'
-                    }
-                  `}
+              className={`flex items-center justify-between rounded-lg border px-1 py-3 transition-all ${
+                newChannels
+                  ? 'border-amber-500/40 bg-white/15 text-amber-400 shadow-md shadow-amber-500/10 backdrop-blur-md'
+                  : 'border-white/20 text-gray-300 hover:bg-white/5 hover:text-white'
+              } `}
             >
-              <div className="flex items-center gap-2 min-w-0">
-                <Folder className={`w-4 h-4 text-gray-500`} />
+              <div className="flex min-w-0 items-center gap-2">
+                <Folder className={`h-4 w-4 text-gray-500`} />
                 <span className="truncate font-medium">
                   New{' '}
                   {pathname.split('/')[1]?.charAt(0).toUpperCase() +
@@ -106,7 +103,7 @@ export default function CategoriesSidebar(props: CategoriesSidebarProps) {
               </div>
 
               <ChevronRight
-                className={`w-4 h-4 transition text-gray-500 group-hover:text-white -translate-x-2`}
+                className={`h-4 w-4 -translate-x-2 text-gray-500 transition group-hover:text-white`}
               />
             </Link>
             {filteredCategories.map((category) => {
@@ -118,27 +115,24 @@ export default function CategoriesSidebar(props: CategoriesSidebarProps) {
                   href={`/${categoryType}?categoryId=${category.categoryId}`}
                   data-category-id={category.categoryId}
                   title={category.categoryName}
-                  className={`
-                    flex items-center justify-between px-1 py-3 rounded-lg border transition-all
-                    ${
-                      isSelected
-                        ? 'border-amber-500/40 bg-white/15 backdrop-blur-md shadow-md shadow-amber-500/10 text-amber-400'
-                        : 'border-white/20  hover:bg-white/5 text-gray-300 hover:text-white'
-                    }
-                  `}
+                  className={`flex items-center justify-between rounded-lg border px-1 py-3 transition-all ${
+                    isSelected
+                      ? 'border-amber-500/40 bg-white/15 text-amber-400 shadow-md shadow-amber-500/10 backdrop-blur-md'
+                      : 'border-white/20 text-gray-300 hover:bg-white/5 hover:text-white'
+                  } `}
                 >
-                  <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex min-w-0 items-center gap-2">
                     <Folder
-                      className={`w-4 h-4 ${isSelected ? 'text-amber-400' : 'text-gray-500'}`}
+                      className={`h-4 w-4 ${isSelected ? 'text-amber-400' : 'text-gray-500'}`}
                     />
                     <span className="truncate font-medium">{category.categoryName}</span>
                   </div>
 
                   <ChevronRight
-                    className={`w-4 h-4 transition ${
+                    className={`h-4 w-4 transition ${
                       isSelected
-                        ? 'text-amber-400 translate-x-0 opacity-100'
-                        : 'text-gray-500 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-2'
+                        ? 'translate-x-0 text-amber-400 opacity-100'
+                        : '-translate-x-2 text-gray-500 opacity-0 group-hover:translate-x-0 group-hover:opacity-100'
                     }`}
                   />
                 </Link>
@@ -149,10 +143,10 @@ export default function CategoriesSidebar(props: CategoriesSidebarProps) {
       </div>
 
       {/* Footer Count */}
-      <div className="px-4 py-2 border-t border-white/10">
-        <div className="flex justify-between items-center text-xs text-gray-400">
+      <div className="border-t border-white/10 px-4 py-2">
+        <div className="flex items-center justify-between text-xs text-gray-400">
           <span>{searchValue ? 'Matching' : 'Total'}</span>
-          <span className="px-3 py-1 border border-white/10 rounded text-white font-semibold">
+          <span className="rounded border border-white/10 px-3 py-1 font-semibold text-white">
             {filteredCategories?.length || 0}
           </span>
         </div>

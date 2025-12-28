@@ -1,8 +1,9 @@
+import { X } from 'lucide-react';
+import { FC } from 'react';
+
 import { Button } from '@/components/ui/button';
 import { VideoPlayer } from '@/features/player/components/VideoPlayer';
 import { VideoPlayerModalProps } from '@/lib/types';
-import { X } from 'lucide-react';
-import { FC } from 'react';
 
 type EnhancedProps = VideoPlayerModalProps & {
   totalEpisodes: number;
@@ -39,10 +40,10 @@ export const VideoPlayerModal: FC<EnhancedProps> = ({
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
-      <div className="relative z-50 w-full max-w-5xl shadow-2xl rounded-xl overflow-hidden border border-white/10">
-        <div className="p-1 flex justify-end bg-black/80 backdrop-blur-md">
+      <div className="relative z-50 w-full max-w-5xl overflow-hidden rounded-xl border border-white/10 shadow-2xl">
+        <div className="flex justify-end bg-black/80 p-1 backdrop-blur-md">
           <Button
-            className="pointer-events-auto p-2.5 text-white cursor-pointer rounded-full hover:bg-white/20 transition-colors duration-200 "
+            className="pointer-events-auto cursor-pointer rounded-full p-2.5 text-white transition-colors duration-200 hover:bg-white/20"
             onClick={onClose}
             aria-label="Close video player"
             title="Close video"

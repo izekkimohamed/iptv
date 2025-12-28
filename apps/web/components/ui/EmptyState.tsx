@@ -1,4 +1,5 @@
 import { ChevronLeft } from 'lucide-react';
+
 import { Button } from './button';
 
 interface EmptyStateProps {
@@ -23,15 +24,15 @@ export default function EmptyState({
   return (
     <div className={containerClasses}>
       <div className="text-center">
-        <div className="text-6xl mb-4 opacity-50">{icon}</div>
-        <h2 className="text-2xl font-bold text-white mb-2">{title}</h2>
-        {description && <p className="text-gray-400 max-w-md mx-auto">{description}</p>}
+        <div className="mb-4 text-6xl opacity-50">{icon}</div>
+        <h2 className="mb-2 text-2xl font-bold text-white">{title}</h2>
+        {description && <p className="mx-auto max-w-md text-gray-400">{description}</p>}
         {goBack && (
           <Button
-            className="mt-6 px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-all duration-200"
+            className="mt-6 rounded-lg bg-white/10 px-4 py-2 text-white transition-all duration-200 hover:bg-white/20"
             onClick={() => window.history.back()}
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="h-5 w-5" />
             <span className="text-sm font-medium">Go Back</span>
           </Button>
         )}

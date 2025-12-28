@@ -1,8 +1,9 @@
 'use client';
 
-import { PropsWithChildren } from 'react';
-import { createTrpcClient, queryClient, trpc } from '@/lib/trpc';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { PropsWithChildren } from 'react';
+
+import { createTrpcClient, queryClient, trpc } from '@/lib/trpc';
 
 interface TrpcProviderProps extends PropsWithChildren {
   url: string;

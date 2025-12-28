@@ -39,17 +39,16 @@ const Controls = ({
 
   return (
     <div
-      className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent transition-opacity duration-300
-       ${isFullscreen ? 'p-8' : 'p-4'}`}
+      className={`absolute right-0 bottom-0 left-0 bg-gradient-to-t from-black/90 to-transparent transition-opacity duration-300 ${isFullscreen ? 'p-8' : 'p-4'}`}
     >
       {/* Progress Bar */}
       <div className="mb-4">
         <div
-          className={`flex items-center space-x-2 text-white mb-2 ${isFullscreen ? 'text-lg' : 'text-sm'}`}
+          className={`mb-2 flex items-center space-x-2 text-white ${isFullscreen ? 'text-lg' : 'text-sm'}`}
         >
           <span>{formatTime(currentTime)}</span>
           <div
-            className={`flex-1 bg-gray-600 rounded overflow-hidden cursor-pointer ${isFullscreen ? 'h-2' : 'h-1'}`}
+            className={`flex-1 cursor-pointer overflow-hidden rounded bg-gray-600 ${isFullscreen ? 'h-2' : 'h-1'}`}
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               const pos = (e.clientX - rect.left) / rect.width;
@@ -71,11 +70,11 @@ const Controls = ({
           {/* Play/Pause */}
           <Button
             onClick={togglePlay}
-            className="text-white hover:text-purple-400 transition-colors"
+            className="text-white transition-colors hover:text-purple-400"
           >
             {isPlaying ? (
               <svg
-                className={`${isFullscreen ? 'w-12 h-12' : 'w-8 h-8'}`}
+                className={`${isFullscreen ? 'h-12 w-12' : 'h-8 w-8'}`}
                 fill="currentColor"
                 viewBox="0 0 24 24"
               >
@@ -83,7 +82,7 @@ const Controls = ({
               </svg>
             ) : (
               <svg
-                className={`${isFullscreen ? 'w-12 h-12' : 'w-8 h-8'}`}
+                className={`${isFullscreen ? 'h-12 w-12' : 'h-8 w-8'}`}
                 fill="currentColor"
                 viewBox="0 0 24 24"
               >
@@ -96,11 +95,11 @@ const Controls = ({
           <div className="flex items-center space-x-2">
             <Button
               onClick={toggleMute}
-              className="text-white hover:text-purple-400 transition-colors"
+              className="text-white transition-colors hover:text-purple-400"
             >
               {isMuted || volume === 0 ? (
                 <svg
-                  className={`${isFullscreen ? 'w-8 h-8' : 'w-6 h-6'}`}
+                  className={`${isFullscreen ? 'h-8 w-8' : 'h-6 w-6'}`}
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
@@ -108,7 +107,7 @@ const Controls = ({
                 </svg>
               ) : (
                 <svg
-                  className={`${isFullscreen ? 'w-8 h-8' : 'w-6 h-6'}`}
+                  className={`${isFullscreen ? 'h-8 w-8' : 'h-6 w-6'}`}
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
@@ -117,7 +116,7 @@ const Controls = ({
               )}
             </Button>
             <div
-              className={`bg-gray-600 rounded overflow-hidden cursor-pointer ${isFullscreen ? 'w-24 h-2' : 'w-16 h-1'}`}
+              className={`cursor-pointer overflow-hidden rounded bg-gray-600 ${isFullscreen ? 'h-2 w-24' : 'h-1 w-16'}`}
               onClick={(e) => {
                 const rect = e.currentTarget.getBoundingClientRect();
                 const pos = (e.clientX - rect.left) / rect.width;
@@ -140,11 +139,11 @@ const Controls = ({
           {/* Fullscreen */}
           <Button
             onClick={toggleFullscreen}
-            className="text-white hover:text-purple-400 transition-colors"
+            className="text-white transition-colors hover:text-purple-400"
           >
             {isFullscreen ? (
               <svg
-                className={`${isFullscreen ? 'w-8 h-8' : 'w-6 h-6'}`}
+                className={`${isFullscreen ? 'h-8 w-8' : 'h-6 w-6'}`}
                 fill="currentColor"
                 viewBox="0 0 24 24"
               >
@@ -152,7 +151,7 @@ const Controls = ({
               </svg>
             ) : (
               <svg
-                className={`${isFullscreen ? 'w-8 h-8' : 'w-6 h-6'}`}
+                className={`${isFullscreen ? 'h-8 w-8' : 'h-6 w-6'}`}
                 fill="currentColor"
                 viewBox="0 0 24 24"
               >

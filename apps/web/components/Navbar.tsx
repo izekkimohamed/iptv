@@ -1,9 +1,4 @@
 'use client';
-import { useTauri } from '@/hooks/useTauri';
-import { trpc } from '@/lib/trpc';
-import { cn } from '@/lib/utils';
-import { usePlaylistStore } from '@/store/appStore';
-import { useRecentUpdateStore } from '@/store/recentUpdate';
 import { invoke } from '@tauri-apps/api/core';
 import { Minus, RefreshCcw, X } from 'lucide-react';
 import Image from 'next/image';
@@ -11,6 +6,13 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+
+import { useTauri } from '@/hooks/useTauri';
+import { trpc } from '@/lib/trpc';
+import { cn } from '@/lib/utils';
+import { usePlaylistStore } from '@/store/appStore';
+import { useRecentUpdateStore } from '@/store/recentUpdate';
+
 import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
@@ -121,14 +123,14 @@ export default function NavBar() {
   return (
     <header
       className={cn(
-        'sticky top-0 z-50  border-b border-white/10',
-        isPending ? 'animate-pulse bg-white/20 pointer-events-none cursor-not-allowed' : '',
+        'sticky top-0 z-50 border-b border-white/10',
+        isPending ? 'pointer-events-none animate-pulse cursor-not-allowed bg-white/20' : '',
       )}
     >
-      <div className={cn('mx-auto max-w-[90vw]', isPending ? 'opacity-50 cursor-not-allowed' : '')}>
-        <div className="flex items-center justify-between h-20  gap-4">
+      <div className={cn('mx-auto max-w-[90vw]', isPending ? 'cursor-not-allowed opacity-50' : '')}>
+        <div className="flex h-20 items-center justify-between gap-4">
           {/* Logo */}
-          <Link href={'/'} className="flex items-center shrink-0">
+          <Link href={'/'} className="flex shrink-0 items-center">
             <Image
               src="/icon.png"
               alt="StreamMax"
@@ -136,59 +138,59 @@ export default function NavBar() {
               height={60}
               className="mr-2 rounded-lg"
             />
-            <span className="text-xl font-bold bg-linear-to-r from-slate-200 to-slate-500 bg-clip-text text-transparent hidden sm:inline">
+            <span className="hidden bg-linear-to-r from-slate-200 to-slate-500 bg-clip-text text-xl font-bold text-transparent sm:inline">
               StreamMax
             </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="items-center justify-center hidden space-x-1 md:flex flex-1 ml-8">
+          <nav className="ml-8 hidden flex-1 items-center justify-center space-x-1 md:flex">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
                   pathName === item.href
-                    ? 'bg-linear-to-br from-white/10 to-transparent backdrop-blur-xl border-white/10 shadow-2xl border text-gray-300 hover:text-white hover:bg-white/10 hover:border-white/20'
-                    : 'text-gray-300 hover:text-white hover:bg-white/10',
-                  'flex items-center gap-2 px-3 py-1  font-medium rounded-lg transition-all duration-200',
+                    ? 'border border-white/10 bg-linear-to-br from-white/10 to-transparent text-gray-300 shadow-2xl backdrop-blur-xl hover:border-white/20 hover:bg-white/10 hover:text-white'
+                    : 'text-gray-300 hover:bg-white/10 hover:text-white',
+                  'flex items-center gap-2 rounded-lg px-3 py-1 font-medium transition-all duration-200',
                 )}
               >
                 <p
                   className={cn(
-                    'flex items-center gap-2 px-3 py-2  font-medium text-gray-300 rounded-lg transition-all duration-200',
+                    'flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-gray-300 transition-all duration-200',
                     isPending ? 'animate-pulse bg-white/20' : '',
                   )}
                 >
                   <span className="mr-1">{item.icon}</span>
-                  <span className="mr-1 hidden md:inline text-lg text-nowrap">{item.label}</span>
+                  <span className="mr-1 hidden text-lg text-nowrap md:inline">{item.label}</span>
                 </p>
               </Link>
             ))}
           </nav>
 
           {/* Center - Playlist Selector & Refresh */}
-          <div className="flex items-center gap-4 shrink-0">
-            <div className="relative group">
+          <div className="flex shrink-0 items-center gap-4">
+            <div className="group relative">
               <Select
                 disabled={!storePlaylists.length}
                 onValueChange={(e) => handlePlaylistSelect(e)}
                 defaultValue={selectedPlaylist?.id.toString()}
               >
                 <SelectTrigger
-                  className="w-40 md:w-45 rounded-lg text-white border border-white/10 hover:border-white/20 hover:bg-white/10 transition-all duration-200 focus:ring-2 focus:ring-white/20 cursor-pointer"
+                  className="w-40 cursor-pointer rounded-lg border border-white/10 text-white transition-all duration-200 hover:border-white/20 hover:bg-white/10 focus:ring-2 focus:ring-white/20 md:w-45"
                   value={selectedPlaylist?.username || 'Select'}
                 >
                   <SelectValue placeholder={selectedPlaylist?.username || 'Playlist'} />
                 </SelectTrigger>
-                <SelectContent className="text-white bg-black/10 backdrop-blur-lg border border-white/10 rounded-lg shadow-xl">
+                <SelectContent className="rounded-lg border border-white/10 bg-black/10 text-white shadow-xl backdrop-blur-lg">
                   {storePlaylists &&
                     storePlaylists.map((playlist) => (
                       <SelectItem
                         key={playlist.id}
                         value={playlist.id.toString()}
                         className={cn(
-                          'cursor-pointer transition-colors flex justify-between items-center w-full',
+                          'flex w-full cursor-pointer items-center justify-between transition-colors',
                           playlist.id === selectedPlaylist?.id
                             ? 'bg-amber-400/20 text-white'
                             : 'text-gray-300 hover:bg-white/5 hover:text-white',
@@ -204,7 +206,7 @@ export default function NavBar() {
             </div>
 
             <Button
-              className="p-2 bg-transparent border border-white/10 rounded-lg transition-all duration-200 disabled:opacity-50 group cursor-pointer hover:border-white/20 hover:bg-white/10 flex items-center justify-center"
+              className="group flex cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-transparent p-2 transition-all duration-200 hover:border-white/20 hover:bg-white/10 disabled:opacity-50"
               disabled={isPending}
               onClick={() => {
                 if (selectedPlaylist) {
@@ -220,7 +222,7 @@ export default function NavBar() {
             >
               <RefreshCcw
                 className={cn(
-                  'w-5 h-5 text-slate-300 group-hover:text-slate-200 transition-colors',
+                  'h-5 w-5 text-slate-300 transition-colors group-hover:text-slate-200',
                   isPending && 'animate-spin',
                 )}
               />
@@ -229,24 +231,24 @@ export default function NavBar() {
 
           {/* Window Controls */}
           {isDesktopApp && (
-            <div className="flex items-center gap-3 ml-auto  shrink-0">
-              <div className="hidden sm:block px-4 py-2.5 rounded-lg border border-white/10">
-                <div className="text-xs text-gray-400 font-mono">{time}</div>
+            <div className="ml-auto flex shrink-0 items-center gap-3">
+              <div className="hidden rounded-lg border border-white/10 px-4 py-2.5 sm:block">
+                <div className="font-mono text-xs text-gray-400">{time}</div>
               </div>
-              <div className="absolute right-1.5 flex items-center gap-2 ml-3 pl-3">
+              <div className="absolute right-1.5 ml-3 flex items-center gap-2 pl-3">
                 <Button
                   onClick={minimizeApp}
-                  className="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-400 hover:text-yellow-300 transition-all duration-200 group"
+                  className="group flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg bg-yellow-500/20 text-yellow-400 transition-all duration-200 hover:bg-yellow-500/40 hover:text-yellow-300"
                   title="Minimize"
                 >
-                  <Minus className="w-4 h-4" />
+                  <Minus className="h-4 w-4" />
                 </Button>
                 <Button
                   onClick={quitApp}
-                  className="flex items-center justify-center w-8 h-8 rounded-lg cursor-pointer bg-red-500/20 hover:bg-red-500/40 text-red-400 hover:text-red-300 transition-all duration-200 group"
+                  className="group flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg bg-red-500/20 text-red-400 transition-all duration-200 hover:bg-red-500/40 hover:text-red-300"
                   title="Exit"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="h-4 w-4" />
                 </Button>
               </div>
             </div>

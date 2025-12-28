@@ -1,6 +1,3 @@
-import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import { cleanName, cn } from '@/lib/utils';
 import { formatTime } from '@vidstack/react';
 import {
   Expand,
@@ -16,6 +13,11 @@ import {
   VolumeX,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
+import { cleanName, cn } from '@/lib/utils';
+
 import { AspectRatio } from './VideoPlayer';
 
 interface CustomControlsProps {
@@ -45,9 +47,9 @@ interface CustomControlsProps {
 }
 
 const aspectRatioIcon = {
-  '16:9': <Maximize2 className="w-5 h-5 text-white fill-white" />,
-  '4:3': <Expand className="w-5 h-5 text-white fill-white" />,
-  '1:1': <MoveHorizontal className="w-5 h-5 text-white fill-white" />,
+  '16:9': <Maximize2 className="h-5 w-5 fill-white text-white" />,
+  '4:3': <Expand className="h-5 w-5 fill-white text-white" />,
+  '1:1': <MoveHorizontal className="h-5 w-5 fill-white text-white" />,
 } as const;
 
 export function CustomControls({
@@ -126,14 +128,14 @@ export function CustomControls({
 
   return (
     <div
-      className={`absolute bottom-0 left-0 flex flex-col gap-3 w-full px-4 py-3 bg-gradient-to-t from-black/80 to-transparent transition-opacity duration-300 z-10`}
+      className={`absolute bottom-0 left-0 z-10 flex w-full flex-col gap-3 bg-gradient-to-t from-black/80 to-transparent px-4 py-3 transition-opacity duration-300`}
       style={{
         opacity: isControlsVisible ? 1 : 0,
         pointerEvents: isControlsVisible || isDraggingSlider ? 'auto' : 'none',
       }}
     >
       <div className="flex items-center gap-2">
-        <span className="text-white text-xs font-medium whitespace-nowrap">
+        <span className="text-xs font-medium whitespace-nowrap text-white">
           {formatTime(currentTime, {
             padHrs: true,
             padMins: true,
@@ -157,41 +159,41 @@ export function CustomControls({
           step={0.1}
           className="flex-1"
         />
-        <span className="text-white text-xs font-medium whitespace-nowrap">
+        <span className="text-xs font-medium whitespace-nowrap text-white">
           {formatTime(duration, {
             padHrs: true,
             padMins: true,
           })}
         </span>
       </div>
-      <div className="flex justify-between items-center gap-2">
+      <div className="flex items-center justify-between gap-2">
         <div className="flex items-center justify-between gap-2">
           <Button
             size={'icon-lg'}
             onClick={onPlayPause}
-            className="p-2 bg-transparent hover:bg-amber-400/30 rounded-lg transition-colors"
+            className="rounded-lg bg-transparent p-2 transition-colors hover:bg-amber-400/30"
             title={isPlaying ? 'Pause' : 'Play'}
           >
             {isPlaying ? (
-              <Pause className="w-5 h-5 text-white fill-white" />
+              <Pause className="h-5 w-5 fill-white text-white" />
             ) : (
-              <Play className="w-5 h-5 text-white fill-white" />
+              <Play className="h-5 w-5 fill-white text-white" />
             )}
           </Button>
           <div className="flex items-center gap-2">
             <Button
               size={'icon-lg'}
               onClick={onToggleMute}
-              className="p-2 bg-transparent hover:bg-amber-400/30 rounded-lg transition-colors"
+              className="rounded-lg bg-transparent p-2 transition-colors hover:bg-amber-400/30"
               title={isMuted ? 'Unmute' : 'Mute'}
             >
               {isMuted || volume === 0 ? (
-                <VolumeX className="w-5 h-5 text-white" />
+                <VolumeX className="h-5 w-5 text-white" />
               ) : (
-                <Volume2 className="w-5 h-5 text-white" />
+                <Volume2 className="h-5 w-5 text-white" />
               )}
             </Button>
-            <div className="flex items-center gap-2 w-24">
+            <div className="flex w-24 items-center gap-2">
               <Slider
                 value={[isMuted ? 0 : volume]}
                 onValueChange={(value) => onVolumeChange(value[0])}
@@ -208,12 +210,12 @@ export function CustomControls({
               size={'icon-lg'}
               onClick={onPrev}
               className={cn(
-                'p-2 bg-transparent hover:bg-amber-400/30 rounded-lg transition-colors',
+                'rounded-lg bg-transparent p-2 transition-colors hover:bg-amber-400/30',
                 !hasPrev && 'cursor-not-allowed',
               )}
               title="Next"
             >
-              <SkipBack className="w-5 h-5 text-white fill-white" />
+              <SkipBack className="h-5 w-5 fill-white text-white" />
             </Button>
           )}
           {onNext && (
@@ -222,16 +224,16 @@ export function CustomControls({
               size={'icon-lg'}
               onClick={onNext}
               className={cn(
-                'p-2 bg-transparent hover:bg-amber-400/30 rounded-lg transition-colors',
+                'rounded-lg bg-transparent p-2 transition-colors hover:bg-amber-400/30',
                 !hasNext && 'cursor-not-allowed',
               )}
               title="Next"
             >
-              <SkipForward className="w-5 h-5 text-white  fill-white" />
+              <SkipForward className="h-5 w-5 fill-white text-white" />
             </Button>
           )}
           {title && (
-            <span className="text-white  font-medium whitespace-nowrap">{cleanName(title)}</span>
+            <span className="font-medium whitespace-nowrap text-white">{cleanName(title)}</span>
           )}
         </div>
 
@@ -240,7 +242,7 @@ export function CustomControls({
             <Button
               size={'icon-lg'}
               onClick={onToggleAspectRatio}
-              className="p-2 bg-transparent hover:bg-amber-400/30 rounded-lg transition-colors"
+              className="rounded-lg bg-transparent p-2 transition-colors hover:bg-amber-400/30"
               title="Toggle Aspect Ratio"
             >
               {aspectRatioIcon[aspectRatio]}
@@ -250,7 +252,7 @@ export function CustomControls({
             <Button
               size={'sm'}
               onClick={onTogglePiP}
-              className="px-3 py-2 bg-transparent hover:bg-amber-400/30 rounded-lg transition-colors text-white"
+              className="rounded-lg bg-transparent px-3 py-2 text-white transition-colors hover:bg-amber-400/30"
               title="Picture-in-Picture"
             >
               PiP
@@ -259,7 +261,7 @@ export function CustomControls({
           <Button
             size={'sm'}
             onClick={() => setShowHelp((s) => !s)}
-            className="px-3 py-2 bg-transparent hover:bg-amber-400/30 rounded-lg transition-colors text-white"
+            className="rounded-lg bg-transparent px-3 py-2 text-white transition-colors hover:bg-amber-400/30"
             title="Shortcuts Help"
           >
             ?
@@ -269,16 +271,16 @@ export function CustomControls({
               <Button
                 size={'sm'}
                 onClick={onRateDecrease}
-                className="px-3 py-2 bg-transparent hover:bg-amber-400/30 rounded-lg transition-colors text-white"
+                className="rounded-lg bg-transparent px-3 py-2 text-white transition-colors hover:bg-amber-400/30"
                 title="Decrease Speed"
               >
                 −
               </Button>
-              <span className="text-white text-sm">{(playbackRate ?? 1).toFixed(2)}x</span>
+              <span className="text-sm text-white">{(playbackRate ?? 1).toFixed(2)}x</span>
               <Button
                 size={'sm'}
                 onClick={onRateIncrease}
-                className="px-3 py-2 bg-transparent hover:bg-amber-400/30 rounded-lg transition-colors text-white"
+                className="rounded-lg bg-transparent px-3 py-2 text-white transition-colors hover:bg-amber-400/30"
                 title="Increase Speed"
               >
                 +
@@ -288,20 +290,20 @@ export function CustomControls({
           <Button
             size={'icon-lg'}
             onClick={onToggleFullscreen}
-            className="p-2 bg-transparent hover:bg-amber-500/30 rounded-lg transition-colors"
+            className="rounded-lg bg-transparent p-2 transition-colors hover:bg-amber-500/30"
             title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           >
             {isFullscreen ? (
-              <Minimize className="w-5 h-5 text-white fill-white" />
+              <Minimize className="h-5 w-5 fill-white text-white" />
             ) : (
-              <Maximize className="w-5 h-5 text-white fill-white" />
+              <Maximize className="h-5 w-5 fill-white text-white" />
             )}
           </Button>
         </div>
       </div>
       {showHelp && (
-        <div className="absolute right-4 bottom-20 bg-black/80 backdrop-blur-md border border-white/10 rounded-lg p-3 text-white text-xs space-y-1 max-w-xs">
-          <div className="font-semibold text-amber-300 mb-1">Shortcuts</div>
+        <div className="absolute right-4 bottom-20 max-w-xs space-y-1 rounded-lg border border-white/10 bg-black/80 p-3 text-xs text-white backdrop-blur-md">
+          <div className="mb-1 font-semibold text-amber-300">Shortcuts</div>
           <div>Space: Play/Pause</div>
           <div>M: Mute/Unmute</div>
           <div>F: Fullscreen</div>

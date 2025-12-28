@@ -1,4 +1,7 @@
 'use client';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useMemo } from 'react';
+
 import ChannelInfoPanel from '@/components/channels/ChannelInfoPanel';
 import ChannelsSidebar from '@/components/channels/ChannelsSidebar';
 import PlayerHeader from '@/components/iptv/PlayerHeader';
@@ -7,8 +10,6 @@ import VideoPlayer from '@/features/player/components/VideoPlayer';
 import { trpc } from '@/lib/trpc';
 import { usePlaylistStore } from '@/store/appStore';
 import { usePlayerStore } from '@/store/player-store';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo } from 'react';
 
 export default function ChannelsPage() {
   const router = useRouter();
@@ -80,7 +81,7 @@ export default function ChannelsPage() {
 
   if (!playlist) {
     return (
-      <div className="flex justify-center items-center h-full">
+      <div className="flex h-full items-center justify-center">
         <EmptyState
           icon="📺"
           title="No Playlists Found"
@@ -96,14 +97,14 @@ export default function ChannelsPage() {
       <ChannelsSidebar channels={channels} isLoading={isFetchingChannels} />
 
       {/* Player Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex flex-1 flex-col">
         {/* Player Header */}
         <PlayerHeader selectedChannel={selectedChannel} />
 
         {/* Player Content */}
         <div className="flex-1 overflow-y-auto">
           {hasPlayerContent ? (
-            <div className="h-full flex flex-col">
+            <div className="flex h-full flex-col">
               {/* Video Player Area */}
               <div className="h-1/2">
                 <VideoPlayer
@@ -137,11 +138,11 @@ export default function ChannelsPage() {
               </div>
             </div>
           ) : (
-            <div className="flex-1 flex items-center justify-center h-full">
+            <div className="flex h-full flex-1 items-center justify-center">
               <div className="text-center">
-                <div className="text-6xl mb-4 opacity-50">🎬</div>
-                <h4 className="text-xl font-semibold text-white mb-2">Ready to Stream</h4>
-                <p className="text-gray-400 max-w-md">
+                <div className="mb-4 text-6xl opacity-50">🎬</div>
+                <h4 className="mb-2 text-xl font-semibold text-white">Ready to Stream</h4>
+                <p className="max-w-md text-gray-400">
                   Select a category and channel to start watching your favorite content
                 </p>
               </div>

@@ -1,9 +1,10 @@
-import { cleanName } from '@/lib/utils';
-import { usePlaylistStore } from '@/store/appStore';
-import { useWatchedMoviesStore, useWatchedSeriesStore } from '@/store/watchedStore';
 import { Film, Play } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
+
+import { cleanName } from '@/lib/utils';
+import { usePlaylistStore } from '@/store/appStore';
+import { useWatchedMoviesStore, useWatchedSeriesStore } from '@/store/watchedStore';
 
 interface ItemsListProps {
   streamId: number;
@@ -42,7 +43,7 @@ function ItemsList(props: ItemsListProps) {
     <div
       key={streamId}
       onClick={onMovieClick}
-      className="relative h-80 rounded-lg overflow-hidden cursor-pointer group border border-slate-700 hover:border-amber-500 transition-all duration-300 hover:scale-105 hover:shadow-[0_16px_40px_-8px_rgba(245,158,11,0.3)]"
+      className="group relative h-80 cursor-pointer overflow-hidden rounded-lg border border-slate-700 transition-all duration-300 hover:scale-105 hover:border-amber-500 hover:shadow-[0_16px_40px_-8px_rgba(245,158,11,0.3)]"
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
@@ -82,29 +83,29 @@ function ItemsList(props: ItemsListProps) {
           </>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-white/2">
-            <Film className="w-12 h-12 text-white/10" />
+            <Film className="h-12 w-12 text-white/10" />
           </div>
         )}
       </div>
 
       {/* Content Overlay */}
-      <div className="relative z-10 h-full flex flex-col p-2">
+      <div className="relative z-10 flex h-full flex-col p-2">
         {/* Top Row: Rating & Play Status */}
-        <div className="flex justify-between items-start">
-          <div className="flex items-center gap-2 bg-black/40 px-3 py-1 rounded-full border border-white/10 backdrop-blur-md">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/40 px-3 py-1 backdrop-blur-md">
             <span className="text-sm font-black text-white/90">
               <span className="text-amber-400">{ratingValue}</span>{' '}
-              <span className="text-white/40 font-bold ml-0.5">IMDB</span>
+              <span className="ml-0.5 font-bold text-white/40">IMDB</span>
             </span>
           </div>
 
           {progressPct > 0 && (
-            <div className="flex items-center gap-1.5 bg-green-500/20 px-2 py-1 rounded-full border border-green-500/30">
+            <div className="flex items-center gap-1.5 rounded-full border border-green-500/30 bg-green-500/20 px-2 py-1">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
               </span>
-              <span className="text-[9px] font-black text-green-400 uppercase tracking-tighter">
+              <span className="text-[9px] font-black tracking-tighter text-green-400 uppercase">
                 Resuming
               </span>
             </div>
@@ -112,15 +113,15 @@ function ItemsList(props: ItemsListProps) {
         </div>
 
         {/* Center: Play Icon (Visible on Hover) */}
-        <div className="flex-1 flex items-center justify-center">
-          <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transform scale-75 group-hover:scale-100 transition-all duration-300">
-            <Play className="w-5 h-5 text-white fill-white ml-0.5" />
+        <div className="flex flex-1 items-center justify-center">
+          <div className="flex h-12 w-12 scale-75 transform items-center justify-center rounded-full border border-white/20 bg-white/10 opacity-0 backdrop-blur-xl transition-all duration-300 group-hover:scale-100 group-hover:opacity-100">
+            <Play className="ml-0.5 h-5 w-5 fill-white text-white" />
           </div>
         </div>
 
         {/* Bottom: Info */}
         <div className="space-y-3">
-          <h3 className="text-sm font-bold text-white text-center leading-tight line-clamp-2 drop-shadow-md">
+          <h3 className="line-clamp-2 text-center text-sm leading-tight font-bold text-white drop-shadow-md">
             {cleanName(title)}
           </h3>
         </div>
@@ -128,7 +129,7 @@ function ItemsList(props: ItemsListProps) {
 
       {/* Progress Bar (Matches the "Live Clock" green accent style) */}
       {progressPct > 0 && (
-        <div className="absolute bottom-0 left-0 w-full h-1 bg-white/5">
+        <div className="absolute bottom-0 left-0 h-1 w-full bg-white/5">
           <div
             className="h-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] transition-all duration-500"
             style={{ width: `${progressPct * 100}%` }}

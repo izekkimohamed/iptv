@@ -1,9 +1,10 @@
 'use client';
+import { useSearchParams } from 'next/navigation';
+import React from 'react';
+
 import CategoriesSidebar from '@/components/commen/CategoriesSidebar';
 import { trpc } from '@/lib/trpc';
 import { usePlaylistStore } from '@/store/appStore';
-import { useSearchParams } from 'next/navigation';
-import React from 'react';
 
 export default function Layout({
   children,

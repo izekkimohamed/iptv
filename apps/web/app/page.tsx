@@ -1,9 +1,10 @@
 'use client';
 
+import { debounce, parseAsString, useQueryState } from 'nuqs';
+
 import HomeSearch from '@/components/home/HomeSearch';
 import HomeLanding from '@/components/home/Landing';
 import SearchList from '@/components/home/SearchList';
-import { debounce, parseAsString, useQueryState } from 'nuqs';
 
 export default function IPTVHomePage() {
   // Sync search with the URL ?q=...
@@ -22,7 +23,7 @@ export default function IPTVHomePage() {
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="flex h-screen flex-col overflow-hidden">
       <HomeSearch searchQuery={searchQuery} setSearchQuery={handleInputSearch} />
 
       {!searchQuery.trim().length ? <HomeLanding /> : <SearchList searchQuery={searchQuery} />}

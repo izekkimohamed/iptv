@@ -157,7 +157,7 @@ export default function MovieDetailsScreen() {
       </Animated.View>
 
       {/* --- Floating Back Button --- */}
-      <SafeAreaView style={styles.floatingHeader} edges={["bottom"]}>
+      <SafeAreaView style={styles.floatingHeader} edges={["top"]}>
         <Pressable
           style={[
             styles.backBtn,

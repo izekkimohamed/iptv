@@ -1,15 +1,17 @@
 'use client';
 
+import './globals.css';
+
+import { invoke } from '@tauri-apps/api/core';
+import { JetBrains_Mono } from 'next/font/google';
+import { usePathname } from 'next/navigation';
+import { type ReactNode, Suspense, useEffect } from 'react';
+
 import NavBar from '@/components/Navbar';
 import Providers from '@/components/providers';
 import { Toaster } from '@/components/ui/sonner';
 import { useTauri } from '@/hooks/useTauri';
 import { usePlayerStore } from '@/store/player-store';
-import { invoke } from '@tauri-apps/api/core';
-import { JetBrains_Mono } from 'next/font/google';
-import { usePathname } from 'next/navigation';
-import { Suspense, useEffect, type ReactNode } from 'react';
-import './globals.css';
 
 const jetBrainsMono = JetBrains_Mono({
   variable: '--font-jetbrains-mono',
@@ -45,7 +47,7 @@ export default function RootLayout({
       <Providers>
         <body className={`${jetBrainsMono.className} font-mono antialiased`}>
           <div
-            className="flex flex-col h-screen font-mono bg-linear-to-br to-[#182848] from-[#030023]"
+            className="flex h-screen flex-col bg-linear-to-br from-[#030023] to-[#182848] font-mono"
             style={
               {
                 // backgroundImage: 'radial-gradient(circle at center top, #182848 0%, #030023 100%)',

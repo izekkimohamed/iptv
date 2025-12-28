@@ -30,9 +30,9 @@ export default function LoadingSpinner({
       <div className="flex items-center justify-center py-16">
         <div className="space-y-3 text-center">
           <div
-            className={`${sizeClasses[size]} border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto`}
+            className={`${sizeClasses[size]} mx-auto animate-spin rounded-full border-2 border-amber-500/30 border-t-amber-500`}
           />
-          <p className={`${textSizeClasses[size]} text-gray-500 font-medium`}>{message}</p>
+          <p className={`${textSizeClasses[size]} font-medium text-gray-500`}>{message}</p>
         </div>
       </div>
     </div>

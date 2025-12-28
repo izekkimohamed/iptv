@@ -1,9 +1,4 @@
 'use client';
-import { TrailerModal } from '@/components/commen/TrailerModels';
-import { Button } from '@/components/ui/button';
-import { trpc } from '@/lib/trpc';
-import { VideoPlayerModal } from '@/src/shared/components/common/VideoPlayerModal';
-import { usePlaylistStore } from '@/store/appStore';
 import {
   Calendar,
   ChevronDown, // 💡 Imported for the dropdown
@@ -17,6 +12,12 @@ import {
 import Image from 'next/image';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
+
+import { TrailerModal } from '@/components/commen/TrailerModels';
+import { Button } from '@/components/ui/button';
+import { trpc } from '@/lib/trpc';
+import { VideoPlayerModal } from '@/src/shared/components/common/VideoPlayerModal';
+import { usePlaylistStore } from '@/store/appStore';
 
 export default function Page() {
   const pathname = usePathname();
@@ -63,10 +64,10 @@ export default function Page() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center ">
+      <div className="flex flex-1 items-center justify-center">
         <div className="space-y-4 text-center">
-          <div className="w-12 h-12 border-4 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto" />
-          <p className="text-gray-400 font-medium">Loading movie details...</p>
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-amber-500/30 border-t-amber-500" />
+          <p className="font-medium text-gray-400">Loading movie details...</p>
         </div>
       </div>
     );
@@ -74,12 +75,12 @@ export default function Page() {
 
   if (error) {
     return (
-      <div className="flex-1 flex items-center justify-center ">
+      <div className="flex flex-1 items-center justify-center">
         <div className="space-y-4 text-center">
-          <Film className="w-16 h-16 text-red-500/40 mx-auto" />
+          <Film className="mx-auto h-16 w-16 text-red-500/40" />
           <div>
-            <p className="text-red-400 font-semibold">Error loading movie</p>
-            <p className="text-gray-400 text-sm">{error.message}</p>
+            <p className="font-semibold text-red-400">Error loading movie</p>
+            <p className="text-sm text-gray-400">{error.message}</p>
           </div>
         </div>
       </div>
@@ -88,7 +89,7 @@ export default function Page() {
 
   if (!movieDetails || movieDetails.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center ">
+      <div className="flex flex-1 items-center justify-center">
         <p className="text-gray-400">No movie details available</p>
       </div>
     );
@@ -108,10 +109,10 @@ export default function Page() {
   const hasMultipleSources = movieDetails[0].dbMovies.length > 1;
 
   return (
-    <div className="flex-1 overflow-y-auto relative">
+    <div className="relative flex-1 overflow-y-auto">
       {/* Background Hero */}
       <div
-        className="absolute inset-0 bg-center bg-no-repeat bg-cover"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: `url(${movieDetails[0].tmdb.backdrop})`,
           backgroundAttachment: 'fixed',
@@ -124,25 +125,25 @@ export default function Page() {
       <div className="relative z-10">
         {/* Header */}
         <div className="sticky top-0 z-20 border-b border-white/10 bg-black/40 backdrop-blur-xl">
-          <div className=" max-w-7xl mx-auto px-6 py-4">
+          <div className="mx-auto max-w-7xl px-6 py-4">
             <Button
               onClick={() => window.history.back()}
-              className="flex items-center gap-2 px-4 py-2 text-white cursor-pointer bg-white/10 rounded-lg transition-all hover:bg-white/20"
+              className="flex cursor-pointer items-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-white transition-all hover:bg-white/20"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="h-5 w-5" />
               <span className="font-medium">Back</span>
             </Button>
           </div>
         </div>
 
         {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-6 py-12 space-y-16">
+        <div className="mx-auto max-w-7xl space-y-16 px-6 py-12">
           {/* Hero Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 items-start">
+          <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-3 lg:gap-12">
             {/* Poster */}
-            <div className="lg:col-span-1 flex justify-center lg:justify-start">
-              <div className="relative group">
-                <div className="absolute -inset-2 rounded-xl blur opacity-40 group-hover:opacity-70 transition duration-500 bg-amber-500/50" />
+            <div className="flex justify-center lg:col-span-1 lg:justify-start">
+              <div className="group relative">
+                <div className="absolute -inset-2 rounded-xl bg-amber-500/50 opacity-40 blur transition duration-500 group-hover:opacity-70" />
                 <Image
                   src={
                     movieDetails[0].tmdb.poster ||
@@ -151,22 +152,22 @@ export default function Page() {
                   alt={movieDetails[0].tmdb.title}
                   width={300}
                   height={450}
-                  className="relative rounded-xl shadow-2xl w-72 h-auto object-cover border border-white/10"
+                  className="relative h-auto w-72 rounded-xl border border-white/10 object-cover shadow-2xl"
                   priority
                 />
               </div>
             </div>
 
             {/* Info */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="space-y-6 lg:col-span-2">
               {/* Title */}
               <div className="space-y-3">
-                <h1 className="text-5xl font-bold text-white leading-tight">
+                <h1 className="text-5xl leading-tight font-bold text-white">
                   {movieDetails[0].tmdb.title}
                 </h1>
 
                 {/* Meta Tags */}
-                <div className="flex flex-wrap gap-3 items-center">
+                <div className="flex flex-wrap items-center gap-3">
                   {/* Rating - TODO: Add rating to schema */}
                   {/* <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30">
                     <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
@@ -176,8 +177,8 @@ export default function Page() {
                   </div> */}
 
                   {/* Release Date */}
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10">
-                    <Calendar className="w-5 h-5 text-gray-300" />
+                  <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2">
+                    <Calendar className="h-5 w-5 text-gray-300" />
                     <span className="text-sm font-medium text-gray-300">
                       {new Date(movieDetails[0].tmdb.releaseDate || '').toLocaleDateString(
                         'en-US',
@@ -191,8 +192,8 @@ export default function Page() {
                   </div>
 
                   {/* Runtime */}
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10">
-                    <Clock className="w-5 h-5 text-gray-300" />
+                  <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2">
+                    <Clock className="h-5 w-5 text-gray-300" />
                     <span className="text-sm font-medium text-gray-300">
                       {Math.floor((movieDetails[0].tmdb.runtime || 0) / 60)}h{' '}
                       {(movieDetails[0].tmdb.runtime || 0) % 60}m
@@ -207,7 +208,7 @@ export default function Page() {
                   {movieDetails[0].tmdb.genres.map((genre) => (
                     <span
                       key={genre.id}
-                      className="px-3 py-1.5 text-xs font-medium text-amber-300 bg-amber-500/20 rounded-full border border-amber-500/30"
+                      className="rounded-full border border-amber-500/30 bg-amber-500/20 px-3 py-1.5 text-xs font-medium text-amber-300"
                     >
                       {genre.name}
                     </span>
@@ -218,7 +219,7 @@ export default function Page() {
               {/* Overview */}
               <div className="space-y-2 pt-4">
                 <h3 className="text-lg font-semibold text-white">Synopsis</h3>
-                <p className="text-gray-300 leading-relaxed text-base">
+                <p className="text-base leading-relaxed text-gray-300">
                   {movieDetails[0].tmdb.overview}
                 </p>
               </div>
@@ -229,9 +230,9 @@ export default function Page() {
                   {/* Primary Play Button */}
                   <Button
                     onClick={() => handlePlayMovie(movieDetails[0].dbMovies[0])}
-                    className="flex items-center gap-2 px-8 py-3 text-lg font-bold text-white bg-amber-600 rounded-full shadow-lg shadow-amber-500/50 hover:bg-amber-700 transition duration-300 transform hover:scale-[1.02]"
+                    className="flex transform items-center gap-2 rounded-full bg-amber-600 px-8 py-3 text-lg font-bold text-white shadow-lg shadow-amber-500/50 transition duration-300 hover:scale-[1.02] hover:bg-amber-700"
                   >
-                    <Play className="w-5 h-5 fill-white" />
+                    <Play className="h-5 w-5 fill-white" />
                     Watch Now
                   </Button>
 
@@ -240,27 +241,27 @@ export default function Page() {
                     <div className="relative">
                       <Button
                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                        className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-white bg-white/10 border border-white/20 rounded-full hover:bg-white/20 transition duration-200"
+                        className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-3 text-sm font-medium text-white transition duration-200 hover:bg-white/20"
                       >
                         <span className="max-w-37.5 truncate">
                           Source: {currentMovieSource?.name || 'Select Source'}
                         </span>
                         <ChevronDown
-                          className={`w-4 h-4 transition-transform ${
+                          className={`h-4 w-4 transition-transform ${
                             isDropdownOpen ? 'rotate-180' : 'rotate-0'
                           }`}
                         />
                       </Button>
 
                       {isDropdownOpen && (
-                        <div className="absolute left-0 mt-2 w-56 max-h-60 overflow-y-auto bg-slate-900 border border-white/20 rounded-lg shadow-xl origin-top-left z-30">
+                        <div className="absolute left-0 z-30 mt-2 max-h-60 w-56 origin-top-left overflow-y-auto rounded-lg border border-white/20 bg-slate-900 shadow-xl">
                           {movieDetails[0].dbMovies.map((movie) => (
                             <div
                               key={movie.id}
                               onClick={() => handlePlayMovie(movie)}
-                              className={`px-4 py-2 cursor-pointer text-sm transition-colors ${
+                              className={`cursor-pointer px-4 py-2 text-sm transition-colors ${
                                 movie.url === currentMovieSource?.url
-                                  ? 'bg-amber-600/50 text-white font-semibold'
+                                  ? 'bg-amber-600/50 font-semibold text-white'
                                   : 'text-gray-200 hover:bg-white/10'
                               }`}
                             >
@@ -273,8 +274,8 @@ export default function Page() {
                   )}
                 </div>
               ) : (
-                <div className="py-6 text-gray-400 border border-white/10 rounded-lg p-4 bg-white/5">
-                  <p className="font-semibold text-lg text-red-400">No videos available</p>
+                <div className="rounded-lg border border-white/10 bg-white/5 p-4 py-6 text-gray-400">
+                  <p className="text-lg font-semibold text-red-400">No videos available</p>
                   <span>We are working to add a source soon!</span>
                 </div>
               )}
@@ -286,16 +287,16 @@ export default function Page() {
           {movieDetails[0].tmdb.cast && movieDetails[0].tmdb.cast.length > 0 && (
             <section className="space-y-6">
               <div>
-                <h2 className="text-3xl font-bold text-white flex items-center gap-3">
-                  <User className="w-8 h-8 text-white" />
+                <h2 className="flex items-center gap-3 text-3xl font-bold text-white">
+                  <User className="h-8 w-8 text-white" />
                   Cast
                 </h2>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
                 {movieDetails[0].tmdb.cast.slice(0, 12).map((actor, idx) => (
                   <div
                     key={idx}
-                    className="group rounded-lg overflow-hidden border border-white/10 hover:border-amber-500/50 transition-all duration-300 bg-white/5 hover:bg-white/10"
+                    className="group overflow-hidden rounded-lg border border-white/10 bg-white/5 transition-all duration-300 hover:border-amber-500/50 hover:bg-white/10"
                   >
                     {actor.profilePath ? (
                       <div className="relative h-48 overflow-hidden bg-slate-800">
@@ -303,15 +304,15 @@ export default function Page() {
                           src={actor.profilePath}
                           alt={actor.name}
                           fill
-                          className="object-cover group-hover:scale-110 transition-transform duration-300"
+                          className="object-cover transition-transform duration-300 group-hover:scale-110"
                         />
                       </div>
                     ) : (
-                      <div className="h-48 flex items-center justify-center bg-linear-to-br from-slate-800 to-slate-900">
-                        <User className="w-12 h-12 text-gray-600" />
+                      <div className="flex h-48 items-center justify-center bg-linear-to-br from-slate-800 to-slate-900">
+                        <User className="h-12 w-12 text-gray-600" />
                       </div>
                     )}
-                    <p className="px-3 py-2 text-xs font-medium text-center text-gray-200 bg-black/40">
+                    <p className="bg-black/40 px-3 py-2 text-center text-xs font-medium text-gray-200">
                       {actor.name}
                     </p>
                   </div>
@@ -324,33 +325,33 @@ export default function Page() {
           {movieDetails[0].tmdb.videos && movieDetails[0].tmdb.videos.length > 0 && (
             <section className="space-y-6 pb-12">
               <div>
-                <h2 className="text-3xl font-bold text-white flex items-center gap-3">
-                  <Youtube className="w-8 h-8 text-red-500" />
+                <h2 className="flex items-center gap-3 text-3xl font-bold text-white">
+                  <Youtube className="h-8 w-8 text-red-500" />
                   Videos & Trailers
                 </h2>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {movieDetails[0].tmdb.videos
                   .filter((v) => v.site === 'YouTube')
                   .map((video) => (
                     <Button
                       key={video.id}
                       onClick={() => setSelectedTrailer(video.key)}
-                      className="relative h-[200] group cursor-pointer rounded-lg overflow-hidden border border-white/10 hover:border-red-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-red-500/20"
+                      className="group relative h-[200] cursor-pointer overflow-hidden rounded-lg border border-white/10 transition-all duration-300 hover:border-red-500/50 hover:shadow-lg hover:shadow-red-500/20"
                     >
                       <Image
                         src={`https://img.youtube.com/vi/${video.key}/maxresdefault.jpg`}
                         alt={video.name}
                         width={400}
                         height={225}
-                        className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
+                        className="h-48 w-full object-cover transition-transform duration-300 group-hover:scale-110"
                       />
-                      <div className="absolute inset-0 flex items-center justify-center transition-colors bg-black/40 group-hover:bg-black/60">
-                        <div className="p-3 rounded-full bg-red-600">
-                          <Play className="w-6 h-6 text-white fill-white" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 transition-colors group-hover:bg-black/60">
+                        <div className="rounded-full bg-red-600 p-3">
+                          <Play className="h-6 w-6 fill-white text-white" />
                         </div>
                       </div>
-                      <p className="absolute bottom-0 left-0 right-0 px-3 py-2 text-xs font-medium text-white bg-linear-to-t from-black/80 to-transparent line-clamp-2">
+                      <p className="absolute right-0 bottom-0 left-0 line-clamp-2 bg-linear-to-t from-black/80 to-transparent px-3 py-2 text-xs font-medium text-white">
                         {video.name}
                       </p>
                     </Button>

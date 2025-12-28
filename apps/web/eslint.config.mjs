@@ -1,5 +1,4 @@
 import { FlatCompat } from '@eslint/eslintrc';
-import prettierPlugin from 'eslint-plugin-prettier'; // Import the plugin
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -10,28 +9,9 @@ const compat = new FlatCompat({
   baseDirectory: __dirname,
 });
 
-const eslintConfig = [
+export default [
+  ...compat.extends('next/core-web-vitals', 'next/typescript'),
   {
-    ignores: [
-    'node_modules/**',
-    '.next/**',
-    'dist/**',
-    'build/**',
-    'out/**',
-    "src-tauri/**"
-  ],
+    ignores: ['node_modules/**', '.next/**', 'out/**', 'build/**', 'next-env.d.ts'],
   },
-  {
-    files: ['**/*.{js,jsx,ts,tsx}'],
-    plugins: {
-      prettier: prettierPlugin,
-    },
-    rules: {
-      'prettier/prettier': 'error',
-    },
-  },
-  ...compat.extends('prettier'),
 ];
-
-
-export default eslintConfig;

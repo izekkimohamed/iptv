@@ -1,7 +1,9 @@
-import { trpc } from '@/lib/trpc';
-import { Channel } from '@/lib/types';
 import { Star } from 'lucide-react';
 import Image from 'next/image';
+
+import { trpc } from '@/lib/trpc';
+import { Channel } from '@/lib/types';
+
 import { Button } from '../ui/button';
 
 interface PlayerHeaderProps {
@@ -17,11 +19,11 @@ export default function PlayerHeader(props: PlayerHeaderProps) {
     },
   });
   return (
-    <div className="border-b border-white/10 ">
+    <div className="border-b border-white/10">
       <div className="flex items-center justify-between">
         {selectedChannel && (
           <>
-            <div className="px-5 py-4 flex gap-3 items-center justify-between">
+            <div className="flex items-center justify-between gap-3 px-5 py-4">
               {selectedChannel.streamIcon && (
                 <Image
                   width={30}
@@ -33,7 +35,7 @@ export default function PlayerHeader(props: PlayerHeaderProps) {
                   }}
                 />
               )}
-              <h3 className="text-xl font-bold text-white flex items-center relative">
+              <h3 className="relative flex items-center text-xl font-bold text-white">
                 {selectedChannel.name}
               </h3>
             </div>
@@ -46,10 +48,10 @@ export default function PlayerHeader(props: PlayerHeaderProps) {
                     isFavorite: !selectedChannel.isFavorite,
                   })
                 }
-                className="p-2 rounded-full text-amber-400 bg-white/10 hover:bg-white/20 cursor-pointer"
+                className="cursor-pointer rounded-full bg-white/10 p-2 text-amber-400 hover:bg-white/20"
               >
                 <Star
-                  className="w-5 h-5"
+                  className="h-5 w-5"
                   fill={selectedChannel.isFavorite ? 'currentColor' : 'none'}
                 />
               </Button>

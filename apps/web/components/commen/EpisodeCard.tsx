@@ -1,13 +1,14 @@
 'use client';
 
-import { Episode } from '@/lib/types';
-import { cn, formatDate, formatDuration } from '@/lib/utils';
-import { usePlaylistStore } from '@/store/appStore';
-import { useWatchedSeriesStore } from '@/store/watchedStore';
 import { Calendar, CheckCircle2, Clock, Play, Star } from 'lucide-react';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { FC } from 'react';
+
+import { Episode } from '@/lib/types';
+import { cn, formatDate, formatDuration } from '@/lib/utils';
+import { usePlaylistStore } from '@/store/appStore';
+import { useWatchedSeriesStore } from '@/store/watchedStore';
 
 interface EpisodeCardProps {
   episode: Episode;
@@ -43,7 +44,7 @@ export const EpisodeCard: FC<EpisodeCardProps> = ({
   return (
     <div
       onClick={() => onSelect(episode)}
-      className="group relative bg-white/3 backdrop-blur-xl rounded-3xl border border-white/10 overflow-hidden cursor-pointer transition-all duration-500 hover:border-white/30 hover:shadow-2xl active:scale-95"
+      className="group relative cursor-pointer overflow-hidden rounded-3xl border border-white/10 bg-white/3 backdrop-blur-xl transition-all duration-500 hover:border-white/30 hover:shadow-2xl active:scale-95"
       role="button"
       tabIndex={0}
     >
@@ -60,23 +61,23 @@ export const EpisodeCard: FC<EpisodeCardProps> = ({
         />
 
         {/* Play Overlay */}
-        <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-all duration-300">
-          <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center transform scale-75 group-hover:scale-100 transition-transform">
-            <Play className="w-5 h-5 text-white fill-white ml-0.5" />
+        <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-all duration-300 group-hover:opacity-100">
+          <div className="flex h-12 w-12 scale-75 transform items-center justify-center rounded-full border border-white/20 bg-white/10 backdrop-blur-md transition-transform group-hover:scale-100">
+            <Play className="ml-0.5 h-5 w-5 fill-white text-white" />
           </div>
         </div>
 
         {/* Status Badges */}
-        <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
+        <div className="absolute top-3 right-3 flex flex-col items-end gap-2">
           {isWatched ? (
-            <div className="bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-xl border border-emerald-400/50">
-              <CheckCircle2 className="w-3 h-3" /> Finished
+            <div className="flex items-center gap-1.5 rounded-full border border-emerald-400/50 bg-emerald-500 px-3 py-1.5 text-[10px] font-black tracking-widest text-white uppercase shadow-xl">
+              <CheckCircle2 className="h-3 w-3" /> Finished
             </div>
           ) : isInProgress ? (
-            <div className="bg-white/10 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-white/20">
+            <div className="flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[10px] font-black tracking-widest text-white uppercase backdrop-blur-md">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500"></span>
               </span>
               Resuming
             </div>
@@ -85,7 +86,7 @@ export const EpisodeCard: FC<EpisodeCardProps> = ({
 
         {/* Dynamic Progress Bar */}
         {isInProgress && (
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10">
+          <div className="absolute right-0 bottom-0 left-0 h-1 bg-white/10">
             <div
               className="h-full bg-amber-500 transition-all duration-500"
               style={{ width: `${progressPercent}%` }}
@@ -95,15 +96,15 @@ export const EpisodeCard: FC<EpisodeCardProps> = ({
       </div>
 
       {/* Info Section */}
-      <div className="p-5 space-y-4">
+      <div className="space-y-4 p-5">
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">
+            <span className="text-[10px] font-black tracking-[0.2em] text-white/30 uppercase">
               S{episode.season} • E{episode.episode_num}
             </span>
             {episode.info?.rating && (
               <div className="flex items-center gap-1 text-amber-400">
-                <Star className="w-3 h-3 fill-current" />
+                <Star className="h-3 w-3 fill-current" />
                 <span className="text-[10px] font-bold tracking-tighter">
                   {parseFloat(episode.info.rating.toString()).toFixed(1)}
                 </span>
@@ -111,27 +112,27 @@ export const EpisodeCard: FC<EpisodeCardProps> = ({
             )}
           </div>
 
-          <h4 className="font-bold text-white text-base leading-tight line-clamp-1 group-hover:text-amber-400 transition-colors">
+          <h4 className="line-clamp-1 text-base leading-tight font-bold text-white transition-colors group-hover:text-amber-400">
             {episode.title || episode.info?.name || `Episode ${episode.episode_num}`}
           </h4>
         </div>
 
         {episode.info?.plot && (
-          <p className="text-xs text-white/40 line-clamp-2 leading-relaxed font-medium">
+          <p className="line-clamp-2 text-xs leading-relaxed font-medium text-white/40">
             {episode.info.plot}
           </p>
         )}
 
         {/* Footer Meta */}
-        <div className="pt-4 border-t border-white/5 flex items-center gap-4">
+        <div className="flex items-center gap-4 border-t border-white/5 pt-4">
           {episode.info?.releasedate && (
-            <div className="flex items-center gap-1.5 text-[10px] font-bold text-white/20 uppercase tracking-tight">
+            <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-tight text-white/20 uppercase">
               <Calendar size={12} />
               {formatDate(episode.info.releasedate)}
             </div>
           )}
           {episode.info?.duration && (
-            <div className="flex items-center gap-1.5 text-[10px] font-bold text-white/20 uppercase tracking-tight">
+            <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-tight text-white/20 uppercase">
               <Clock size={12} />
               {formatDuration(episode.info?.duration)}
             </div>

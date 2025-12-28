@@ -1,3 +1,7 @@
+import { ChevronLeft } from 'lucide-react';
+import Image from 'next/image';
+import { useSearchParams } from 'next/navigation';
+
 import { ActionButtons } from '@/components/commen/ActionButtons';
 import { CastSection } from '@/components/commen/CastSection';
 import { HeaderSection } from '@/components/commen/HeaderSection';
@@ -9,9 +13,6 @@ import { ItemsDetailsProps } from '@/lib/types';
 import { VideoPlayerModal } from '@/shared/components/common/VideoPlayerModal';
 import { usePlaylistStore } from '@/store/appStore';
 import { useWatchedMoviesStore } from '@/store/watchedStore';
-import { ChevronLeft } from 'lucide-react';
-import Image from 'next/image';
-import { useSearchParams } from 'next/navigation';
 
 type MovieDetailsProps = Omit<ItemsDetailsProps, 'seasons' | 'episodes'>;
 
@@ -51,7 +52,7 @@ export default function MovieDetails({
   return (
     <div className="relative h-full">
       <div
-        className="absolute inset-0 bg-center bg-no-repeat bg-cover"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: `url(${tmdb?.backdrop || image})`,
         }}
@@ -61,24 +62,24 @@ export default function MovieDetails({
 
       <div className="relative h-full overflow-hidden">
         <div className="h-full overflow-y-auto border-t border-white/10">
-          <div className="sticky z-10 top-0 p-3 left-0 bg-black/10 backdrop-blur-md">
+          <div className="sticky top-0 left-0 z-10 bg-black/10 p-3 backdrop-blur-md">
             <Button
               onClick={() => window.history.back()}
-              className="flex items-center bg-transparent gap-2 px-4 py-2 text-white transition-all duration-300 border rounded-full cursor-pointer group hover:bg-white/20 hover:border-white/40 border-white/20"
+              className="group flex cursor-pointer items-center gap-2 rounded-full border border-white/20 bg-transparent px-4 py-2 text-white transition-all duration-300 hover:border-white/40 hover:bg-white/20"
               aria-label="Go back"
             >
-              <ChevronLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
-              <span className="font-semibold text-sm">Back</span>
+              <ChevronLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
+              <span className="text-sm font-semibold">Back</span>
             </Button>
           </div>
-          <div className="max-w-7xl mx-auto pt-12">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
-              <div className="lg:col-span-1 flex justify-center lg:justify-start">
-                <div className="relative group">
+          <div className="mx-auto max-w-7xl pt-12">
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:gap-12">
+              <div className="flex justify-center lg:col-span-1 lg:justify-start">
+                <div className="group relative">
                   <Image
                     src={tmdb?.poster || image}
                     alt={name || 'Movie Image'}
-                    className="relative rounded-lg shadow-2xl border border-white/10"
+                    className="relative rounded-lg border border-white/10 shadow-2xl"
                     width={400}
                     height={600}
                     priority
@@ -86,7 +87,7 @@ export default function MovieDetails({
                 </div>
               </div>
 
-              <div className="lg:col-span-2 flex flex-col space-y-6">
+              <div className="flex flex-col space-y-6 lg:col-span-2">
                 <HeaderSection
                   name={name}
                   rating={rating}
@@ -97,17 +98,17 @@ export default function MovieDetails({
 
                 <div className="space-y-2">
                   <h3 className="text-lg font-semibold text-white">Synopsis</h3>
-                  <p className="text-gray-300 leading-relaxed line-clamp-4">
+                  <p className="line-clamp-4 leading-relaxed text-gray-300">
                     {tmdb?.overview || description || 'No description available.'}
                   </p>
                 </div>
 
                 {tmdb?.director && (
                   <div className="space-y-2">
-                    <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">
+                    <h4 className="text-sm font-semibold tracking-wider text-gray-400 uppercase">
                       Director
                     </h4>
-                    <p className="text-white font-medium">{tmdb.director}</p>
+                    <p className="font-medium text-white">{tmdb.director}</p>
                   </div>
                 )}
 

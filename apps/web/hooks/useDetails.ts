@@ -1,5 +1,6 @@
-import { Episode } from '@/lib/types';
 import { useCallback, useMemo, useState } from 'react';
+
+import { Episode } from '@/lib/types';
 
 export const useMoviePlayback = (initialPlay: boolean) => {
   const [playing, setPlaying] = useState<boolean>(initialPlay);

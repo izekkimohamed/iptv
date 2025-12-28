@@ -1,14 +1,14 @@
 'use client';
 
-import { trpc } from '@/lib/trpc';
-import VirtualGrid from '@/src/shared/components/common/VirtualGrid';
-import { usePlaylistStore } from '@/store/appStore';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import ItemsList from '@/components/iptv/ItemsList';
 import EmptyState from '@/components/ui/EmptyState';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import MovieDetails from '@/features/movies/components/MovieDetails';
+import { trpc } from '@/lib/trpc';
+import VirtualGrid from '@/src/shared/components/common/VirtualGrid';
+import { usePlaylistStore } from '@/store/appStore';
 import { useRecentUpdateStore } from '@/store/recentUpdate';
 
 export default function MoviesPage() {
@@ -70,7 +70,7 @@ export default function MoviesPage() {
 
   return (
     <>
-      <div className="flex-1 min-h-full overflow-y-auto">
+      <div className="min-h-full flex-1 overflow-y-auto">
         {movieError && (
           <EmptyState
             icon="📺"
@@ -101,9 +101,9 @@ export default function MoviesPage() {
           />
         )}
         {movies && !isFetchingMovies && !isFetchingMovie && !movieId && (
-          <div className="bg-linear-to-b from-slate-900/40 to-slate-950 min-h-full">
+          <div className="min-h-full bg-linear-to-b from-slate-900/40 to-slate-950">
             <VirtualGrid
-              className="h-full p-5 "
+              className="h-full p-5"
               items={movies}
               renderItem={(movie) => (
                 <ItemsList
@@ -126,9 +126,9 @@ export default function MoviesPage() {
           !isFetchingMovies &&
           !isFetchingMovie &&
           !movieId && (
-            <div className="bg-linear-to-b from-slate-900/40 to-slate-950 min-h-full">
+            <div className="min-h-full bg-linear-to-b from-slate-900/40 to-slate-950">
               <VirtualGrid
-                className="h-full p-5 "
+                className="h-full p-5"
                 items={newMoviesData}
                 renderItem={(movie) => (
                   <ItemsList

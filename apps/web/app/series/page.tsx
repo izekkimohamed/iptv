@@ -1,5 +1,7 @@
 'use client';
 
+import { useRouter, useSearchParams } from 'next/navigation';
+
 import CategoriesSidebar from '@/components/commen/CategoriesSidebar';
 import ItemsList from '@/components/iptv/ItemsList';
 import EmptyState from '@/components/ui/EmptyState';
@@ -9,7 +11,6 @@ import { trpc } from '@/lib/trpc';
 import VirtualGrid from '@/src/shared/components/common/VirtualGrid';
 import { usePlaylistStore } from '@/store/appStore';
 import { useRecentUpdateStore } from '@/store/recentUpdate';
-import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function SeriesPage() {
   const router = useRouter();
@@ -66,7 +67,7 @@ export default function SeriesPage() {
         selectedCategoryId={selectedCategoryId}
         categoryType="series"
       />
-      <div className="flex-1 min-h-full overflow-y-auto ">
+      <div className="min-h-full flex-1 overflow-y-auto">
         {serieError && (
           <EmptyState
             icon="📺"
@@ -99,7 +100,7 @@ export default function SeriesPage() {
         )}
 
         {series && !isFetchingSeries && !isFetchingSerie && !serieId && (
-          <div className="bg-linear-to-b from-slate-900/40 to-slate-950 min-h-full">
+          <div className="min-h-full bg-linear-to-b from-slate-900/40 to-slate-950">
             <VirtualGrid
               className="h-full p-5"
               items={series}
@@ -125,7 +126,7 @@ export default function SeriesPage() {
           !isFetchingSeries &&
           !isFetchingSerie &&
           !serieId && (
-            <div className="bg-linear-to-b from-slate-900/40 to-slate-950 min-h-full">
+            <div className="min-h-full bg-linear-to-b from-slate-900/40 to-slate-950">
               <VirtualGrid
                 className="h-full p-5"
                 items={newSeriesData}

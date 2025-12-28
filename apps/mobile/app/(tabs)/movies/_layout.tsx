@@ -7,14 +7,20 @@ export default function MoviesLayout() {
     <Stack
       screenOptions={{
         headerShown: true,
-        header: () => <Header />, // Hide header for all screens in movies
+        header: () => <Header />,
       }}
     >
       <Stack.Screen name='index' />
       <Stack.Screen
         name='[id]'
         options={{
-          headerShown: false, // Explicitly hide for [id] screen
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name='tmdb'
+        options={{
+          headerShown: false,
         }}
       />
     </Stack>

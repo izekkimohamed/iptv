@@ -1,6 +1,8 @@
-import { ActionButtonsProps } from '@/lib/types';
 import { Play, Youtube } from 'lucide-react';
 import { FC } from 'react';
+
+import { ActionButtonsProps } from '@/lib/types';
+
 import { Button } from '../ui/button';
 
 interface EpisodeToPlay {
@@ -37,25 +39,25 @@ export const ActionButtons: FC<UpdatedActionButtonsProps> = ({
     <div className="flex flex-wrap gap-3 pt-4">
       {(hasSeasons || !hasSeasons) && (
         <Button
-          className="flex items-center gap-2 px-6 py-3 text-base font-semibold text-white bg-linear-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 transition-all duration-300 rounded-lg shadow-lg hover:shadow-amber-600/50 group"
+          className="group flex items-center gap-2 rounded-lg bg-linear-to-r from-amber-600 to-amber-700 px-6 py-3 text-base font-semibold text-white shadow-lg transition-all duration-300 hover:from-amber-700 hover:to-amber-800 hover:shadow-amber-600/50"
           onClick={onPlayMovie}
           aria-label={getPlayButtonLabel()}
         >
-          <Play className="w-5 h-5 fill-white group-hover:scale-110 transition-transform" />
+          <Play className="h-5 w-5 fill-white transition-transform group-hover:scale-110" />
           {getPlayButtonLabel()}
         </Button>
       )}
       <Button
         disabled={!hasTrailer}
         onClick={onPlayTrailer}
-        className={`flex items-center gap-2 px-6 py-3 text-base font-semibold rounded-lg transition-all duration-300 border ${
+        className={`flex items-center gap-2 rounded-lg border px-6 py-3 text-base font-semibold transition-all duration-300 ${
           !hasTrailer
-            ? 'cursor-not-allowed opacity-50 text-gray-400 border-gray-500/20 bg-gray-500/10'
-            : 'text-red-300 border-red-500/30 bg-red-500/10 hover:bg-red-500/20 hover:border-red-500/50 hover:shadow-lg hover:shadow-red-500/20'
+            ? 'cursor-not-allowed border-gray-500/20 bg-gray-500/10 text-gray-400 opacity-50'
+            : 'border-red-500/30 bg-red-500/10 text-red-300 hover:border-red-500/50 hover:bg-red-500/20 hover:shadow-lg hover:shadow-red-500/20'
         }`}
         aria-label="Watch trailer"
       >
-        <Youtube className="w-5 h-5" />
+        <Youtube className="h-5 w-5" />
         Trailer
       </Button>
     </div>

@@ -1,5 +1,4 @@
 import { usePlayerTheme } from "@/theme/playerTheme";
-// Added Lucide icons for events
 import {
   AlertCircle,
   MapPin,
