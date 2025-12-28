@@ -1,58 +1,33 @@
 import { ChannelRow } from "@/components/ChannelRow";
+import Header from "@/components/Header";
 import { trpc } from "@/lib/trpc";
 import { usePlaylistStore } from "@/store/appStore";
 import { usePlayerTheme } from "@/theme/playerTheme";
-import { FlashList } from "@shopify/flash-list";
+import { FlashList, FlashListRef } from "@shopify/flash-list";
 import { Search, Tv, X } from "lucide-react-native";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-// --- Skeleton Component for Loading State ---
-const ChannelSkeleton = () => {
-  const theme = usePlayerTheme();
-
-  return (
-    <View style={[styles.skeletonRow, { borderBottomColor: theme.border }]}>
-      <View
-        style={[
-          styles.skeletonLogo,
-          { backgroundColor: theme.surfaceSecondary },
-        ]}
-      />
-      <View style={{ flex: 1, gap: 10 }}>
-        <View
-          style={[
-            styles.skeletonText,
-            { width: "60%", backgroundColor: theme.surfaceSecondary },
-          ]}
-        />
-        <View
-          style={[
-            styles.skeletonText,
-            {
-              width: "40%",
-              height: 10,
-              backgroundColor: theme.surfaceSecondary,
-            },
-          ]}
-        />
-      </View>
-    </View>
-  );
-};
 
 export default function ChannelsScreen() {
   const theme = usePlayerTheme();
   const selectPlaylist = usePlaylistStore((state) => state.selectedPlaylist);
+  const categoryListRef = useRef<FlashListRef<any>>(null);
 
   const [selectedCatId, setSelectedCatId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -86,236 +61,293 @@ export default function ChannelsScreen() {
     );
   }, [categories, searchQuery]);
 
+  const scrollToCategory = (index: number) => {
+    categoryListRef.current?.scrollToIndex({
+      index,
+      animated: true,
+      viewPosition: 0.5, // Centers the pill
+    });
+  };
+
   const renderChannelItem = ({ item, index }: { item: any; index: number }) => (
-    <Animated.View entering={FadeInDown.delay((index % 15) * 30)}>
-      <ChannelRow
-        channel={item}
-        playlist={{
-          url: selectPlaylist?.baseUrl ?? "",
-          username: selectPlaylist?.username ?? "",
-          password: selectPlaylist?.password ?? "",
-        }}
-      />
+    <Animated.View entering={FadeInDown.delay(Math.min(index * 20, 300))}>
+      <ChannelRow channel={item} />
     </Animated.View>
   );
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: theme.bg }]}
-      edges={["top"]}
-    >
-      {/* --- Search Header --- */}
-      <View
-        style={[styles.headerContainer, { borderBottomColor: theme.border }]}
-      >
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
+      <Header />
+
+      {/* 1. Integrated Search & Stats Header */}
+      <View style={styles.headerStack}>
         <View
           style={[
-            styles.searchBar,
+            styles.searchWrapper,
             {
               backgroundColor: theme.surfaceSecondary,
               borderColor: theme.border,
             },
           ]}
         >
-          <Search size={18} color={theme.textMuted} />
+          <Search size={18} color={theme.primary} />
           <TextInput
             style={[styles.searchInput, { color: theme.textPrimary }]}
-            placeholder='Search categories...'
+            placeholder='Search channels...'
             placeholderTextColor={theme.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
           {searchQuery.length > 0 && (
-            <Pressable onPress={() => setSearchQuery("")} hitSlop={10}>
-              <View
-                style={[styles.clearBtn, { backgroundColor: theme.border }]}
-              >
-                <X size={12} color={theme.textSecondary} />
-              </View>
+            <Pressable onPress={() => setSearchQuery("")}>
+              <X size={16} color={theme.textSecondary} />
             </Pressable>
           )}
         </View>
       </View>
 
-      {/* --- Categories (Pills) --- */}
-      <View style={styles.categoriesWrapper}>
+      {/* Categories Horizontal Scroll */}
+      <View style={[styles.catWrapper, { borderBottomColor: theme.border }]}>
         {loadingCats ?
           <ActivityIndicator
             size='small'
             color={theme.primary}
-            style={{ margin: 20 }}
+            style={styles.loader}
           />
         : <FlashList
+            ref={categoryListRef}
             horizontal
             data={filteredCategories}
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoriesContent}
-            keyExtractor={(item) => item.categoryId.toString()}
-            renderItem={({ item }) => {
+            contentContainerStyle={styles.catContent}
+            renderItem={({ item, index }) => {
               const isActive = selectedCatId === item.categoryId;
               return (
-                <Pressable
-                  style={[
-                    styles.categoryPill,
-                    {
-                      backgroundColor:
-                        isActive ? theme.primary : theme.surfaceSecondary,
-                      borderColor: isActive ? theme.primary : theme.border,
-                    },
-                  ]}
-                  onPress={() => setSelectedCatId(item.categoryId)}
-                >
-                  <Text
-                    style={[
-                      styles.categoryText,
-                      {
-                        color: isActive ? "#000" : theme.textSecondary,
-                        fontWeight: isActive ? "700" : "500",
-                      },
-                    ]}
-                  >
-                    {item.categoryName}
-                  </Text>
-                </Pressable>
+                <CategoryPill
+                  item={item}
+                  isActive={isActive}
+                  onPress={() => {
+                    setSelectedCatId(item.categoryId);
+                    scrollToCategory(index);
+                  }}
+                />
               );
             }}
           />
         }
       </View>
 
-      {/* --- Channel List --- */}
-      <View style={styles.listContainer}>
+      <SafeAreaView style={styles.listContainer} edges={["bottom"]}>
         {loadingChannels ?
-          // Render Skeletons while loading
-          <View style={{ padding: 16 }}>
-            {[...Array(8)].map((_, i) => (
-              <ChannelSkeleton key={i} />
-            ))}
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size='large' color={theme.primary} />
+            <Text style={[styles.loadingText, { color: theme.textMuted }]}>
+              Loading Streams...
+            </Text>
           </View>
-        : channels && channels.length > 0 ?
-          <FlashList
+        : <FlashList
             data={channels}
             renderItem={renderChannelItem}
             keyExtractor={(item) => item.streamId.toString()}
-            contentContainerStyle={{
-              paddingBottom: 40,
-              paddingHorizontal: 10,
-            }}
-            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={
+              <Animated.View entering={FadeIn} style={styles.emptyContainer}>
+                <Tv size={64} color={theme.border} />
+                <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>
+                  No Channels Found
+                </Text>
+                <Text style={[styles.emptySub, { color: theme.textMuted }]}>
+                  Try adjusting your search or category
+                </Text>
+              </Animated.View>
+            }
           />
-        : <View style={styles.emptyState}>
-            <View
-              style={[
-                styles.emptyIconCircle,
-                { backgroundColor: `${theme.primary}15` },
-              ]}
-            >
-              <Tv size={48} color={theme.primary} />
-            </View>
-            <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>
-              No channels found
-            </Text>
-            <Text style={[styles.emptySub, { color: theme.textMuted }]}>
-              Try a different category
-            </Text>
-          </View>
         }
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+// Sub-component for the Pill to handle its own animation state
+const CategoryPill = ({ item, isActive, onPress }: any) => {
+  const theme = usePlayerTheme();
+  const scale = useSharedValue(1);
 
-  // Header
-  headerContainer: {
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = () => (scale.value = withSpring(0.95));
+  const handlePressOut = () => (scale.value = withSpring(1));
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+    >
+      <Animated.View
+        style={[
+          styles.pill,
+          animatedStyle,
+          {
+            backgroundColor: isActive ? theme.primary : theme.surfaceSecondary,
+            borderColor: isActive ? theme.primary : theme.border,
+            elevation: isActive ? 4 : 0,
+            shadowColor: theme.primary,
+            shadowOpacity: isActive ? 0.3 : 0,
+          },
+        ]}
+      >
+        <Text
+          style={[
+            styles.pillText,
+            {
+              color: isActive ? "#000" : theme.textSecondary,
+              fontWeight: isActive ? "700" : "500",
+            },
+          ]}
+        >
+          {item.categoryName}
+        </Text>
+      </Animated.View>
+    </Pressable>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  searchSection: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
   },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
-    height: 44,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    gap: 10,
+    height: 48,
+    borderRadius: 24,
+    paddingHorizontal: 16,
     borderWidth: 1,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    height: "100%",
-  },
-  clearBtn: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
+    gap: 12,
   },
 
-  // Categories
-  categoriesWrapper: {
-    height: 56,
+  catWrapper: {
+    paddingBottom: 12,
+    borderBottomWidth: 1,
   },
-  categoriesContent: {
+  catContent: {
     paddingHorizontal: 16,
+  },
+  catPill: {
+    paddingHorizontal: 18,
     paddingVertical: 10,
-  },
-  categoryPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 25,
     marginRight: 8,
     borderWidth: 1,
-    justifyContent: "center",
   },
-  categoryText: {
-    fontSize: 13,
-  },
-
-  // List
-  listContainer: {
-    flex: 1,
+  catText: {
+    fontSize: 14,
   },
 
-  // Empty State
-  emptyState: {
+  listContent: {
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 20,
+  },
+  loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 100,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginTop: 16,
+  },
+  emptySub: {
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: "center",
+  },
+  loader: {
+    paddingVertical: 10,
+    marginLeft: 20,
+  },
+
+  headerStack: {
+    padding: 12,
     gap: 12,
-    marginTop: 40,
   },
-  emptyIconCircle: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  emptyTitle: { fontSize: 18, fontWeight: "700" },
-  emptySub: { fontSize: 14 },
-
-  // Skeleton
-  skeletonRow: {
+  searchWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    gap: 16,
+    height: 52,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    gap: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: { elevation: 2 },
+    }),
   },
-  skeletonLogo: {
-    width: 60,
-    height: 40,
-    borderRadius: 8,
+  searchInput: { flex: 1, fontSize: 16, fontWeight: "500" },
+  statsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 4,
   },
-  skeletonText: {
-    height: 14,
-    borderRadius: 4,
+  liveIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
+  statsText: {
+    fontSize: 12,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  catContainer: {
+    paddingVertical: 14,
+    marginTop: 4,
+  },
+  catScroll: { paddingHorizontal: 16 },
+  pill: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 14,
+    marginRight: 10,
+    borderWidth: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+  },
+  pillText: { fontSize: 14 },
+  listContainer: { flex: 1 },
+  listPadding: { paddingHorizontal: 16, paddingBottom: 30 },
+  loadingState: { flex: 1, justifyContent: "center" },
+  emptyContent: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 80,
+    gap: 12,
+  },
+  emptyText: { fontSize: 14, fontWeight: "500" },
 });

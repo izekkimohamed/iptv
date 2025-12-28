@@ -15,19 +15,17 @@ export default function PlaylistsSelectScreen() {
 
   const { playlists, removePlaylist, selectPlaylist, selectedPlaylist } =
     usePlaylistStore();
-
-  const { mutateAsync: deletePlaylist, isPending } =
+  const utils = trpc.useUtils();
+  const { mutate: deletePlaylist, isPending } =
     trpc.playlists.deletePlaylist.useMutation({
-      onSuccess: (data, variables) => {
+      onSuccess: async (data, variables) => {
+        await utils.playlists.getPlaylists.invalidate();
         removePlaylist(variables.playlistId);
-        Alert.alert(data.success);
+        if (playlists.length) {
+          selectPlaylist(playlists[0]);
+        }
       },
     });
-
-  const handleSelect = (playlist: any) => {
-    selectPlaylist(playlist);
-    router.replace("/(tabs)/channels");
-  };
 
   const handleDelete = (playlistId: number) => {
     Alert.alert(
@@ -36,16 +34,19 @@ export default function PlaylistsSelectScreen() {
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: "Disconnect",
-          onPress: async () =>
-            await deletePlaylist({
-              playlistId,
-            }),
-
+          text: "Delete",
+          onPress: () => {
+            deletePlaylist({ playlistId });
+          },
           style: "destructive",
         },
       ]
     );
+  };
+
+  const handleSelect = (playlist: any) => {
+    selectPlaylist(playlist);
+    router.replace("/(tabs)/channels");
   };
 
   // --- RENDER: LIST VIEW ---

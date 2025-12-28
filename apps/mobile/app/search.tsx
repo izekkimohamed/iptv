@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
 
   loadingBox: {
     padding: 24,
-    borderRadius: 20,
+    borderRadius: 200,
     borderWidth: 1,
   },
 });

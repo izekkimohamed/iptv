@@ -6,7 +6,7 @@ import { FlashList } from "@shopify/flash-list";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { Search, Tv } from "lucide-react-native";
+import { Tv } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -109,23 +109,8 @@ export default function SeriesScreen() {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.bg }]}
-      edges={["top"]}
+      edges={["bottom"]}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>
-          TV Series
-        </Text>
-        <Pressable
-          style={[
-            styles.searchBtn,
-            { backgroundColor: theme.surfaceSecondary },
-          ]}
-        >
-          <Search size={20} color={theme.textMuted} />
-        </Pressable>
-      </View>
-
       {/* Categories Horizontal Scroll */}
       <View style={styles.categoriesContainer}>
         <FlashList

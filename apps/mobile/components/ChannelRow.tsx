@@ -1,77 +1,34 @@
 import { trpc } from "@/lib/trpc";
+import { usePlaylistStore } from "@/store/appStore";
 import { usePlayerTheme } from "@/theme/playerTheme";
+import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { Tv } from "lucide-react-native";
+import { Heart, Tv } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withRepeat,
-  withTiming,
+  withSequence,
+  withSpring,
 } from "react-native-reanimated";
 
 interface ChannelRowProps {
   channel: any;
-  playlist: {
-    url: string;
-    username: string;
-    password: string;
-  };
 }
 
-// --- Helper: Decode Base64 EPG Titles ---
-export const decodeBase64 = (str: string): string => {
-  try {
-    const chars =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-    let output = "";
-    str = String(str).replace(/=+$/, "");
-    for (
-      let bc = 0, bs = 0, buffer, i = 0;
-      (buffer = str.charAt(i++));
-      ~buffer && ((bs = bc % 4 ? bs * 64 + buffer : buffer), bc++ % 4) ?
-        (output += String.fromCharCode(255 & (bs >> ((-2 * bc) & 6))))
-      : 0
-    ) {
-      buffer = chars.indexOf(buffer);
-    }
-    return decodeURIComponent(escape(output));
-  } catch {
-    return str;
-  }
-};
-
-// --- Component: Pulsing Live Dot ---
-const LivePulse = ({ color }: { color: string }) => {
-  const opacity = useSharedValue(0.5);
-
-  useEffect(() => {
-    opacity.value = withRepeat(withTiming(1, { duration: 1000 }), -1, true);
-  }, []);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-  }));
-
-  return (
-    <Animated.View
-      style={[styles.liveDotOuter, animatedStyle, { borderColor: color }]}
-    >
-      <View style={[styles.liveDotInner, { backgroundColor: color }]} />
-    </Animated.View>
-  );
-};
-
-export const ChannelRow = ({ channel, playlist }: ChannelRowProps) => {
+export const ChannelRow = ({ channel }: ChannelRowProps) => {
   const router = useRouter();
   const theme = usePlayerTheme();
+  const utils = trpc.useUtils();
   const [currentTime, setCurrentTime] = useState(Math.floor(Date.now() / 1000));
 
+  // Fix: useSharedValue should only be accessed via useAnimatedStyle
+  const heartScale = useSharedValue(1);
+  const playlist = usePlaylistStore((state) => state.selectedPlaylist);
+
   useEffect(() => {
-    // Update every 30 seconds is usually enough for EPG progress to save CPU
     const timer = setInterval(
       () => setCurrentTime(Math.floor(Date.now() / 1000)),
       30000
@@ -79,56 +36,69 @@ export const ChannelRow = ({ channel, playlist }: ChannelRowProps) => {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch EPG (Only enable if visible/mounted)
   const { data: epgData } = trpc.channels.getShortEpg.useQuery(
     {
       channelId: channel.streamId,
-      url: playlist.url,
-      username: playlist.username,
-      password: playlist.password,
+      url: playlist?.baseUrl ?? "",
+      username: playlist?.username ?? "",
+      password: playlist?.password ?? "",
     },
-    {
-      enabled: !!channel.streamId,
-      staleTime: 1000 * 60 * 5, // Cache for 5 mins
-    }
+    { enabled: !!channel.streamId, staleTime: 1000 * 60 * 5 }
   );
+
+  const { mutate: toggleFavorite } = trpc.channels.toggleFavorite.useMutation({
+    onSuccess: () => utils.channels.getChannels.invalidate(),
+  });
 
   const programInfo = useMemo(() => {
     if (!epgData?.length) return null;
     const current = epgData.find(
-      (prog: any) =>
-        currentTime >= Number(prog.start_timestamp) &&
-        currentTime <= Number(prog.stop_timestamp)
+      (p: any) =>
+        currentTime >= Number(p.start_timestamp) &&
+        currentTime <= Number(p.stop_timestamp)
     );
     if (!current) return null;
 
     const start = Number(current.start_timestamp);
     const stop = Number(current.stop_timestamp);
-    const duration = stop - start;
-    const elapsed = currentTime - start;
-    const progress = Math.min(100, Math.max(0, (elapsed / duration) * 100));
+    const progress = Math.min(
+      100,
+      Math.max(0, ((currentTime - start) / (stop - start)) * 100)
+    );
+
+    const formatTime = (ts: number) =>
+      new Date(ts * 1000).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
 
     return {
-      title: decodeBase64(current.title),
+      title: current.title,
       progress,
-      remainingMins: Math.ceil((stop - currentTime) / 60),
-      startStr: new Date(start * 1000).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      stopStr: new Date(stop * 1000).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+      startTime: formatTime(start),
+      stopTime: formatTime(stop),
     };
   }, [epgData, currentTime]);
+
+  const handleFavorite = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    heartScale.value = withSequence(withSpring(1.3), withSpring(1));
+    toggleFavorite({
+      channelsId: Number(channel.id),
+      isFavorite: !channel.isFavorite,
+    });
+  };
+
+  // Fix for the Reanimated Warning:
+  const animatedHeartStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: heartScale.value }],
+  }));
 
   return (
     <Pressable
       style={({ pressed }) => [
-        styles.rowContainer,
-        { borderColor: theme.border },
-        pressed && { backgroundColor: theme.surfaceSecondary },
+        styles.row,
+        { backgroundColor: pressed ? `${theme.primary}10` : "transparent" },
       ]}
       onPress={() =>
         router.push({
@@ -137,7 +107,6 @@ export const ChannelRow = ({ channel, playlist }: ChannelRowProps) => {
         })
       }
     >
-      {/* 1. Channel Logo */}
       <View
         style={[
           styles.logoContainer,
@@ -153,114 +122,113 @@ export const ChannelRow = ({ channel, playlist }: ChannelRowProps) => {
             style={styles.logo}
             contentFit='contain'
           />
-        : <Tv size={24} color={theme.primary} />}
+        : <Tv size={20} color={theme.textMuted} />}
       </View>
 
-      {/* 2. Info Section */}
       <View style={styles.infoContainer}>
-        <View style={styles.headerRow}>
-          <Text
-            style={[styles.channelName, { color: theme.textPrimary }]}
-            numberOfLines={1}
-          >
-            {channel.name}
-          </Text>
-          {/* Live Indicator if EPG exists */}
-        </View>
+        <Text
+          style={[styles.channelName, { color: theme.textPrimary }]}
+          numberOfLines={1}
+        >
+          {channel.name}
+        </Text>
 
         {programInfo ?
-          <View style={styles.programWrapper}>
+          <View style={styles.epgWrapper}>
             <Text
               style={[styles.programTitle, { color: theme.textSecondary }]}
               numberOfLines={1}
             >
               {programInfo.title}
             </Text>
-
-            {/* Progress Bar */}
             <View style={styles.progressRow}>
-              <View style={[styles.track, { backgroundColor: theme.trackBg }]}>
-                <LinearGradient
-                  colors={[theme.primary, theme.primaryDark]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={[styles.fill, { width: `${programInfo.progress}%` }]}
+              <Text style={[styles.timeText, { color: theme.textMuted }]}>
+                {programInfo.startTime}
+              </Text>
+              <View style={[styles.track, { backgroundColor: theme.border }]}>
+                <View
+                  style={[
+                    styles.fill,
+                    {
+                      width: `${programInfo.progress}%`,
+                      backgroundColor: theme.primary,
+                    },
+                  ]}
                 />
               </View>
-              <Text style={[styles.timeText, { color: theme.textMuted }]}>
-                {programInfo.startStr} - {programInfo.stopStr}
+              <Text
+                style={[
+                  styles.timeText,
+                  { color: theme.textMuted, textAlign: "right" },
+                ]}
+              >
+                {programInfo.stopTime}
               </Text>
             </View>
           </View>
-        : <View style={styles.noEpgRow}>
-            <View style={[styles.dot, { backgroundColor: theme.textMuted }]} />
-            <Text style={[styles.noEpgText, { color: theme.textMuted }]}>
-              No information available
-            </Text>
-          </View>
+        : <Text style={[styles.noEpg, { color: theme.textMuted }]}>
+            No Information Available
+          </Text>
         }
       </View>
+
+      <Pressable
+        onPress={handleFavorite}
+        hitSlop={15}
+        style={styles.favoriteTouch}
+      >
+        <Animated.View style={animatedHeartStyle}>
+          <Heart
+            size={22}
+            color={channel.isFavorite ? theme.primary : theme.textMuted}
+            fill={channel.isFavorite ? theme.primary : "transparent"}
+          />
+        </Animated.View>
+      </Pressable>
     </Pressable>
   );
 };
 
 const styles = StyleSheet.create({
-  rowContainer: {
+  row: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderRadius: 10,
-    marginBottom: 5,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    marginBottom: 4,
   },
-
-  // Logo
   logoContainer: {
-    width: 60,
-    height: 44,
-    borderRadius: 8,
+    width: 64,
+    height: 46,
+    borderRadius: 10,
     borderWidth: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 14,
     overflow: "hidden",
   },
-  logo: {
-    width: "85%",
-    height: "85%",
-  },
-
-  // Info
+  logo: { width: "80%", height: "80%" },
   infoContainer: {
     flex: 1,
-    gap: 6,
-  },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    marginLeft: 14,
+    gap: 2,
   },
   channelName: {
     fontSize: 15,
     fontWeight: "700",
-    letterSpacing: 0.2,
-    flex: 1,
-    marginRight: 8,
   },
-
-  // EPG Section
-  programWrapper: {
-    gap: 6,
+  epgWrapper: {
+    marginTop: 2,
   },
   programTitle: {
     fontSize: 13,
     fontWeight: "500",
+    marginBottom: 4,
   },
   progressRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
   },
   track: {
     flex: 1,
@@ -270,48 +238,19 @@ const styles = StyleSheet.create({
   },
   fill: {
     height: "100%",
-    borderRadius: 2,
   },
   timeText: {
     fontSize: 10,
     fontWeight: "600",
-    fontVariant: ["tabular-nums"],
+    minWidth: 40,
   },
-
-  // No EPG
-  noEpgRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 2,
-  },
-  dot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    opacity: 0.5,
-  },
-  noEpgText: {
+  noEpg: {
     fontSize: 12,
     fontStyle: "italic",
+    marginTop: 2,
   },
-
-  // Live Pulse
-  liveDotOuter: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 1.5,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  liveDotInner: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-
-  arrowContainer: {
-    marginLeft: 8,
+  favoriteTouch: {
+    padding: 8,
+    marginLeft: 4,
   },
 });

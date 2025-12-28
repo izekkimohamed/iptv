@@ -48,7 +48,10 @@ export const usePlaylistStore = create<PlaylistState>()(
         }),
       removePlaylist: (id) =>
         set((state) => ({
-          playlists: state.playlists.filter((playlist) => playlist.id !== id),
+          // Ensure both are compared as numbers (or strings)
+          playlists: state.playlists.filter(
+            (playlist) => Number(playlist.id) !== Number(id)
+          ),
         })),
     }),
 

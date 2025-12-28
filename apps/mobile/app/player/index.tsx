@@ -7,16 +7,55 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import { useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { VideoView } from "expo-video";
-import { useCallback, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Animated,
   BackHandler,
   StyleSheet,
   Text,
+  TextInput,
+  TextInputProps,
   View,
 } from "react-native";
 import { GestureDetector } from "react-native-gesture-handler";
+import Animated, {
+  SharedValue,
+  useAnimatedProps,
+  useAnimatedStyle,
+  useDerivedValue,
+} from "react-native-reanimated";
+import { runOnJS } from "react-native-worklets";
+
+// --- Reanimated Text Helper ---
+const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
+
+const ReanimatedPercentage = ({
+  value,
+  style,
+  color,
+}: {
+  value: SharedValue<number>;
+  style?: any;
+  color: string;
+}) => {
+  const animatedProps = useAnimatedProps(() => {
+    return {
+      text: `${Math.round(value.value * 100)}%`,
+    } as unknown as TextInputProps;
+  });
+
+  return (
+    <AnimatedTextInput
+      underlineColorAndroid='transparent'
+      editable={false}
+      value='0%'
+      style={[style, { color: color }]}
+      animatedProps={animatedProps}
+    />
+  );
+};
+
+// --- Main Component ---
 
 export default function Player() {
   const { url, title, mediaType } = useLocalSearchParams<{
@@ -51,19 +90,67 @@ export default function Player() {
 
   const {
     composedGesture,
-    volumeLevel,
+    tapGesture,
+    volumeValue,
+    brightnessValue,
     volumeAnim,
-    brightnessLevel,
     brightnessAnim,
     leftDoubleTapAnim,
     rightDoubleTapAnim,
-    tapGesture,
   } = usePlayerGestures({
     showControls,
     setShowControls,
     skipForward,
     skipBackward,
   });
+
+  // --- Icon Logic (Optimized) ---
+  const [volIcon, setVolIcon] =
+    useState<keyof typeof MaterialCommunityIcons.glyphMap>("volume-high");
+  const [brightIcon, setBrightIcon] =
+    useState<keyof typeof MaterialCommunityIcons.glyphMap>("brightness-6");
+
+  useDerivedValue(() => {
+    const v = volumeValue.value;
+    let icon: keyof typeof MaterialCommunityIcons.glyphMap = "volume-off";
+    if (v >= 0.7) icon = "volume-high";
+    else if (v >= 0.3) icon = "volume-medium";
+    else if (v > 0) icon = "volume-low";
+    runOnJS(setVolIcon)(icon);
+  });
+
+  useDerivedValue(() => {
+    const b = brightnessValue.value;
+    let icon: keyof typeof MaterialCommunityIcons.glyphMap = "brightness-4";
+    if (b >= 0.7) icon = "brightness-6";
+    else if (b >= 0.3) icon = "brightness-5";
+    runOnJS(setBrightIcon)(icon);
+  });
+
+  // --- Animated Styles ---
+  const volumeBarStyle = useAnimatedStyle(() => ({
+    height: `${volumeValue.value * 100}%`,
+  }));
+
+  const volumeContainerStyle = useAnimatedStyle(() => ({
+    opacity: volumeAnim.value,
+  }));
+
+  const brightnessBarStyle = useAnimatedStyle(() => ({
+    height: `${brightnessValue.value * 100}%`,
+  }));
+
+  const brightnessContainerStyle = useAnimatedStyle(() => ({
+    opacity: brightnessAnim.value,
+  }));
+
+  const leftRippleStyle = useAnimatedStyle(() => ({
+    opacity: leftDoubleTapAnim.value,
+  }));
+
+  const rightRippleStyle = useAnimatedStyle(() => ({
+    opacity: rightDoubleTapAnim.value,
+  }));
 
   useEffect(() => {
     activateKeepAwakeAsync();
@@ -79,19 +166,6 @@ export default function Player() {
     );
     return () => backHandler.remove();
   }, [handleBackPress]);
-
-  const volumeIcon = useCallback(() => {
-    if (volumeLevel === 0) return "volume-off";
-    if (volumeLevel < 0.3) return "volume-low";
-    if (volumeLevel < 0.7) return "volume-medium";
-    return "volume-high";
-  }, [volumeLevel]);
-
-  const brightnessIcon = useCallback(() => {
-    if (brightnessLevel < 0.3) return "brightness-4";
-    if (brightnessLevel < 0.7) return "brightness-5";
-    return "brightness-6";
-  }, [brightnessLevel]);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
@@ -110,35 +184,28 @@ export default function Player() {
             fullscreenOptions={{ enable: true }}
             allowsPictureInPicture
             startsPictureInPictureAutomatically
-            onPictureInPictureStop={() => player.pause()}
             nativeControls={false}
             contentFit={!isFullScreen ? "contain" : resizeMode}
           />
 
-          {/* --- Loading State --- */}
+          {/* Loading State */}
           {status === "loading" && (
             <View style={styles.centerOverlay}>
               <View
                 style={[
                   styles.loadingBackdrop,
                   {
-                    backgroundColor: theme.glassMedium,
+                    backgroundColor: theme.glassHighlight,
                     borderColor: theme.borderMuted,
                   },
                 ]}
               >
-                <View
-                  style={[
-                    styles.loadingGlow,
-                    { backgroundColor: theme.primaryGlow },
-                  ]}
-                />
-                <ActivityIndicator size='large' color={theme.primary} />
+                <ActivityIndicator size={42} color={theme.primary} />
               </View>
             </View>
           )}
 
-          {/* --- Error State --- */}
+          {/* Error State */}
           {status === "error" && (
             <View style={styles.centerOverlay}>
               <View
@@ -150,41 +217,24 @@ export default function Player() {
                   },
                 ]}
               >
-                <View
-                  style={[
-                    styles.errorIconContainer,
-                    { backgroundColor: "rgba(239, 68, 68, 0.15)" },
-                  ]}
-                >
-                  <MaterialCommunityIcons
-                    name='alert-circle-outline'
-                    size={36}
-                    color={theme.accentError}
-                  />
-                </View>
+                <MaterialCommunityIcons
+                  name='alert-circle-outline'
+                  size={36}
+                  color={theme.accentError}
+                />
                 <Text style={[styles.errorTitle, { color: theme.textPrimary }]}>
                   Playback Error
-                </Text>
-                <Text
-                  style={[styles.errorMessage, { color: theme.textSecondary }]}
-                >
-                  Unable to load video. Check your connection.
                 </Text>
               </View>
             </View>
           )}
 
-          {/* --- Double Tap Ripples --- */}
+          {/* Left Ripple */}
           <Animated.View
             pointerEvents='none'
-            style={[
-              styles.rippleContainer,
-              styles.rippleLeft,
-              { opacity: leftDoubleTapAnim },
-            ]}
+            style={[styles.rippleContainer, styles.rippleLeft, leftRippleStyle]}
           >
-            <View style={[styles.rippleArcLeft]} />
-
+            <View style={styles.rippleArcLeft} />
             <View style={styles.rippleContent}>
               <View
                 style={[
@@ -204,16 +254,16 @@ export default function Player() {
             </View>
           </Animated.View>
 
+          {/* Right Ripple */}
           <Animated.View
             pointerEvents='none'
             style={[
               styles.rippleContainer,
               styles.rippleRight,
-              { opacity: rightDoubleTapAnim },
+              rightRippleStyle,
             ]}
           >
-            <View style={[styles.rippleArcRight]} />
-
+            <View style={styles.rippleArcRight} />
             <View style={styles.rippleContent}>
               <View
                 style={[
@@ -233,13 +283,13 @@ export default function Player() {
             </View>
           </Animated.View>
 
-          {/* --- Volume HUD --- */}
+          {/* Volume HUD */}
           <Animated.View
             style={[
               styles.hudBar,
               styles.hudLeft,
+              volumeContainerStyle,
               {
-                opacity: volumeAnim,
                 backgroundColor: theme.glassMedium,
                 borderColor: theme.borderMuted,
               },
@@ -248,48 +298,38 @@ export default function Player() {
             <View
               style={[styles.hudTrack, { backgroundColor: theme.trackBg }]}
             />
-
-            <View
+            <Animated.View
               style={[
                 styles.hudFill,
-                {
-                  height: `${volumeLevel * 100}%`,
-                  backgroundColor: theme.primary,
-                },
+                volumeBarStyle,
+                { backgroundColor: theme.primary },
               ]}
             />
-
             <View style={styles.hudIconContainer}>
-              <View
-                style={[
-                  styles.hudIconBg,
-                  { backgroundColor: theme.glassLight },
-                ]}
-              >
+              <View style={[styles.hudIconBg]}>
                 <MaterialCommunityIcons
-                  name={volumeIcon()}
+                  name={volIcon}
                   size={20}
                   color={theme.textPrimary}
                 />
               </View>
             </View>
-
             <View style={styles.hudPercentage}>
-              <Text
-                style={[styles.hudPercentageText, { color: theme.textPrimary }]}
-              >
-                {Math.round(volumeLevel * 100)}%
-              </Text>
+              <ReanimatedPercentage
+                value={volumeValue}
+                color={theme.textPrimary}
+                style={styles.hudPercentageText}
+              />
             </View>
           </Animated.View>
 
-          {/* --- Brightness HUD --- */}
+          {/* Brightness HUD */}
           <Animated.View
             style={[
               styles.hudBar,
               styles.hudRight,
+              brightnessContainerStyle,
               {
-                opacity: brightnessAnim,
                 backgroundColor: theme.glassMedium,
                 borderColor: theme.borderMuted,
               },
@@ -298,17 +338,13 @@ export default function Player() {
             <View
               style={[styles.hudTrack, { backgroundColor: theme.trackBg }]}
             />
-
-            <View
+            <Animated.View
               style={[
                 styles.hudFill,
-                {
-                  height: `${brightnessLevel * 100}%`,
-                  backgroundColor: theme.accentWarning,
-                },
+                brightnessBarStyle,
+                { backgroundColor: theme.accentWarning },
               ]}
             />
-
             <View style={styles.hudIconContainer}>
               <View
                 style={[
@@ -317,24 +353,23 @@ export default function Player() {
                 ]}
               >
                 <MaterialCommunityIcons
-                  name={brightnessIcon()}
+                  name={brightIcon}
                   size={20}
                   color={theme.textPrimary}
                 />
               </View>
             </View>
-
             <View style={styles.hudPercentage}>
-              <Text
-                style={[styles.hudPercentageText, { color: theme.textPrimary }]}
-              >
-                {Math.round(brightnessLevel * 100)}%
-              </Text>
+              <ReanimatedPercentage
+                value={brightnessValue}
+                color={theme.textPrimary}
+                style={styles.hudPercentageText}
+              />
             </View>
           </Animated.View>
 
-          {/* --- Controls --- */}
-          {showControls && status !== "loading" && (
+          {/* Controls */}
+          {showControls && status !== "loading" && status !== "error" && (
             <VideoControls
               showControls={showControls}
               setShowControls={setShowControls}
@@ -394,27 +429,15 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
   loadingBackdrop: {
-    borderRadius: 200,
-    padding: 10,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     alignItems: "center",
     justifyContent: "center",
     gap: 16,
     borderWidth: 1,
-    backdropFilter: "blur(10px)",
     position: "relative",
     overflow: "hidden",
-  },
-  loadingGlow: {
-    position: "absolute",
-    width: 80,
-    height: 80,
-    borderRadius: 60,
-    opacity: 0.2,
-  },
-  loadingText: {
-    fontSize: 14,
-    fontWeight: "600",
-    letterSpacing: 0.5,
   },
   errorBackdrop: {
     borderRadius: 24,
@@ -422,15 +445,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 16,
     borderWidth: 1,
-    backdropFilter: "blur(10px)",
     maxWidth: 320,
-  },
-  errorIconContainer: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    justifyContent: "center",
-    alignItems: "center",
   },
   errorTitle: {
     fontSize: 18,
@@ -492,7 +507,6 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     justifyContent: "center",
     alignItems: "center",
-    backdropFilter: "blur(10px)",
   },
   rippleText: {
     fontSize: 14,
@@ -503,21 +517,20 @@ const styles = StyleSheet.create({
   // HUD Bars
   hudBar: {
     position: "absolute",
-    top: "18%",
-    bottom: "28%",
-    width: 52,
+    top: "25%",
+    bottom: "25%",
+    width: 35,
     borderRadius: 26,
     overflow: "hidden",
     zIndex: 999,
     borderWidth: 1,
     justifyContent: "flex-end",
-    backdropFilter: "blur(10px)",
   },
   hudLeft: {
-    left: 16,
+    left: 10,
   },
   hudRight: {
-    right: 16,
+    right: 10,
   },
   hudTrack: {
     ...StyleSheet.absoluteFillObject,
@@ -526,12 +539,11 @@ const styles = StyleSheet.create({
     width: "100%",
     position: "absolute",
     bottom: 0,
-    borderTopLeftRadius: 6,
-    borderTopRightRadius: 6,
+    borderRadius: 26,
   },
   hudIconContainer: {
     width: "100%",
-    height: 52,
+    height: 35,
     justifyContent: "center",
     alignItems: "center",
     position: "absolute",
@@ -539,12 +551,11 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   hudIconBg: {
-    width: 40,
-    height: 40,
+    width: 20,
+    height: 20,
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
-    backdropFilter: "blur(10px)",
   },
   hudPercentage: {
     position: "absolute",
@@ -553,8 +564,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   hudPercentageText: {
-    fontSize: 11,
-    fontWeight: "700",
+    fontSize: 10,
+    fontWeight: "600",
     letterSpacing: 0.5,
+    textAlign: "center",
   },
 });

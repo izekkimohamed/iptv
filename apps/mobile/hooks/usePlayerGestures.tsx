@@ -1,11 +1,15 @@
 import * as Brightness from "expo-brightness";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Dimensions } from "react-native";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { Dimensions } from "react-native";
 import { Gesture } from "react-native-gesture-handler";
-import { useSharedValue } from "react-native-reanimated";
-import { scheduleOnRN } from "react-native-worklets";
-
+import {
+  useSharedValue,
+  withDelay,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 import { VolumeManager } from "react-native-volume-manager";
+import { runOnJS } from "react-native-worklets";
 
 interface UsePlayerGesturesProps {
   showControls: boolean;
@@ -29,245 +33,208 @@ export const usePlayerGestures = ({
       screenWidth.value = window.width;
       screenWidthRef.current = window.width;
     });
-
     return () => subscription?.remove();
   }, [screenWidth]);
 
-  // Volume state and animations
+  // --- Shared Values (Replaces Animated.Value) ---
   const volumeValue = useSharedValue(0);
+  const volumeAnim = useSharedValue(0); // Opacity: 0 or 1
   const gestureStartVolume = useSharedValue(0);
-  const volumeAnim = useRef(new Animated.Value(0)).current;
-  const [volumeLevel, setVolumeLevel] = useState(0);
-  const volumeTimeoutRef = useRef<number | null>(null);
 
-  // Brightness state and animations
-  const brightness = useSharedValue(0);
+  const brightnessValue = useSharedValue(0);
+  const brightnessAnim = useSharedValue(0); // Opacity: 0 or 1
   const gestureStartBrightness = useSharedValue(0);
-  const [brightnessLevel, setBrightnessLevel] = useState(0);
-  const brightnessAnim = useRef(new Animated.Value(0)).current;
-  const brightnessTimeoutRef = useRef<number | null>(null);
-
-  // Gesture tracking
-  const startXPosition = useSharedValue(0);
-  const lastTapTimestamp = useSharedValue(0);
 
   // Double tap animations
-  const leftDoubleTapAnim = useRef(new Animated.Value(0)).current;
-  const rightDoubleTapAnim = useRef(new Animated.Value(0)).current;
+  const leftDoubleTapAnim = useSharedValue(0);
+  const rightDoubleTapAnim = useSharedValue(0);
 
-  // Initialize volume and brightness on mount
+  // Initialize values
   useEffect(() => {
     const initializeValues = async () => {
       try {
-        // Get current system volume
         const currentVolume = await VolumeManager.getVolume();
         volumeValue.value = currentVolume.volume;
-        setVolumeLevel(currentVolume.volume);
 
-        // Get current brightness
         const currentBrightness = await Brightness.getBrightnessAsync();
-        brightness.value = currentBrightness;
-        setBrightnessLevel(currentBrightness);
+        brightnessValue.value = currentBrightness;
       } catch (error) {
         console.error("Failed to initialize volume/brightness:", error);
       }
     };
-
     initializeValues();
-  }, [brightness, volumeValue]);
+  }, [brightnessValue, volumeValue]);
 
-  // Volume overlay animations
-  const showVolumeOverlay = useCallback(() => {
-    if (volumeTimeoutRef.current) {
-      clearTimeout(volumeTimeoutRef.current);
-    }
+  // --- Helpers for Overlay Visibility (UI Thread) ---
+  const showVolume = () => {
+    "worklet";
+    volumeAnim.value = withTiming(1, { duration: 200 });
+  };
 
-    Animated.timing(volumeAnim, {
-      toValue: 1,
-      duration: 15,
-      useNativeDriver: true,
-    }).start();
+  const hideVolume = () => {
+    "worklet";
+    volumeAnim.value = withDelay(1000, withTiming(0, { duration: 500 }));
+  };
 
-    volumeTimeoutRef.current = setTimeout(() => {
-      Animated.timing(volumeAnim, {
-        toValue: 0,
-        duration: 500,
-        useNativeDriver: true,
-      }).start();
-    }, 1000);
-  }, [volumeAnim]);
+  const showBrightness = () => {
+    "worklet";
+    brightnessAnim.value = withTiming(1, { duration: 200 });
+  };
 
-  // Brightness overlay animations
-  const showBrightnessOverlay = useCallback(() => {
-    if (brightnessTimeoutRef.current) {
-      clearTimeout(brightnessTimeoutRef.current);
-    }
+  const hideBrightness = () => {
+    "worklet";
+    brightnessAnim.value = withDelay(1000, withTiming(0, { duration: 500 }));
+  };
 
-    Animated.timing(brightnessAnim, {
-      toValue: 1,
-      duration: 15,
-      useNativeDriver: true,
-    }).start();
+  // --- Tap Logic ---
+  // We use a JS-side ref for double tap timing because complex logic is easier there
+  // and double-taps don't require 60fps precision like dragging does.
+  const lastTapTimestamp = useRef(0);
 
-    brightnessTimeoutRef.current = setTimeout(() => {
-      Animated.timing(brightnessAnim, {
-        toValue: 0,
-        duration: 500,
-        useNativeDriver: true,
-      }).start();
-    }, 1000);
-  }, [brightnessAnim]);
+  const handleTap = useCallback(() => {
+    const now = new Date().getTime();
+    const DOUBLE_TAP_DELAY = 300;
 
-  // Double tap feedback animation
-  const showDoubleTapFeedback = useCallback(
-    (side: "left" | "right") => {
-      const anim = side === "left" ? leftDoubleTapAnim : rightDoubleTapAnim;
-
-      Animated.sequence([
-        Animated.timing(anim, {
-          toValue: 1,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(anim, {
-          toValue: 0,
-          duration: 300,
-          delay: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    },
-    [leftDoubleTapAnim, rightDoubleTapAnim]
-  );
-
-  // Handle tap logic (single/double tap detection)
-  const handleTap = useCallback(
-    (event: { absoluteX: number; absoluteY: number }) => {
-      const now = new Date().getTime();
-      const DOUBLE_TAP_DELAY = 300; // ms
-
-      if (now - lastTapTimestamp.value < DOUBLE_TAP_DELAY) {
-        // This is a double tap
-        const tapX = event.absoluteX;
-
-        if (tapX > screenWidthRef.current / 2) {
-          showDoubleTapFeedback("right");
-          if (skipForward) {
-            skipForward();
-          }
-        } else {
-          showDoubleTapFeedback("left");
-          if (skipBackward) {
-            skipBackward();
-          }
+    if (now - lastTapTimestamp.current < DOUBLE_TAP_DELAY) {
+      // Double Tap detected - return "double" to the gesture
+      lastTapTimestamp.current = 0;
+      return true;
+    } else {
+      // Potentially a single tap
+      lastTapTimestamp.current = now;
+      setTimeout(() => {
+        if (lastTapTimestamp.current === now) {
+          // No second tap occurred
+          setShowControls(!showControls);
         }
+      }, DOUBLE_TAP_DELAY);
+      return false;
+    }
+  }, [showControls, setShowControls]);
 
-        // Reset timestamp to prevent triple tap being detected as another double tap
-        lastTapTimestamp.value = 0;
-      } else {
-        // This is a single tap (for now)
-        lastTapTimestamp.value = now;
-
-        // Use a timeout to determine if this was actually a single tap
-        setTimeout(() => {
-          if (lastTapTimestamp.value === now) {
-            // No second tap came in, so this was a single tap
-            setShowControls(!showControls);
-            lastTapTimestamp.value = 0;
-          }
-        }, DOUBLE_TAP_DELAY);
-      }
-    },
-    [
-      lastTapTimestamp,
-      setShowControls,
-      showControls,
-      showDoubleTapFeedback,
-      skipBackward,
-      skipForward,
-    ]
-  );
-
-  // Tap gesture
   const tapGesture = useMemo(() => {
-    return Gesture.Tap().onEnd((event) => {
-      scheduleOnRN(handleTap, event);
-    });
-  }, [handleTap]);
-
-  // Pan gesture for volume/brightness control
-  const panGesture = useMemo(() => {
-    return Gesture.Pan()
-      .minDistance(10)
+    return Gesture.Tap()
+      .maxDuration(250)
       .onStart((e) => {
         "worklet";
-        gestureStartVolume.value = volumeValue.value;
-        gestureStartBrightness.value = brightness.value;
-        startXPosition.value = e.absoluteX;
+        // We calculate side immediately on UI thread for instant visual feedback
+        const isRightSide = e.absoluteX > screenWidth.value / 2;
+
+        // Call JS to check timing logic
+        runOnJS(handleTapWrapper)(isRightSide);
+      });
+
+    // Wrapper to handle the JS logic and callbacks
+    function handleTapWrapper(isRightSide: boolean) {
+      const isDoubleTap = handleTap();
+      if (isDoubleTap) {
+        if (isRightSide) {
+          // Trigger Reanimated sequence directly
+          rightDoubleTapAnim.value = withSequence(
+            withTiming(1, { duration: 100 }),
+            withDelay(300, withTiming(0, { duration: 300 }))
+          );
+          if (skipForward) skipForward();
+        } else {
+          leftDoubleTapAnim.value = withSequence(
+            withTiming(1, { duration: 100 }),
+            withDelay(300, withTiming(0, { duration: 300 }))
+          );
+          if (skipBackward) skipBackward();
+        }
+      }
+    }
+  }, [
+    handleTap,
+    screenWidth,
+    leftDoubleTapAnim,
+    rightDoubleTapAnim,
+    skipForward,
+    skipBackward,
+  ]);
+
+  // --- Pan Gesture (Volume / Brightness) ---
+  const BRIGHTNESS_ZONE = 0.5;
+  const CONTROL_NONE = 0;
+  const CONTROL_BRIGHTNESS = 1;
+  const CONTROL_VOLUME = 2;
+  const activeControl = useSharedValue(CONTROL_NONE);
+
+  const panGesture = useMemo(() => {
+    return Gesture.Pan()
+      .minDistance(20) // Increased slightly to prevent accidental swipes while tapping
+      .onStart((e) => {
+        "worklet";
+        const relativeX = e.absoluteX / screenWidth.value;
+
+        if (relativeX > BRIGHTNESS_ZONE) {
+          activeControl.value = CONTROL_VOLUME;
+          gestureStartVolume.value = volumeValue.value;
+          showVolume();
+        } else {
+          activeControl.value = CONTROL_BRIGHTNESS;
+          gestureStartBrightness.value = brightnessValue.value;
+          showBrightness();
+        }
       })
       .onUpdate((e) => {
         "worklet";
+        const delta = -e.translationY / 300; // Sensitivity
 
-        const deltaY = e.translationY;
-        const delta = -deltaY / 300;
-        const relativeX = e.absoluteX / screenWidth.value;
-
-        if (relativeX > 0.5) {
-          // RIGHT → VOLUME
-          const newVolume = gestureStartVolume.value + delta;
-          const clamped = Math.min(Math.max(newVolume, 0), 1);
-
-          if (Math.abs(clamped - volumeValue.value) >= 0.01) {
-            volumeValue.value = clamped;
-
-            scheduleOnRN(setVolumeLevel, clamped);
-            scheduleOnRN(showVolumeOverlay);
-            scheduleOnRN(VolumeManager.setVolume, clamped);
+        if (activeControl.value === CONTROL_VOLUME) {
+          const newVal = Math.min(
+            Math.max(gestureStartVolume.value + delta, 0),
+            1
+          );
+          if (Math.abs(newVal - volumeValue.value) > 0.005) {
+            volumeValue.value = newVal;
+            runOnJS(VolumeManager.setVolume)(newVal);
           }
-        } else {
-          // LEFT → BRIGHTNESS
-          const newBrightness = gestureStartBrightness.value + delta;
-          const clampedBrightness = Math.min(Math.max(newBrightness, 0), 1);
-
-          if (Math.abs(clampedBrightness - brightness.value) >= 0.01) {
-            brightness.value = clampedBrightness;
-
-            scheduleOnRN(setBrightnessLevel, clampedBrightness);
-            scheduleOnRN(showBrightnessOverlay);
-            scheduleOnRN(Brightness.setBrightnessAsync, clampedBrightness);
+          // Keep overlay visible while dragging
+          volumeAnim.value = 1;
+        } else if (activeControl.value === CONTROL_BRIGHTNESS) {
+          const newVal = Math.min(
+            Math.max(gestureStartBrightness.value + delta, 0),
+            1
+          );
+          if (Math.abs(newVal - brightnessValue.value) > 0.005) {
+            brightnessValue.value = newVal;
+            runOnJS(Brightness.setBrightnessAsync)(newVal);
           }
+          brightnessAnim.value = 1;
         }
       })
-      .onEnd(() => {});
+      .onEnd(() => {
+        "worklet";
+        if (activeControl.value === CONTROL_VOLUME) {
+          hideVolume();
+        } else if (activeControl.value === CONTROL_BRIGHTNESS) {
+          hideBrightness();
+        }
+        activeControl.value = CONTROL_NONE;
+      });
   }, [
-    brightness,
-    gestureStartBrightness,
+    screenWidth,
+    activeControl,
     gestureStartVolume,
-    showBrightnessOverlay,
-    showVolumeOverlay,
-    startXPosition,
     volumeValue,
+    gestureStartBrightness,
+    brightnessValue,
+    volumeAnim,
+    brightnessAnim,
   ]);
 
-  // Composed gesture
   const composedGesture = useMemo(() => {
     return Gesture.Simultaneous(tapGesture, panGesture);
   }, [tapGesture, panGesture]);
 
   return {
-    // Gestures
     composedGesture,
     tapGesture,
-
-    // Volume state
-    volumeLevel,
+    volumeValue,
+    brightnessValue,
     volumeAnim,
-
-    // Brightness state
-    brightnessLevel,
     brightnessAnim,
-
-    // Double tap animations
     leftDoubleTapAnim,
     rightDoubleTapAnim,
   };

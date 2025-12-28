@@ -6,7 +6,7 @@ import { FlashList } from "@shopify/flash-list";
 import { Image } from "expo-image"; // Better performance than react-native Image
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { Film, Search } from "lucide-react-native";
+import { Film } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -121,98 +121,85 @@ export default function MovieExplorer() {
     );
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: theme.bg }]}
-      edges={["top"]}
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>
-          Discover Movies
-        </Text>
-        <Pressable
-          style={[
-            styles.searchBtn,
-            { backgroundColor: theme.surfaceSecondary },
-          ]}
-        >
-          <Search size={20} color={theme.textMuted} />
-        </Pressable>
-      </View>
-
-      {/* Categories Horizontal Scroll */}
-      <View style={styles.categoriesContainer}>
-        <FlashList
-          horizontal
-          data={categories}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoriesContent}
-          keyExtractor={(item) => item.categoryId.toString()}
-          renderItem={({ item }) => {
-            const isSelected = selectedCategoryId === item.categoryId;
-            return (
-              <Pressable
-                onPress={() => setSelectedCategoryId(item.categoryId)}
-                style={[
-                  styles.categoryPill,
-                  {
-                    backgroundColor:
-                      isSelected ? theme.primary : theme.surfaceSecondary,
-                    borderColor: isSelected ? theme.primary : theme.border,
-                  },
-                ]}
-              >
-                <Text
+    <>
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: theme.bg }]}
+        edges={["bottom"]}
+      >
+        {/* Categories Horizontal Scroll */}
+        <View style={styles.categoriesContainer}>
+          <FlashList
+            horizontal
+            data={categories}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoriesContent}
+            keyExtractor={(item) => item.categoryId.toString()}
+            renderItem={({ item }) => {
+              const isSelected = selectedCategoryId === item.categoryId;
+              return (
+                <Pressable
+                  onPress={() => setSelectedCategoryId(item.categoryId)}
                   style={[
-                    styles.categoryText,
+                    styles.categoryPill,
                     {
-                      color: isSelected ? "#000" : theme.textSecondary,
-                      fontWeight: isSelected ? "700" : "500",
+                      backgroundColor:
+                        isSelected ? theme.primary : theme.surfaceSecondary,
+                      borderColor: isSelected ? theme.primary : theme.border,
                     },
                   ]}
                 >
-                  {item.categoryName}
-                </Text>
-              </Pressable>
-            );
-          }}
-        />
-      </View>
-
-      {/* Movies Grid */}
-      <View style={styles.gridArea}>
-        {loadingMovies ?
-          <View style={styles.centerBox}>
-            <ActivityIndicator size='large' color={theme.primary} />
-          </View>
-        : movies && movies.length > 0 ?
-          <FlashList
-            data={movies}
-            numColumns={COLUMN_COUNT}
-            renderItem={renderMovie}
-            contentContainerStyle={styles.gridContent}
-            showsVerticalScrollIndicator={false}
-            keyExtractor={(item) => item.streamId.toString()}
+                  <Text
+                    style={[
+                      styles.categoryText,
+                      {
+                        color: isSelected ? "#000" : theme.textSecondary,
+                        fontWeight: isSelected ? "700" : "500",
+                      },
+                    ]}
+                  >
+                    {item.categoryName}
+                  </Text>
+                </Pressable>
+              );
+            }}
           />
-        : <Animated.View entering={FadeIn} style={styles.emptyState}>
-            <View
-              style={[
-                styles.emptyIconCircle,
-                { backgroundColor: `${theme.primary}15` },
-              ]}
-            >
-              <Film size={40} color={theme.primary} />
+        </View>
+
+        {/* Movies Grid */}
+        <View style={styles.gridArea}>
+          {loadingMovies ?
+            <View style={styles.centerBox}>
+              <ActivityIndicator size='large' color={theme.primary} />
             </View>
-            <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>
-              No movies found
-            </Text>
-            <Text style={[styles.emptySub, { color: theme.textMuted }]}>
-              This category seems to be empty.
-            </Text>
-          </Animated.View>
-        }
-      </View>
-    </SafeAreaView>
+          : movies && movies.length > 0 ?
+            <FlashList
+              data={movies}
+              numColumns={COLUMN_COUNT}
+              renderItem={renderMovie}
+              contentContainerStyle={styles.gridContent}
+              showsVerticalScrollIndicator={false}
+              keyExtractor={(item) => item.streamId.toString()}
+            />
+          : <Animated.View entering={FadeIn} style={styles.emptyState}>
+              <View
+                style={[
+                  styles.emptyIconCircle,
+                  { backgroundColor: `${theme.primary}15` },
+                ]}
+              >
+                <Film size={40} color={theme.primary} />
+              </View>
+              <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>
+                No movies found
+              </Text>
+              <Text style={[styles.emptySub, { color: theme.textMuted }]}>
+                This category seems to be empty.
+              </Text>
+            </Animated.View>
+          }
+        </View>
+      </SafeAreaView>
+    </>
   );
 }
 

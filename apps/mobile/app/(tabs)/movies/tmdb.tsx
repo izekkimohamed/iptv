@@ -157,18 +157,18 @@ export default function MovieDetailsScreen() {
       </Animated.View>
 
       {/* --- Floating Back Button --- */}
-      <SafeAreaView style={styles.floatingHeader} edges={["top"]}>
+      <SafeAreaView style={styles.floatingHeader} edges={["bottom"]}>
         <Pressable
           style={[
             styles.backBtn,
             {
-              backgroundColor: "rgba(0,0,0,0.4)", // Always visible dark glass
-              borderColor: "rgba(255,255,255,0.1)",
+              backgroundColor: theme.glassMedium, // Always visible dark glass
+              borderColor: theme.border,
             },
           ]}
           onPress={router.back}
         >
-          <ChevronLeft color='#fff' size={26} strokeWidth={2.5} />
+          <ChevronLeft color={theme.primary} size={26} strokeWidth={2.5} />
         </Pressable>
       </SafeAreaView>
 
@@ -294,8 +294,21 @@ export default function MovieDetailsScreen() {
                   end={{ x: 1, y: 0 }}
                   style={styles.playGradient}
                 />
-                <Play size={24} color='#000' fill='#000' />
-                <Text style={styles.playText}>Watch Movie</Text>
+                <Play
+                  size={24}
+                  fill={theme.textSecondary}
+                  color={theme.textSecondary}
+                />
+                <Text
+                  style={[
+                    styles.playText,
+                    {
+                      color: theme.textSecondary,
+                    },
+                  ]}
+                >
+                  Watch Movie
+                </Text>
               </Pressable>
 
               {/* Source Dropdown */}

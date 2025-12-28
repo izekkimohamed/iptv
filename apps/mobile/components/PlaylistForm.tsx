@@ -11,7 +11,6 @@ import {
   LayoutList,
   Link as LinkIcon,
   Loader2,
-  Lock,
   Server,
   User,
   Wifi,
@@ -41,7 +40,6 @@ export default function PlaylistLoginForm() {
     password: "",
   });
 
-  const [showPassword, setShowPassword] = useState(false);
   const [urlTouched, setUrlTouched] = useState(false);
   const [urlStatus, setUrlStatus] = useState<"" | "checking" | "verified">("");
   const [urlError, setUrlError] = useState("");
@@ -263,17 +261,8 @@ export default function PlaylistLoginForm() {
                   onChangeText={(t) =>
                     setFormData({ ...formData, password: t })
                   }
-                  secureTextEntry={!showPassword}
                   editable={!isPending}
                 />
-                <Pressable
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={{ padding: 4 }}
-                >
-                  {showPassword ?
-                    <Lock size={18} color={theme.primary} />
-                  : <Lock size={18} color={theme.textMuted} />}
-                </Pressable>
               </View>
             </View>
           </View>

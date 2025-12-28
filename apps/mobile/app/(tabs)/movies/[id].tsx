@@ -166,13 +166,13 @@ export default function MovieDetailsScreen() {
           style={[
             styles.backBtn,
             {
-              backgroundColor: "rgba(0,0,0,0.5)",
-              borderColor: "rgba(255,255,255,0.1)",
+              backgroundColor: theme.glassMedium, // Always visible dark glass
+              borderColor: theme.border,
             },
           ]}
           onPress={() => router.back()}
         >
-          <ChevronLeft color='#fff' size={26} strokeWidth={2.5} />
+          <ChevronLeft color={theme.primary} size={26} strokeWidth={2.5} />
         </Pressable>
       </SafeAreaView>
 
@@ -306,8 +306,21 @@ export default function MovieDetailsScreen() {
               end={{ x: 1, y: 0 }}
               style={styles.playGradient}
             />
-            <Play size={24} color='#000' fill='#000' />
-            <Text style={styles.playText}>Watch Now</Text>
+            <Play
+              size={24}
+              fill={theme.textSecondary}
+              color={theme.textSecondary}
+            />
+            <Text
+              style={[
+                styles.playText,
+                {
+                  color: theme.textSecondary,
+                },
+              ]}
+            >
+              Watch Now
+            </Text>
           </Pressable>
         </Animated.View>
 
@@ -457,8 +470,12 @@ export default function MovieDetailsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
-  loadingBackdrop: { padding: 20, borderRadius: 16, borderWidth: 1 },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingBackdrop: { padding: 20, borderWidth: 1, borderRadius: 100 },
   errorText: { marginTop: 12, fontSize: 16 },
 
   // --- Header ---

@@ -134,19 +134,18 @@ export const VideoControls = ({
             style={[
               styles.playBackdrop,
               {
-                backgroundColor: theme.glassMedium,
+                backgroundColor: theme.glassHighlight,
                 borderColor: theme.borderMuted,
               },
             ]}
           >
             <View
-              style={[styles.playGlow, { backgroundColor: theme.primaryGlow }]}
+              style={[styles.playGlow, { backgroundColor: theme.glassLight }]}
             />
             <MaterialCommunityIcons
               name={isPlaying ? "pause" : "play"}
               size={42}
-              color={theme.textPrimary}
-              style={{ marginLeft: isPlaying ? 0 : 4 }}
+              color={theme.primary}
             />
           </View>
         </BorderlessButton>

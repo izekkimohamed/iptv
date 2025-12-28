@@ -120,7 +120,10 @@ export default function LiveScoresScreen() {
   }, [mutate]);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.bg }]}
+      edges={["bottom", "top"]}
+    >
       {/* Date Header */}
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
         <View>
@@ -269,7 +272,7 @@ export default function LiveScoresScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, paddingBottom: 50 },
 
   // Header
   header: {

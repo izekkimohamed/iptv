@@ -8,11 +8,16 @@ import {
   ChevronRight,
   Database,
   Film,
-  Loader2,
   Tv,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import Animated, { FadeInUp, Layout, ZoomIn } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -321,11 +326,7 @@ export default function PlaylistSetupScreen() {
                     : isDone ?
                       <CheckCircle2 size={20} color={theme.accentSuccess} />
                     : isActive ?
-                      <Loader2
-                        size={20}
-                        color={theme.primary}
-                        style={styles.spin}
-                      />
+                      <ActivityIndicator />
                     : getStageIcon(stage, theme.textMuted)}
                   </View>
 

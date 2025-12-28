@@ -118,10 +118,16 @@ export default function SeriesDetailScreen() {
       {/* --- Floating Back Button --- */}
       <SafeAreaView style={styles.floatingHeader} edges={["top"]}>
         <Pressable
-          style={[styles.backBtn, { borderColor: "rgba(255,255,255,0.1)" }]}
+          style={[
+            styles.backBtn,
+            {
+              backgroundColor: theme.glassMedium, // Always visible dark glass
+              borderColor: theme.border,
+            },
+          ]}
           onPress={() => router.back()}
         >
-          <ChevronLeft color='#fff' size={26} strokeWidth={2.5} />
+          <ChevronLeft color={theme.primary} size={26} strokeWidth={2.5} />
         </Pressable>
       </SafeAreaView>
 
@@ -366,7 +372,7 @@ function EpisodeItem({ episode, seasonNumber, seriesCover, theme }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
-  loadingBackdrop: { padding: 20, borderRadius: 16, borderWidth: 1 },
+  loadingBackdrop: { padding: 20, borderRadius: 160, borderWidth: 1 },
   errorText: { marginTop: 12, fontSize: 16 },
 
   // Header

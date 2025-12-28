@@ -1,22 +1,8 @@
-import MatchDetailsModal from "@/components/365/Details";
-import { formatDateForAPI, Game } from "@/components/365/LiveScores";
-import MatchCard from "@/components/365/MatchCard";
-import { trpc } from "@/lib/trpc";
-import { usePlaylistStore } from "@/store/appStore";
-import { usePlayerTheme } from "@/theme/playerTheme";
 import { FlashList } from "@shopify/flash-list";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import {
-  Database,
-  Play,
-  RefreshCcw,
-  Search,
-  Star,
-  Tv,
-  User,
-} from "lucide-react-native";
+import { Database, Info, Play, Tv } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -27,21 +13,67 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated, {
+  FadeInDown,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useSWR from "swr";
 
+import MatchDetailsModal from "@/components/365/Details";
+import { formatDateForAPI, Game } from "@/components/365/LiveScores";
+import MatchCard from "@/components/365/MatchCard";
+import Header from "@/components/Header";
+import { trpc } from "@/lib/trpc";
+import { usePlaylistStore } from "@/store/appStore";
+import { usePlayerTheme } from "@/theme/playerTheme";
+
 const { width } = Dimensions.get("window");
-const FEATURED_WIDTH = width - 40;
+const FEATURED_WIDTH = width * 0.85;
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
+// --- Live Pulse Component ---
+const LiveIndicator = ({ color }: { color: string }) => {
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: withRepeat(
+      withSequence(
+        withTiming(0.4, { duration: 800 }),
+        withTiming(1, { duration: 800 })
+      ),
+      -1,
+      true
+    ),
+    transform: [
+      {
+        scale: withRepeat(
+          withSequence(
+            withTiming(1, { duration: 800 }),
+            withTiming(1.2, { duration: 800 })
+          ),
+          -1,
+          true
+        ),
+      },
+    ],
+  }));
+
+  return (
+    <View style={styles.liveIndicatorContainer}>
+      <Animated.View
+        style={[styles.dot, { backgroundColor: color }, animatedStyle]}
+      />
+    </View>
+  );
+};
 
 export default function HomeScreen() {
   const router = useRouter();
   const theme = usePlayerTheme();
-  const [searchQuery, setSearchQuery] = useState("");
   const currentDate = new Date();
   const [selectedGameId, setSelectedGameId] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -53,101 +85,57 @@ export default function HomeScreen() {
     playlists: storePlaylists,
   } = usePlaylistStore();
 
-  // 1. Fetch Home Data (Featured, Movies)
   const { data: homeData, isLoading } = trpc.home.getHome.useQuery(undefined, {
     enabled: !!selectedPlaylist,
   });
-
-  // 2. Fetch Playlists (Initial Setup)
   const { data: playlists, refetch: refreshPlaylists } =
     trpc.playlists.getPlaylists.useQuery();
-
-  // 3. Fetch Favorite Channels
   const { data: favoriteChannels } = trpc.channels.getChannels.useQuery(
-    {
-      favorites: true,
-      playlistId: selectedPlaylist?.id || 0,
-    },
-    {
-      enabled: !!selectedPlaylist,
-    }
+    { favorites: true, playlistId: selectedPlaylist?.id || 0 },
+    { enabled: !!selectedPlaylist }
   );
 
   const apiUrl = `${process.env.EXPO_PUBLIC_API_URL}/live-matches?date=${formatDateForAPI(currentDate)}`;
-
-  // 2. Optimized SWR Configuration for "Live" Data
   const {
-    data: games = [], // Default to empty array
-    error,
-    isLoading: LoadingLiveScores,
+    data: games = [],
     mutate: mutateGames,
+    isLoading: loadingLive,
   } = useSWR<Game[]>(apiUrl, fetcher, {
-    // Dynamic Polling: If there are live games, poll every 10s. If not, every 60s.
-    refreshInterval: (latestData) => {
-      const hasLiveAction = latestData?.some((g) => g.statusGroup === 3);
-      return hasLiveAction ? 30000 : 60000;
-    },
-    revalidateOnFocus: true, // Update when app comes to foreground
-    revalidateOnReconnect: true, // Update when internet returns
-    dedupingInterval: 2000, // Don't use cache if request is older than 2 seconds
-    keepPreviousData: true, // Keep showing old list while fetching new one (prevents flicker)
+    refreshInterval: (data) =>
+      data?.some((g) => g.statusGroup === 3) ? 20000 : 60000,
+    keepPreviousData: true,
   });
 
-  // 3. Derived State
   const liveMatches = useMemo(
     () => games.filter((g) => g.statusGroup === 3),
     [games]
   );
 
   useEffect(() => {
-    if (!playlists || playlists.length === 0) return;
-    // Get existing playlist IDs from store
-    const existingPlaylistIds = new Set(storePlaylists.map((p) => p.id));
+    if (playlists?.length && !selectedPlaylist) selectPlaylist(playlists[0]);
+  }, [playlists]);
 
-    // Find playlists that don't exist in the store
-    const newPlaylists = playlists.filter(
-      (playlist) => !existingPlaylistIds.has(playlist.id)
-    );
-
-    // Add new playlists to store
-    if (newPlaylists.length > 0) {
-      newPlaylists.forEach((playlist) => {
-        addPlaylist(playlist);
-      });
-    }
-
-    // Select the first playlist if none is selected
-    if (!selectedPlaylist && playlists.length > 0) {
-      selectPlaylist(playlists[0]);
-    }
-  }, [
-    addPlaylist,
-    playlists,
-    selectPlaylist,
-    selectedPlaylist,
-    storePlaylists,
-  ]);
-
-  // Pull-to-refresh handler
   const onRefresh = async () => {
     setRefreshing(true);
-    try {
-      // Refresh all data sources in parallel
-      await Promise.all([
-        refreshPlaylists(),
-        mutateGames(), // Revalidate SWR data
-      ]);
-    } catch (error) {
-      console.error("Error refreshing data:", error);
-    } finally {
-      setRefreshing(false);
-    }
+    await Promise.all([refreshPlaylists(), mutateGames()]);
+    setRefreshing(false);
   };
 
-  // --- Render Functions ---
-
   const renderFeaturedItem = ({ item }: { item: any }) => (
-    <View style={styles.featuredCard}>
+    <Pressable
+      onPress={() =>
+        router.push({
+          pathname: "/movies/tmdb",
+          params: { movieId: item.id, playlistId: 26 },
+        })
+      }
+      style={[
+        styles.featuredCard,
+        {
+          borderColor: theme.border,
+        },
+      ]}
+    >
       <Image
         source={{ uri: item.backdropUrl || item.posterUrl }}
         style={styles.featuredImage}
@@ -155,30 +143,37 @@ export default function HomeScreen() {
         transition={500}
       />
       <LinearGradient
-        colors={["transparent", "rgba(0,0,0,0.8)"]}
+        colors={["transparent", "rgba(0,0,0,0.4)", "rgba(0,0,0,0.9)"]}
         style={styles.featuredGradient}
       />
       <View style={styles.featuredContent}>
         <Text style={styles.featuredTitle} numberOfLines={1}>
           {item.title || item.name}
         </Text>
-        <Text style={styles.featuredSub} numberOfLines={2}>
-          {item.overview || "No description available."}
-        </Text>
-        <Pressable
-          style={[styles.playButton, { backgroundColor: theme.primary }]}
-          onPress={() =>
-            router.push({
-              pathname: "/movies/tmdb",
-              params: { movieId: item.id, playlistId: 26 },
-            })
-          }
-        >
-          <Play size={16} color='#000' fill='#000' />
-          <Text style={styles.playButtonText}>Watch Now</Text>
-        </Pressable>
+        <View style={styles.featuredRow}>
+          <View style={[styles.badge, { backgroundColor: theme.primary }]}>
+            <Text style={styles.badgeText}>Trending</Text>
+          </View>
+          <Text style={styles.featuredSub} numberOfLines={1}>
+            {item.overview || "New Release"}
+          </Text>
+        </View>
+        <View style={styles.buttonRow}>
+          <View style={[styles.playButton, { backgroundColor: "#fff" }]}>
+            <Play size={14} color='#000' fill='#000' />
+            <Text style={styles.playButtonText}>Play</Text>
+          </View>
+          <View
+            style={[
+              styles.infoButton,
+              { backgroundColor: "rgba(255,255,255,0.2)" },
+            ]}
+          >
+            <Info size={14} color='#fff' />
+          </View>
+        </View>
       </View>
-    </View>
+    </Pressable>
   );
 
   const renderChannel = ({ item }: { item: any }) => (
@@ -187,11 +182,7 @@ export default function HomeScreen() {
         onPress={() =>
           router.push({
             pathname: "/player",
-            params: {
-              url: item.url, // Ensure your API returns the stream URL here
-              title: item.name,
-              mediaType: "live",
-            },
+            params: { url: item.url, title: item.name, mediaType: "live" },
           })
         }
         style={({ pressed }) => [
@@ -200,154 +191,103 @@ export default function HomeScreen() {
             backgroundColor: theme.surfaceSecondary,
             borderColor: theme.border,
           },
-          pressed && { opacity: 0.8, backgroundColor: theme.surfacePrimary },
+          pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] },
         ]}
       >
         {item.streamIcon ?
           <Image
             source={{ uri: item.streamIcon }}
             style={styles.channelLogo}
-            contentFit='contain'
-            transition={300}
+            contentFit='fill'
           />
-        : <Tv size={24} color={theme.textMuted} />}
+        : <Tv size={28} color={theme.textMuted} />}
       </Pressable>
       <Text
         numberOfLines={1}
-        style={[styles.channelTitle, { color: theme.textSecondary }]}
+        style={[styles.channelTitle, { color: theme.textPrimary }]}
       >
         {item.name}
       </Text>
     </Animated.View>
   );
 
+  if (!selectedPlaylist) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
+        <Header />
+        <View style={styles.emptyState}>
+          <View
+            style={[
+              styles.emptyIconCircle,
+              { backgroundColor: theme.surfaceSecondary },
+            ]}
+          >
+            <Database size={40} color={theme.textMuted} />
+          </View>
+          <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>
+            No Playlist Found
+          </Text>
+          <Pressable
+            style={[styles.actionButton, { backgroundColor: theme.primary }]}
+            onPress={() => router.push("/playlists/manage")}
+          >
+            <Text style={styles.actionButtonText}>Add Playlist</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.bg }]}
-      edges={["top"]}
+      edges={["bottom"]}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <View
-          style={[
-            styles.searchContainer,
-            { backgroundColor: theme.surfaceSecondary },
-          ]}
-        >
-          <Search size={18} color={theme.textMuted} />
-          <TextInput
-            placeholder='Search...'
-            placeholderTextColor={theme.textMuted}
-            style={[styles.searchInput, { color: theme.textPrimary }]}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            onSubmitEditing={() => router.push(`/search?q=${searchQuery}`)}
-            returnKeyType='search'
-          />
-        </View>
-        <Pressable
-          onPress={() => router.push("/playlists/manage")}
-          style={[
-            styles.profileButton,
-            {
-              backgroundColor: theme.surfaceSecondary,
-              borderColor: theme.border,
-            },
-          ]}
-        >
-          <User
-            size={20}
-            color={selectedPlaylist ? theme.primary : theme.accentError}
-          />
-        </Pressable>
-      </View>
-
+      <Header />
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
             tintColor={theme.primary}
-            colors={[theme.primary]}
           />
         }
       >
-        {!selectedPlaylist ?
-          <View style={styles.emptyState}>
-            <View
-              style={[
-                styles.emptyIconCircle,
-                { backgroundColor: theme.surfaceSecondary },
-              ]}
-            >
-              <Database size={48} color={theme.textMuted} />
-            </View>
-            <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>
-              No Playlist Connected
-            </Text>
-            <Text style={[styles.emptySub, { color: theme.textMuted }]}>
-              Please add a playlist to start watching content.
-            </Text>
-            <Pressable
-              style={[styles.actionButton, { backgroundColor: theme.primary }]}
-              onPress={() => router.push("/playlists/manage")}
-            >
-              <Text style={styles.actionButtonText}>Connect Playlist</Text>
-            </Pressable>
-          </View>
-        : isLoading ?
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size='large' color={theme.primary} />
-          </View>
+        {isLoading ?
+          <ActivityIndicator style={{ marginTop: 100 }} color={theme.primary} />
         : <>
-            {/* Featured Section (Carousel) */}
-            {homeData?.movies && homeData.movies.length > 0 && (
-              <View style={styles.featuredSection}>
-                <Text
-                  style={[
-                    styles.sectionHeader,
-                    { color: theme.textPrimary, marginLeft: 20 },
-                  ]}
-                >
-                  Trending Now
-                </Text>
-                <FlashList
-                  horizontal
-                  data={homeData.movies}
-                  renderItem={renderFeaturedItem}
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.featuredList}
-                  pagingEnabled
-                  decelerationRate='fast'
-                  snapToInterval={FEATURED_WIDTH + 10}
-                />
-              </View>
-            )}
+            {/* Hero Carousel */}
+            <View style={styles.featuredSection}>
+              <FlashList
+                horizontal
+                data={homeData?.movies || []}
+                renderItem={renderFeaturedItem}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.featuredList}
+                snapToInterval={FEATURED_WIDTH + 16}
+                decelerationRate='fast'
+              />
+            </View>
 
-            {/* Favorite Channels Section */}
+            {/* Favorite Channels */}
             {favoriteChannels && favoriteChannels.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionTitleRow}>
-                  <View style={styles.titleLeft}>
-                    <Star
-                      size={18}
-                      color={theme.primary}
-                      fill={theme.primary}
-                    />
-                    <Text
-                      style={[
-                        styles.sectionHeader,
-                        { color: theme.textPrimary },
-                      ]}
-                    >
-                      Favorite Channels
-                    </Text>
-                  </View>
+                  <Text
+                    style={[styles.sectionHeader, { color: theme.textPrimary }]}
+                  >
+                    Favorites
+                  </Text>
                   <Pressable onPress={() => router.push("/(tabs)/channels")}>
-                    <Text style={[styles.seeAll, { color: theme.primary }]}>
-                      View All
+                    <Text
+                      style={{
+                        color: theme.primary,
+                        fontSize: 13,
+                        fontWeight: "600",
+                      }}
+                    >
+                      See All
                     </Text>
                   </Pressable>
                 </View>
@@ -361,71 +301,26 @@ export default function HomeScreen() {
               </View>
             )}
 
-            {/* Loading State (Initial Load Only) */}
-            {LoadingLiveScores && games.length === 0 ?
-              <ActivityIndicator
-                size='large'
-                color={theme.primary}
-                style={{ marginTop: 50 }}
-              />
-            : games.length === 0 && !error ?
-              // 6. Empty State
-              <View style={styles.emptyContainer}>
-                <RefreshCcw
-                  size={48}
-                  color={theme.textMuted}
-                  style={{ opacity: 0.5, marginBottom: 10 }}
+            {/* Live Matches */}
+            {liveMatches.length > 0 && (
+              <View style={styles.section}>
+                <View style={styles.liveTitleRow}>
+                  <LiveIndicator color={theme.accentError} />
+                  <Text style={[styles.liveText, { color: theme.accentError }]}>
+                    LIVE SCORES
+                  </Text>
+                </View>
+                <FlashList
+                  horizontal
+                  data={liveMatches}
+                  renderItem={({ item }) => (
+                    <MatchCard game={item} onPress={setSelectedGameId} />
+                  )}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.horizontalList}
                 />
-                <Text style={{ color: theme.textSecondary, fontWeight: "600" }}>
-                  No matches scheduled
-                </Text>
-                <Text style={{ color: theme.textMuted, fontSize: 12 }}>
-                  Try changing the date
-                </Text>
               </View>
-            : <>
-                {/* Live Section */}
-                {liveMatches.length > 0 && (
-                  <View style={styles.section}>
-                    <View
-                      style={{
-                        padding: 20,
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 5,
-                      }}
-                    >
-                      {/* Assuming LivePulse is a component you have */}
-                      <View style={styles.liveIndicator}>
-                        <View
-                          style={[
-                            styles.dot,
-                            { backgroundColor: theme.accentError },
-                          ]}
-                        />
-                      </View>
-                      <Text
-                        style={[
-                          styles.sectionTitle,
-                          { color: theme.accentError },
-                        ]}
-                      >
-                        LIVE NOW
-                      </Text>
-                    </View>
-                    <FlashList
-                      horizontal
-                      data={liveMatches}
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={styles.horizontalList}
-                      renderItem={({ item }) => (
-                        <MatchCard game={item} onPress={setSelectedGameId} />
-                      )}
-                    />
-                  </View>
-                )}
-              </>
-            }
+            )}
           </>
         }
       </ScrollView>
@@ -440,61 +335,28 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { paddingBottom: 2 },
-  emptyContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 100,
-  },
-  liveIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "rgba(255,0,0,0.2)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  dot: { width: 4, height: 4, borderRadius: 2 },
-  sectionTitle: { fontSize: 14, fontWeight: "800", letterSpacing: 0.5 },
-
-  // Header
-  header: {
+  section: { marginVertical: 12 },
+  sectionTitleRow: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingVertical: 12,
-    gap: 12,
+    marginBottom: 12,
   },
-  searchContainer: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    height: 44,
-    borderRadius: 22,
-    paddingHorizontal: 16,
-    gap: 10,
-  },
-  searchInput: { flex: 1, fontSize: 15 },
-  profileButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-  },
+  sectionHeader: { fontSize: 20, fontWeight: "800", letterSpacing: -0.5 },
+  horizontalList: { paddingHorizontal: 20, paddingBottom: 10 },
 
-  // Featured Carousel
-  featuredSection: { marginBottom: 10, marginTop: 10 },
-  featuredList: { paddingHorizontal: 20, gap: 10 },
+  // Featured Hero
+  featuredSection: { marginTop: 10 },
+  featuredList: { paddingHorizontal: 20 },
   featuredCard: {
     width: FEATURED_WIDTH,
-    height: 200,
-    borderRadius: 16,
+    height: 340,
+    borderRadius: 24,
+    borderWidth: 1,
     overflow: "hidden",
-    position: "relative",
-    marginRight: 10,
-    marginTop: 12,
+    marginRight: 16,
+    elevation: 5,
   },
   featuredImage: { width: "100%", height: "100%" },
   featuredGradient: { ...StyleSheet.absoluteFillObject },
@@ -503,85 +365,84 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 16,
-    gap: 6,
+    padding: 20,
   },
   featuredTitle: {
     color: "#fff",
-    fontSize: 22,
-    fontWeight: "800",
-    textShadowColor: "rgba(0,0,0,0.7)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
+    fontSize: 24,
+    fontWeight: "900",
+    marginBottom: 4,
   },
-  featuredSub: {
-    color: "rgba(255,255,255,0.8)",
-    fontSize: 13,
-    marginBottom: 8,
+  featuredRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
   },
+  featuredSub: { color: "rgba(255,255,255,0.7)", fontSize: 12, flex: 1 },
+  badge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+  badgeText: { fontSize: 10, fontWeight: "800", color: "#000" },
+  buttonRow: { flexDirection: "row", gap: 10 },
   playButton: {
     flexDirection: "row",
     alignItems: "center",
-    alignSelf: "flex-start",
     paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    gap: 6,
-  },
-  playButtonText: { color: "#000", fontWeight: "700", fontSize: 12 },
-
-  // Sections
-  section: { marginBottom: 1 },
-  sectionTitleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
     paddingHorizontal: 20,
-    marginBottom: 16,
-  },
-  titleLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
-  sectionHeader: { fontSize: 18, fontWeight: "700" },
-  seeAll: { fontSize: 12, fontWeight: "600" },
-
-  horizontalList: { paddingHorizontal: 20 },
-
-  // Poster Style (Movies)
-  posterContainer: { width: 140, marginRight: 16 },
-  posterPressable: { gap: 8 },
-  posterImage: {
-    width: 140,
-    height: 210,
     borderRadius: 12,
-    borderWidth: 1,
+    gap: 8,
   },
-  posterTitle: { fontSize: 12, fontWeight: "600", paddingLeft: 4 },
+  playButtonText: { color: "#000", fontWeight: "800", fontSize: 14 },
+  infoButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 
-  // Channel Style (Favorites)
-  channelContainer: { width: 110, marginRight: 12, alignItems: "center" },
+  // Channels
+  channelContainer: { width: 85, marginRight: 12, alignItems: "center" },
   channelPressable: {
-    width: 110,
-    height: 110,
-    borderRadius: 24,
+    width: 85,
+    height: 85,
+    borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 8,
     borderWidth: 1,
-    padding: 10,
+    overflow: "hidden",
   },
-  channelLogo: { width: "80%", height: "80%" },
-  channelTitle: { fontSize: 12, fontWeight: "600", textAlign: "center" },
+  channelLogo: { width: "100%", height: "100%" },
+  channelTitle: {
+    fontSize: 11,
+    fontWeight: "700",
+    textAlign: "center",
+    width: "100%",
+  },
 
-  // States
-  loadingContainer: {
-    height: 300,
+  // Live Section
+  liveTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 20,
+    marginBottom: 12,
+  },
+  liveText: { fontSize: 14, fontWeight: "900", letterSpacing: 1 },
+  liveIndicatorContainer: {
+    width: 12,
+    height: 12,
     justifyContent: "center",
     alignItems: "center",
   },
+  dot: { width: 6, height: 6, borderRadius: 3 },
+
+  // Empty State
   emptyState: {
-    marginTop: 60,
+    flex: 1,
+    justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 40,
-    gap: 12,
+    padding: 40,
   },
   emptyIconCircle: {
     width: 80,
@@ -589,15 +450,13 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 4,
+    marginBottom: 20,
   },
-  emptyTitle: { fontSize: 18, fontWeight: "700" },
-  emptySub: { fontSize: 14, textAlign: "center", lineHeight: 20 },
+  emptyTitle: { fontSize: 22, fontWeight: "800", marginBottom: 20 },
   actionButton: {
-    marginTop: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 30,
+    borderRadius: 16,
   },
-  actionButtonText: { color: "#000", fontWeight: "700" },
+  actionButtonText: { fontWeight: "800", fontSize: 16 },
 });
