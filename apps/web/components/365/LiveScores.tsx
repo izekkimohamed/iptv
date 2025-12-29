@@ -3,8 +3,8 @@
 import { useCallback, useMemo, useState } from 'react';
 import useSWR from 'swr';
 
-import { formatDateForAPI, formatDisplayDate } from '@/lib/utils';
 import { Game } from '@/trpc/types';
+import { formatDateForAPI, formatDisplayDate } from '@repo/utils';
 import { WifiOff } from 'lucide-react';
 import { CompetitionSection } from './CompetitionSection';
 import { DateNavigator } from './DateNavigator';

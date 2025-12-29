@@ -6,9 +6,9 @@ import { useSearchParams } from 'next/navigation';
 import { FC } from 'react';
 
 import { Episode } from '@/lib/types';
-import { cn, formatDate, formatDuration } from '@/lib/utils';
-import { usePlaylistStore } from '@/store/appStore';
-import { useWatchedSeriesStore } from '@/store/watchedStore';
+import { cn } from '@/lib/utils';
+import { usePlaylistStore, useWatchedSeriesStore } from '@repo/store';
+import { formatDate, formatDuration } from '@repo/utils';
 
 interface EpisodeCardProps {
   episode: Episode;

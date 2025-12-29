@@ -12,8 +12,7 @@ import { TrailersSection } from '@/components/commen/TrailersSEction';
 import { Button } from '@/components/ui/button';
 import { useTrailerPlayback } from '@/hooks/useDetails';
 import { ItemsDetailsProps } from '@/lib/types';
-import { usePlaylistStore } from '@/store/appStore';
-import { useWatchedSeriesStore } from '@/store/watchedStore';
+import { usePlaylistStore, useWatchedSeriesStore } from '@repo/store';
 
 type SeriesDetailsProps = Omit<ItemsDetailsProps, 'container_extension'> & {
   seasons: NonNullable<ItemsDetailsProps['seasons']>;

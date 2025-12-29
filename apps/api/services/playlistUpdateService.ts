@@ -24,7 +24,7 @@ export async function performPlaylistUpdate(input: PlaylistUpdateInput) {
 
   // Fetch categories
   const categoryData = await fetchAndPrepareCategories(input.playlistId);
-
+  console.log("res", categoryData);
   // Fetch channels
   const { newChannels, toDelete: channelsToDelete } =
     await fetchAndPrepareChannels(input.playlistId, xtreamClient);

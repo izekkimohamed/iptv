@@ -11,11 +11,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { usePlayer } from '@/features/player/hooks/player';
-import { cn, getVideoType } from '@/lib/utils';
-import { usePlaylistStore } from '@/store/appStore';
-import { usePlayerStore } from '@/store/player-store';
-import { useWatchedMoviesStore, useWatchedSeriesStore } from '@/store/watchedStore';
+import { cn } from '@/lib/utils';
+import {
+  usePlayerStore,
+  usePlaylistStore,
+  useWatchedMoviesStore,
+  useWatchedSeriesStore,
+} from '@repo/store';
 
+import { getVideoType } from '@repo/utils';
 import { CustomControls } from './CustomControls';
 
 interface VideoPlayerProps {
@@ -410,7 +414,7 @@ export function VideoPlayer({
         </MediaProvider>
 
         {!player.isPlaying && !player.isLoading && (
-          <div className="pointer-events-none absolute inset-0 flex w-full items-center justify-center bg-gradient-to-t from-black/80 via-transparent to-black/80">
+          <div className="pointer-events-none absolute inset-0 flex w-full items-center justify-center bg-linear-to-t from-black/80 via-transparent to-black/80">
             <div className="rounded-full bg-amber-400/20 p-5 backdrop-blur-sm">
               <Pause className="h-10 w-10 fill-white text-white" />
             </div>

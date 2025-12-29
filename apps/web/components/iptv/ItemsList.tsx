@@ -2,9 +2,8 @@ import { Film, Play } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 
-import { cleanName } from '@/lib/utils';
-import { usePlaylistStore } from '@/store/appStore';
-import { useWatchedMoviesStore, useWatchedSeriesStore } from '@/store/watchedStore';
+import { usePlaylistStore, useWatchedMoviesStore, useWatchedSeriesStore } from '@repo/store';
+import { cleanName } from '@repo/utils';
 
 interface ItemsListProps {
   streamId: number;

@@ -6,7 +6,7 @@ import { forwardRef, useEffect, useImperativeHandle, useMemo } from 'react';
 import { useEpisodePlayback, useSeasonSelection, useStreamingUrls } from '@/hooks/useDetails';
 import { EpisodesSectionProps } from '@/lib/types';
 import { VideoPlayerModal } from '@/shared/components/common/VideoPlayerModal';
-import { usePlaylistStore } from '@/store/appStore';
+import { usePlaylistStore } from '@repo/store';
 
 import { EpisodeCard } from './EpisodeCard';
 

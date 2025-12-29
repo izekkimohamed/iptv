@@ -1,6 +1,6 @@
 import PlaylistLoginForm from "@/components/PlaylistForm";
 import PlaylistSetupScreen from "@/components/PlaylistSetup";
-import { usePlaylistStore } from "@/store/appStore";
+import { usePlaylistStore } from "@repo/store";
 import React from "react";
 
 export default function PlaylistAuthScreen() {

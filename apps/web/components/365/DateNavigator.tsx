@@ -1,4 +1,4 @@
-import { formatDisplayDate } from '@/lib/utils';
+import { formatDisplayDate } from '@repo/utils';
 import { Calendar, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 
 interface DateNavigatorProps {
@@ -31,11 +31,11 @@ export function DateNavigator({
           </span>
         </div>
         <div className="flex items-center gap-4">
-          <h2 className=" text-3xl font-black tracking-tight ">{formatDisplayDate(currentDate)}</h2>
+          <h2 className="text-3xl font-black tracking-tight">{formatDisplayDate(currentDate)}</h2>
           {!isToday && (
             <button
               onClick={onGoToToday}
-              className="group cursor-pointer flex items-center gap-2 rounded-full bg-white px-4 py-1.5 text-[10px] font-black tracking-tight text-black uppercase shadow-lg transition-all hover:scale-105 hover:shadow-white/20 active:scale-95"
+              className="group flex cursor-pointer items-center gap-2 rounded-full bg-white px-4 py-1.5 text-[10px] font-black tracking-tight text-black uppercase shadow-lg transition-all hover:scale-105 hover:shadow-white/20 active:scale-95"
             >
               <Calendar className="h-3 w-3" />
               Today

@@ -6,9 +6,7 @@ import React from 'react';
 
 import { useAutoScrollToSelected } from '@/hooks/useAutoScrollToSelected';
 import { Channel } from '@/lib/types';
-import { usePlaylistStore } from '@/store/appStore';
-import { usePlayerStore } from '@/store/player-store';
-import { useRecentUpdateStore } from '@/store/recentUpdate';
+import { usePlayerStore, usePlaylistStore, useRecentUpdateStore } from '@repo/store';
 
 import LoadingSpinner from '../ui/LoadingSpinner';
 
@@ -40,7 +38,7 @@ export default function ChannelsSidebar(props: ChannelsSidebarProps) {
   });
 
   return (
-    <div className="flex h-full w-[400px] flex-col border-r border-white/10 backdrop-blur-sm">
+    <div className="flex h-full w-100 flex-col border-r border-white/10 backdrop-blur-sm">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
         <h2 className="text-lg font-semibold tracking-tight text-white/90">Channels</h2>
@@ -84,7 +82,7 @@ export default function ChannelsSidebar(props: ChannelsSidebarProps) {
                       : 'border-white/20 text-white/90 hover:bg-white/10'
                   } `}
                 >
-                  <div className="relative flex h-[50px] w-[65px] items-center justify-center gap-3 overflow-hidden bg-white/10">
+                  <div className="relative flex h-12.5 w-16.25 items-center justify-center gap-3 overflow-hidden bg-white/10">
                     <Image
                       fill
                       className="object-cover"
@@ -121,7 +119,7 @@ export default function ChannelsSidebar(props: ChannelsSidebarProps) {
                       : 'border-white/20 text-white/90 hover:bg-white/10'
                   } `}
                 >
-                  <div className="relative flex h-[50px] w-[65px] items-center justify-center gap-3 overflow-hidden bg-white/10">
+                  <div className="relative flex h-12.5 w-16.25 items-center justify-center gap-3 overflow-hidden bg-white/10">
                     <Image
                       fill
                       className="object-cover"

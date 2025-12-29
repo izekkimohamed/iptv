@@ -1,6 +1,6 @@
 import { trpc } from "@/lib/trpc";
-import { usePlaylistStore } from "@/store/appStore";
 import { usePlayerTheme } from "@/theme/playerTheme";
+import { usePlaylistStore } from "@repo/store";
 import { FlashList } from "@shopify/flash-list";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -37,7 +37,6 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-
 const { width, height } = Dimensions.get("window");
 const POSTER_WIDTH = width * 0.42; // Much larger poster (42% of screen width)
 const POSTER_HEIGHT = POSTER_WIDTH * 1.5;

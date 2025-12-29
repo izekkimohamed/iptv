@@ -1,4 +1,4 @@
-import { usePlaylistStore } from "@/store/appStore";
+import { usePlaylistStore } from "@repo/store";
 import { usePlayerTheme } from "@/theme/playerTheme";
 import { useRouter } from "expo-router";
 import { Search, User } from "lucide-react-native";

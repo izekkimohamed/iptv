@@ -1,6 +1,6 @@
 import { trpc } from '@/lib/trpc';
 import { Channel, PlaylistProps } from '@/lib/types';
-import { decodeBase64, getProgress } from '@/lib/utils';
+import { decodeBase64, getProgress } from '@repo/utils';
 
 import LoadingSpinner from '../ui/LoadingSpinner';
 

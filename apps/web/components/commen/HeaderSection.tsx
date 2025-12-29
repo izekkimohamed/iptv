@@ -2,7 +2,7 @@ import { Calendar, Clock, Star } from 'lucide-react';
 import { FC } from 'react';
 
 import { HeaderSectionProps } from '@/lib/types';
-import { cleanName, formatRuntime } from '@/lib/utils';
+import { cleanName, formatRuntime } from '@repo/utils';
 
 export const HeaderSection: FC<HeaderSectionProps> = ({
   name,

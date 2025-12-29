@@ -8,8 +8,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import MovieDetails from '@/features/movies/components/MovieDetails';
 import { trpc } from '@/lib/trpc';
 import VirtualGrid from '@/src/shared/components/common/VirtualGrid';
-import { usePlaylistStore } from '@/store/appStore';
-import { useRecentUpdateStore } from '@/store/recentUpdate';
+import { usePlaylistStore, useRecentUpdateStore } from '@repo/store';
 
 export default function MoviesPage() {
   const router = useRouter();

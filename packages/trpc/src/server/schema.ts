@@ -50,6 +50,9 @@ export const categories = pgTable(
       onDelete: "cascade",
     }),
     type: text("type", { enum: ["channels", "movies", "series"] }).notNull(),
+    createdAt: timestamp("created_at")
+      .$defaultFn(() => new Date())
+      .notNull(),
   },
   (table) => ({
     playlistIdx: index("playlist_idx").on(table.playlistId),
@@ -79,6 +82,9 @@ export const channels = pgTable(
       .notNull(),
     isFavorite: boolean("is_favorite").default(false),
     url: text("url").notNull(),
+    createdAt: timestamp("created_at")
+      .$defaultFn(() => new Date())
+      .notNull(),
   },
   (t) => [
     index("channels_category_idx").on(t.categoryId),
@@ -103,6 +109,9 @@ export const movies = pgTable(
       .notNull(),
     containerExtension: text("container_extension").notNull(),
     url: text("url").notNull(),
+    createdAt: timestamp("created_at")
+      .$defaultFn(() => new Date())
+      .notNull(),
   },
   (table) => ({
     categoryIdx: index("movies_category_idx").on(table.categoryId),
@@ -134,6 +143,9 @@ export const series = pgTable(
     categoryId: integer("category_id").notNull(),
     playlistId: integer("playlist_id")
       .references(() => playlists.id, { onDelete: "cascade" })
+      .notNull(),
+    createdAt: timestamp("created_at")
+      .$defaultFn(() => new Date())
       .notNull(),
   },
   (table) => ({

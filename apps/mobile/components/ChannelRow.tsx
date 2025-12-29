@@ -1,6 +1,6 @@
 import { trpc } from "@/lib/trpc";
-import { usePlaylistStore } from "@/store/appStore";
 import { usePlayerTheme } from "@/theme/playerTheme";
+import { usePlaylistStore } from "@repo/store";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";

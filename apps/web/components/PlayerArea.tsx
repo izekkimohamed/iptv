@@ -1,5 +1,5 @@
 import VideoPlayer from '@/features/player/components/VideoPlayer';
-import { usePlaylistStore } from '@/store/appStore';
+import { usePlaylistStore } from '@repo/store';
 
 import ChannelInfoPanel from './channels/ChannelInfoPanel';
 import PlayerHeader from './iptv/PlayerHeader';

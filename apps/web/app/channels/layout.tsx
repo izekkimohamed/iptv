@@ -4,7 +4,7 @@ import React from 'react';
 
 import CategoriesSidebar from '@/components/commen/CategoriesSidebar';
 import { trpc } from '@/lib/trpc';
-import { usePlaylistStore } from '@/store/appStore';
+import { usePlaylistStore } from '@repo/store';
 
 export default function Layout({
   children,

@@ -32,7 +32,7 @@ export async function fetchAndPrepareSeries(
       genere: s.genre,
       director: s.director,
       releaseDate: s.release_date,
-      backdropPath: s.backdrop_path[0],
+      backdropPath: s.cover[0] || "",
       youtubeTrailer: s.youtube_trailer,
       episodeRunTime: s.episode_run_time ? s.episode_run_time.toString() : "",
       categoryId: +s.category_id,

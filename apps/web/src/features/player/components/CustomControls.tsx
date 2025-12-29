@@ -16,8 +16,9 @@ import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { cleanName, cn } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
+import { cleanName } from '@repo/utils';
 import { AspectRatio } from './VideoPlayer';
 
 interface CustomControlsProps {
@@ -128,7 +129,7 @@ export function CustomControls({
 
   return (
     <div
-      className={`absolute bottom-0 left-0 z-10 flex w-full flex-col gap-3 bg-gradient-to-t from-black/80 to-transparent px-4 py-3 transition-opacity duration-300`}
+      className={`absolute bottom-0 left-0 z-10 flex w-full flex-col gap-3 bg-linear-to-t from-black/80 to-transparent px-4 py-3 transition-opacity duration-300`}
       style={{
         opacity: isControlsVisible ? 1 : 0,
         pointerEvents: isControlsVisible || isDraggingSlider ? 'auto' : 'none',

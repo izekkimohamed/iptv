@@ -1,4 +1,3 @@
-import { performPlaylistUpdate } from "@/services/playlistUpdateService";
 import { ensureAnonymousUser } from "@/services/userService";
 import { getDb } from "@/trpc/db";
 import { playlists, zodPlaylistsSchema } from "@/trpc/schema";
@@ -40,6 +39,8 @@ export const playlistsRouter = t.router({
     )
     .output(zodPlaylistsSchema)
     .mutation(async ({ input }) => {
+      console.log("input", input);
+
       const db = getDb();
       const xtreamClient = createXtreamClient(
         input.url,
@@ -47,6 +48,7 @@ export const playlistsRouter = t.router({
         input.password
       );
       const data = await xtreamClient.getProfile();
+      console.log("data", data);
 
       if (!data.status || data.status !== "Active") {
         throw new Error("Failed to get profile from xtream");
@@ -83,13 +85,15 @@ export const playlistsRouter = t.router({
       })
     )
     .mutation(async ({ input }) => {
-      const res = await performPlaylistUpdate(input);
+      // const res = await performPlaylistUpdate(input);
+
       const db = getDb();
-      await db
+      const [data] = await db
         .update(playlists)
         .set({ updatedAt: new Date().toISOString() })
-        .where(eq(playlists.id, input.playlistId));
-      return res;
+        .where(eq(playlists.id, input.playlistId))
+        .returning();
+      return data;
     }),
 
   deletePlaylist: publicProcedure

@@ -1,7 +1,7 @@
 import { trpc } from "@/lib/trpc";
-import { cleanName } from "@/lib/utils";
-import { usePlaylistStore } from "@/store/appStore";
 import { usePlayerTheme } from "@/theme/playerTheme";
+import { usePlaylistStore } from "@repo/store";
+import { cleanName } from "@repo/utils";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";

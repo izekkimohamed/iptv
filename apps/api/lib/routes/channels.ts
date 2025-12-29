@@ -32,6 +32,26 @@ export const channelsRouter = t.router({
     .output(z.array(zodChannelsSchema))
     .query(async ({ input }) => {
       const db = getDb();
+
+      // const [p] = await db
+      //   .select()
+      //   .from(playlists)
+      //   .where(eq(playlists.id, input.playlistId));
+
+      // const updatedTime = new Date(p.updatedAt);
+
+      // const newChannels = await db
+      //   .select()
+      //   .from(channels)
+      //   .where(
+      //     eq(
+      //       sql`DATE(${channels.createdAt})`,
+      //       sql`DATE(${updatedTime.toISOString().split("T")[0]})`
+      //     )
+      //   );
+
+      // console.log("new Channels", JSON.stringify(newChannels));
+
       if (input.categoryId) {
         const rows = await db
           .select()

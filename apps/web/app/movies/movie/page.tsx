@@ -17,7 +17,7 @@ import { TrailerModal } from '@/components/commen/TrailerModels';
 import { Button } from '@/components/ui/button';
 import { trpc } from '@/lib/trpc';
 import { VideoPlayerModal } from '@/src/shared/components/common/VideoPlayerModal';
-import { usePlaylistStore } from '@/store/appStore';
+import { usePlaylistStore } from '@repo/store';
 
 export default function Page() {
   const pathname = usePathname();
@@ -101,7 +101,7 @@ export default function Page() {
     setPoster(movieDetails[0].tmdb.poster || '');
     setSrc(movie.url);
     setCategoryId(movie.categoryId.toString());
-    setDbMovieId(movie.id.toString());
+    setDbMovieId(movie.streamId.toString());
     setPlaying(true);
     setIsDropdownOpen(false); // Close dropdown on selection
   };

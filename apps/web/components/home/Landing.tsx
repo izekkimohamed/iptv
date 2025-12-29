@@ -4,8 +4,7 @@ import Link from 'next/link';
 
 import { trpc } from '@/lib/trpc';
 import HorizontalCarousel from '@/src/shared/components/common/HorizontalCarousel';
-import { usePlaylistStore } from '@/store/appStore';
-import { useWatchedMoviesStore, useWatchedSeriesStore } from '@/store/watchedStore';
+import { usePlaylistStore, useWatchedMoviesStore, useWatchedSeriesStore } from '@repo/store';
 
 import { Button } from '../ui/button';
 

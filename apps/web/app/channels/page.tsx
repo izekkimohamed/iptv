@@ -8,8 +8,7 @@ import PlayerHeader from '@/components/iptv/PlayerHeader';
 import EmptyState from '@/components/ui/EmptyState';
 import VideoPlayer from '@/features/player/components/VideoPlayer';
 import { trpc } from '@/lib/trpc';
-import { usePlaylistStore } from '@/store/appStore';
-import { usePlayerStore } from '@/store/player-store';
+import { usePlaylistStore, usePlayerStore } from '@repo/store';
 
 export default function ChannelsPage() {
   const router = useRouter();

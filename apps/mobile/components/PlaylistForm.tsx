@@ -1,6 +1,6 @@
 import { trpc } from "@/lib/trpc";
-import { usePlaylistStore } from "@/store/appStore";
 import { usePlayerTheme } from "@/theme/playerTheme";
+import { usePlaylistForm } from "@repo/hooks";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import {
@@ -15,7 +15,7 @@ import {
   User,
   Wifi,
 } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -34,67 +34,18 @@ export default function PlaylistLoginForm() {
   const router = useRouter();
   const theme = usePlayerTheme();
 
-  const [formData, setFormData] = useState({
-    url: "",
-    username: "",
-    password: "",
-  });
-
-  const [urlTouched, setUrlTouched] = useState(false);
-  const [urlStatus, setUrlStatus] = useState<"" | "checking" | "verified">("");
-  const [urlError, setUrlError] = useState("");
-
-  const { addPlaylist, selectPlaylist, startPlaylistCreation } =
-    usePlaylistStore();
-
   const {
-    mutate: createPlaylist,
+    formData,
+    setFormData,
+    urlTouched,
+    setUrlTouched,
+    urlStatus,
+    urlError,
     isPending,
     error,
-  } = trpc.playlists.createPlaylist.useMutation({
-    onSuccess: (data) => {
-      if (!data) return;
-      setUrlStatus("");
-      setFormData({ url: "", username: "", password: "" });
-      addPlaylist(data);
-      selectPlaylist(data);
-      startPlaylistCreation();
-    },
-  });
-
-  const validateUrl = (url: string) => {
-    if (!url) return "";
-    try {
-      new URL(url);
-      return url.startsWith("https://") || url.startsWith("http://") ?
-          ""
-        : "Secure connection (HTTPS) recommended";
-    } catch {
-      return "Invalid server URL";
-    }
-  };
-
-  useEffect(() => {
-    const err = validateUrl(formData.url);
-    setUrlError(err);
-
-    if (formData.url && !err) {
-      setUrlStatus("checking");
-      const timer = setTimeout(() => setUrlStatus("verified"), 800); // Simulate check
-      return () => clearTimeout(timer);
-    } else {
-      setUrlStatus("");
-    }
-  }, [formData.url]);
-
-  const handleSubmit = () => {
-    if (isFormValid) {
-      createPlaylist(formData);
-    }
-  };
-
-  const isFormValid =
-    formData.url && formData.username && formData.password && !urlError;
+    handleSubmit,
+    isFormValid,
+  } = usePlaylistForm(trpc);
 
   return (
     <SafeAreaView

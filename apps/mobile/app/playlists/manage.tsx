@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { usePlaylistStore } from "@/store/appStore";
+import { usePlaylistStore } from "@repo/store";
 import { usePlayerTheme } from "@/theme/playerTheme";
 import { FlashList } from "@shopify/flash-list";
 import { useRouter } from "expo-router";

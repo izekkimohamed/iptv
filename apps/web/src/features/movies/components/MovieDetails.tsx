@@ -11,8 +11,7 @@ import { Button } from '@/components/ui/button';
 import { useMoviePlayback, useStreamingUrls, useTrailerPlayback } from '@/hooks/useDetails';
 import { ItemsDetailsProps } from '@/lib/types';
 import { VideoPlayerModal } from '@/shared/components/common/VideoPlayerModal';
-import { usePlaylistStore } from '@/store/appStore';
-import { useWatchedMoviesStore } from '@/store/watchedStore';
+import { usePlaylistStore, useWatchedMoviesStore } from '@repo/store';
 
 type MovieDetailsProps = Omit<ItemsDetailsProps, 'seasons' | 'episodes'>;
 

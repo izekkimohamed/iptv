@@ -30,8 +30,8 @@ import { formatDateForAPI, Game } from "@/components/365/LiveScores";
 import MatchCard from "@/components/365/MatchCard";
 import Header from "@/components/Header";
 import { trpc } from "@/lib/trpc";
-import { usePlaylistStore } from "@/store/appStore";
 import { usePlayerTheme } from "@/theme/playerTheme";
+import { usePlaylistStore } from "@repo/store";
 
 const { width } = Dimensions.get("window");
 const FEATURED_WIDTH = width * 0.85;
@@ -78,12 +78,7 @@ export default function HomeScreen() {
   const [selectedGameId, setSelectedGameId] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const {
-    selectedPlaylist,
-    selectPlaylist,
-    addPlaylist,
-    playlists: storePlaylists,
-  } = usePlaylistStore();
+  const { selectedPlaylist, selectPlaylist } = usePlaylistStore();
 
   const { data: homeData, isLoading } = trpc.home.getHome.useQuery(undefined, {
     enabled: !!selectedPlaylist,
@@ -96,15 +91,15 @@ export default function HomeScreen() {
   );
 
   const apiUrl = `${process.env.EXPO_PUBLIC_API_URL}/live-matches?date=${formatDateForAPI(currentDate)}`;
-  const {
-    data: games = [],
-    mutate: mutateGames,
-    isLoading: loadingLive,
-  } = useSWR<Game[]>(apiUrl, fetcher, {
-    refreshInterval: (data) =>
-      data?.some((g) => g.statusGroup === 3) ? 20000 : 60000,
-    keepPreviousData: true,
-  });
+  const { data: games = [], mutate: mutateGames } = useSWR<Game[]>(
+    apiUrl,
+    fetcher,
+    {
+      refreshInterval: (data) =>
+        data?.some((g) => g.statusGroup === 3) ? 20000 : 60000,
+      keepPreviousData: true,
+    }
+  );
 
   const liveMatches = useMemo(
     () => games.filter((g) => g.statusGroup === 3),
@@ -113,7 +108,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     if (playlists?.length && !selectedPlaylist) selectPlaylist(playlists[0]);
-  }, [playlists]);
+  }, [playlists, selectPlaylist, selectedPlaylist]);
 
   const onRefresh = async () => {
     setRefreshing(true);

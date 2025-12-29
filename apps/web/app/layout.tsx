@@ -11,7 +11,7 @@ import NavBar from '@/components/Navbar';
 import Providers from '@/components/providers';
 import { Toaster } from '@/components/ui/sonner';
 import { useTauri } from '@/hooks/useTauri';
-import { usePlayerStore } from '@/store/player-store';
+import { usePlayerStore } from '@repo/store';
 
 const jetBrainsMono = JetBrains_Mono({
   variable: '--font-jetbrains-mono',
@@ -46,15 +46,7 @@ export default function RootLayout({
     <html lang="en">
       <Providers>
         <body className={`${jetBrainsMono.className} font-mono antialiased`}>
-          <div
-            className="flex h-screen flex-col bg-linear-to-br from-[#030023] to-[#182848] font-mono"
-            style={
-              {
-                // backgroundImage: 'radial-gradient(circle at center top, #182848 0%, #030023 100%)',
-                // backgroundImage: 'linear-gradient(90deg, #182848 0%, #030023 100%)',
-              }
-            }
-          >
+          <div className="flex h-screen flex-col overflow-hidden bg-linear-to-br from-[#030023] to-[#182848] font-mono">
             <div>
               <NavBar />
             </div>

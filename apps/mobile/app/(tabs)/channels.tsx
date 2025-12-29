@@ -1,7 +1,7 @@
 import { ChannelRow } from "@/components/ChannelRow";
 import Header from "@/components/Header";
 import { trpc } from "@/lib/trpc";
-import { usePlaylistStore } from "@/store/appStore";
+import { usePlaylistStore } from "@repo/store";
 import { usePlayerTheme } from "@/theme/playerTheme";
 import { FlashList, FlashListRef } from "@shopify/flash-list";
 import { Search, Tv, X } from "lucide-react-native";

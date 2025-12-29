@@ -1,17 +1,15 @@
 'use client';
 import { invoke } from '@tauri-apps/api/core';
-import { Minus, RefreshCcw, X } from 'lucide-react';
+import { Minus, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
 
 import { useTauri } from '@/hooks/useTauri';
 import { trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
-import { usePlaylistStore } from '@/store/appStore';
-import { useRecentUpdateStore } from '@/store/recentUpdate';
+import { usePlaylistStore, useRecentUpdateStore } from '@repo/store';
 
 import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -69,51 +67,12 @@ export default function NavBar() {
     }
   }, [playlists, selectPlaylist]);
 
-  const { mutate: handleUpdate, isPending } = trpc.playlists.updatePlaylists.useMutation({
-    onSuccess: async (data) => {
-      if (data && selectedPlaylist) {
-        // Save data specifically for this playlist
-        addUpdate(selectedPlaylist.id, data);
-      }
-
-      await utils.playlists.getPlaylists.invalidate();
-      await utils.channels.getCategories.invalidate({
-        playlistId: selectedPlaylist?.id || 0,
-      });
-      await utils.movies.getMoviesCategories.invalidate({
-        playlistId: selectedPlaylist?.id || 0,
-      });
-      await utils.series.getSeriesCategories.invalidate({
-        playlistId: selectedPlaylist?.id || 0,
-      });
-      await utils.channels.getChannels.invalidate({
-        playlistId: selectedPlaylist?.id || 0,
-      });
-      await utils.movies.getMovies.invalidate({
-        playlistId: selectedPlaylist?.id || 0,
-      });
-      await utils.series.getseries.invalidate({
-        playlistId: selectedPlaylist?.id || 0,
-      });
-      if (data) {
-        toast.success(
-          `Updated library: +${data.newItems.channels.length} new channels, -${data.deletedItems.channels.length} removed channels, -${data.categories.channelsCat.length} categories pruned`,
-        );
-      } else {
-        toast.info('Playlist updated');
-      }
-    },
-    onError: (err) => {
-      toast.error(err.message || 'Failed to update playlist');
-    },
-  });
-
   const navItems = [
     { label: 'Channels', href: '/channels', icon: '📺' },
     { label: 'Movies', href: '/movies', icon: '🎬' },
     { label: 'Series', href: '/series', icon: '🎞️' },
-    { label: 'Add Playlist', href: '/playlists/add', icon: '➕' },
     { label: '365SCORES', href: '/365', icon: '🏆' },
+    { label: 'Settings', href: '/settings', icon: '⚙️' },
   ];
 
   const handlePlaylistSelect = async (id: string) => {
@@ -121,13 +80,8 @@ export default function NavBar() {
     router.push(pathName);
   };
   return (
-    <header
-      className={cn(
-        'sticky top-0 z-50 border-b border-white/10',
-        isPending ? 'pointer-events-none animate-pulse cursor-not-allowed bg-white/20' : '',
-      )}
-    >
-      <div className={cn('mx-auto max-w-[90vw]', isPending ? 'cursor-not-allowed opacity-50' : '')}>
+    <header className={cn('sticky top-0 z-50 border-b border-white/10')}>
+      <div className={cn('mx-auto max-w-[90vw]')}>
         <div className="flex h-20 items-center justify-between gap-4">
           {/* Logo */}
           <Link href={'/'} className="flex shrink-0 items-center">
@@ -159,7 +113,6 @@ export default function NavBar() {
                 <p
                   className={cn(
                     'flex items-center gap-2 rounded-lg px-3 py-2 font-medium text-gray-300 transition-all duration-200',
-                    isPending ? 'animate-pulse bg-white/20' : '',
                   )}
                 >
                   <span className="mr-1">{item.icon}</span>
@@ -204,29 +157,6 @@ export default function NavBar() {
                 </SelectContent>
               </Select>
             </div>
-
-            <Button
-              className="group flex cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-transparent p-2 transition-all duration-200 hover:border-white/20 hover:bg-white/10 disabled:opacity-50"
-              disabled={isPending}
-              onClick={() => {
-                if (selectedPlaylist) {
-                  handleUpdate({
-                    url: selectedPlaylist.baseUrl,
-                    username: selectedPlaylist.username,
-                    password: selectedPlaylist.password,
-                    playlistId: selectedPlaylist.id,
-                  });
-                }
-              }}
-              title="Refresh playlists"
-            >
-              <RefreshCcw
-                className={cn(
-                  'h-5 w-5 text-slate-300 transition-colors group-hover:text-slate-200',
-                  isPending && 'animate-spin',
-                )}
-              />
-            </Button>
           </div>
 
           {/* Window Controls */}
