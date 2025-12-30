@@ -7,9 +7,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { useTauri } from '@/hooks/useTauri';
-import { trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
-import { usePlaylistStore, useRecentUpdateStore } from '@repo/store';
+import { usePlaylistStore } from '@repo/store';
 
 import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -23,18 +22,11 @@ async function minimizeApp() {
 }
 
 export default function NavBar() {
-  const {
-    selectedPlaylist,
-    selectPlaylist,
-    addPlaylist,
-    playlists: storePlaylists,
-  } = usePlaylistStore();
+  const { selectedPlaylist, selectPlaylist, playlists: storePlaylists } = usePlaylistStore();
   const pathName = usePathname();
   const router = useRouter();
-  const utils = trpc.useUtils();
   const [time, setTime] = useState<string>('');
   const { isDesktopApp } = useTauri();
-  const addUpdate = useRecentUpdateStore((state) => state.addUpdate);
 
   useEffect(() => {
     const updateTime = () => {
@@ -55,17 +47,6 @@ export default function NavBar() {
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, []);
-
-  const { data: playlists } = trpc.playlists.getPlaylists.useQuery();
-
-  useEffect(() => {
-    if (storePlaylists.length === 0 && playlists) {
-      playlists.forEach((playlist) => {
-        addPlaylist(playlist);
-      });
-      selectPlaylist(playlists[0]);
-    }
-  }, [playlists, selectPlaylist]);
 
   const navItems = [
     { label: 'Channels', href: '/channels', icon: '📺' },

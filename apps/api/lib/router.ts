@@ -1,6 +1,7 @@
 import { channelsRouter } from "./routes/channels";
 import { homeRouter } from "./routes/home";
 import { moviesRouter } from "./routes/movies";
+import { newRouter } from "./routes/new";
 import { playlistsRouter } from "./routes/playlists";
 import { seriesRouter } from "./routes/series";
 import { t } from "./trpc";
@@ -11,5 +12,6 @@ export const appRouter = t.router({
   movies: moviesRouter,
   series: seriesRouter,
   home: homeRouter,
+  new: newRouter,
 });
 export type AppRouter = typeof appRouter;

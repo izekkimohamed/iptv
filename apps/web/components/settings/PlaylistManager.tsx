@@ -6,6 +6,27 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
+export interface Playlist {
+  id: number;
+  baseUrl: string;
+  username: string;
+  password: string;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+  expDate: string;
+  status: string;
+  isTrial: string;
+}
+interface PlaylistProps {
+  playlists: Playlist[];
+  selectedPlaylist: Playlist;
+  deletePending: boolean;
+  handleUpdate: () => void;
+  deletePlaylist: ({ playlistId }: { playlistId: number }) => void;
+  selectPlaylist: (playlist: Playlist) => void;
+}
+
 const PlaylistManager = ({
   playlists,
   selectedPlaylist,
@@ -13,7 +34,7 @@ const PlaylistManager = ({
   handleUpdate,
   deletePlaylist,
   deletePending,
-}: any) => {
+}: PlaylistProps) => {
   return (
     <div className="space-y-6">
       {/* Active Node Card */}
@@ -24,7 +45,7 @@ const PlaylistManager = ({
           <div className="space-y-1">
             <div className="mb-1 flex items-center gap-2 text-amber-500">
               <Server className="h-4 w-4" />
-              <span className="text-xs font-bold tracking-widest uppercase">Active System</span>
+              <span className="text-xs font-bold tracking-widest uppercase">Active Playlist</span>
             </div>
             <h3 className="text-xl font-bold text-white">
               {selectedPlaylist ? selectedPlaylist.username : 'No Active Node'}
@@ -52,7 +73,7 @@ const PlaylistManager = ({
       <div className="flex items-center justify-between px-1">
         <h4 className="flex items-center gap-2 text-sm font-medium text-neutral-300">
           <LayoutGrid className="h-4 w-4 text-neutral-500" />
-          Available Nodes
+          Available Playlists
         </h4>
         <Badge variant="outline" className="border-white/10 bg-white/5 text-neutral-400">
           {playlists?.length || 0} Total
@@ -61,7 +82,7 @@ const PlaylistManager = ({
 
       {/* Node List */}
       <div className="space-y-3">
-        {playlists?.map((p: any) => {
+        {playlists?.map((p) => {
           const isActive = selectedPlaylist?.id === p.id;
           return (
             <div
@@ -105,6 +126,9 @@ const PlaylistManager = ({
                   <div className="max-w-50 truncate font-mono text-[11px] text-neutral-500">
                     {new URL(p.baseUrl).hostname}
                   </div>
+                  <div className="max-w-50 truncate font-mono text-[11px] text-neutral-500">
+                    {new Date(p.updatedAt).toLocaleString()}
+                  </div>
                 </div>
               </div>
 
@@ -116,7 +140,7 @@ const PlaylistManager = ({
                   }}
                   variant={'ghost'}
                   disabled={deletePending}
-                  className="cursor-pointer text-red-400 focus:bg-red-500/10 focus:text-red-500"
+                  className="cursor-pointer border border-red-500/30 bg-red-500/5 text-red-500 transition-all duration-350 ease-in-out hover:bg-red-500 hover:text-red-50 focus:bg-red-500/10 focus:text-red-500"
                 >
                   <Trash2 className="mr-2 h-4 w-4" /> Delete
                 </Button>

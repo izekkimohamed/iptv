@@ -78,9 +78,6 @@ export const playlistsRouter = t.router({
   updatePlaylists: publicProcedure
     .input(
       z.object({
-        url: z.string(),
-        username: z.string(),
-        password: z.string(),
         playlistId: z.number(),
       })
     )

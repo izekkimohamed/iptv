@@ -33,21 +33,6 @@ export const moviesRouter = t.router({
     .output(z.array(zodMovieSchema))
     .query(async ({ input }) => {
       const db = getDb();
-      // const [p] = await db
-      //   .select()
-      //   .from(playlists)
-      //   .where(eq(playlists.id, input.playlistId));
-      // const updatedTime = new Date(p.updatedAt);
-      // const newChannels = await db
-      //   .select()
-      //   .from(movies)
-      //   .where(
-      //     eq(
-      //       sql`DATE(${movies.createdAt})`,
-      //       sql`DATE(${updatedTime.toISOString().split("T")[0]})`
-      //     )
-      //   );
-      // console.log("new Channels", JSON.stringify(newChannels));
       return await db
         .select()
         .from(movies)

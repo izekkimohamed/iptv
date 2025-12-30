@@ -29,6 +29,7 @@ export default function PlaylistSettingsPage() {
     finishPlaylistCreation,
     removePlaylist,
     playlists: storedPlaylists,
+    updatePlaylist: updateStorePlaylist,
   } = usePlaylistStore();
 
   const [currentStage, setCurrentStage] = useState<CreationStage>(
@@ -37,7 +38,11 @@ export default function PlaylistSettingsPage() {
   const [totalProgress, setTotalProgress] = useState(0);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const { mutate: updatePlaylist } = trpc.playlists.updatePlaylists.useMutation();
+  const { mutate: updatePlaylist } = trpc.playlists.updatePlaylists.useMutation({
+    onSuccess: (data, variables) => {
+      updateStorePlaylist(variables.playlistId, data);
+    },
+  });
   const { mutate: deletePlaylist, isPending: deletePending } =
     trpc.playlists.deletePlaylist.useMutation({
       onSuccess: async (data, variables) => {
@@ -57,6 +62,10 @@ export default function PlaylistSettingsPage() {
     isPending: isVerifying,
     handleSubmit,
     isFormValid,
+    urlError,
+    urlTouched,
+    setUrlTouched,
+    urlStatus,
   } = usePlaylistForm(trpc);
 
   // --- 2. SEQUENTIAL MUTATIONS ---
@@ -66,15 +75,13 @@ export default function PlaylistSettingsPage() {
         setTotalProgress(100);
         setCurrentStage(CreationStage.COMPLETED);
         setTimeout(() => {
-          finishPlaylistCreation();
-          setIsUpdating(false);
           if (!selectedPlaylist) return;
           updatePlaylist({
-            url: selectedPlaylist.baseUrl,
-            username: selectedPlaylist.username,
-            password: selectedPlaylist.password,
             playlistId: selectedPlaylist.id,
           });
+
+          finishPlaylistCreation();
+          setIsUpdating(false);
 
           utils.playlists.getPlaylists.invalidate();
           toast.success('Database sync complete');
@@ -192,21 +199,27 @@ export default function PlaylistSettingsPage() {
                 isVerifying={isVerifying}
                 handleSubmit={handleSubmit}
                 isFormValid={isFormValid}
+                urlError={urlError}
+                urlTouched={urlTouched}
+                setUrlTouched={setUrlTouched}
+                urlStatus={urlStatus}
               />
             </div>
           </div>
 
           {/* Right: List */}
-          <div className="lg:col-span-7">
-            <PlaylistManager
-              playlists={playlists}
-              selectedPlaylist={selectedPlaylist}
-              selectPlaylist={selectPlaylist}
-              handleUpdate={handleUpdate}
-              deletePlaylist={deletePlaylist}
-              deletePending={deletePending}
-            />
-          </div>
+          {playlists && selectedPlaylist && (
+            <div className="lg:col-span-7">
+              <PlaylistManager
+                playlists={playlists}
+                selectedPlaylist={selectedPlaylist}
+                selectPlaylist={selectPlaylist}
+                handleUpdate={handleUpdate}
+                deletePlaylist={deletePlaylist}
+                deletePending={deletePending}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

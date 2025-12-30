@@ -6,8 +6,9 @@ import React from 'react';
 
 import { useAutoScrollToSelected } from '@/hooks/useAutoScrollToSelected';
 import { Channel } from '@/lib/types';
-import { usePlayerStore, usePlaylistStore, useRecentUpdateStore } from '@repo/store';
+import { usePlayerStore, usePlaylistStore } from '@repo/store';
 
+import { trpc } from '@/lib/trpc';
 import LoadingSpinner from '../ui/LoadingSpinner';
 
 interface ChannelsSidebarProps {
@@ -22,11 +23,16 @@ export default function ChannelsSidebar(props: ChannelsSidebarProps) {
   const listRef = React.useRef<HTMLDivElement | null>(null);
   const newChannels = useSearchParams().get('new');
   const selectedPlaylist = usePlaylistStore((state) => state.selectedPlaylist);
-  const recentChannels = useRecentUpdateStore((state) =>
-    state.getLatestUpdate(selectedPlaylist?.id),
-  );
-  const newChannelsData = recentChannels?.newItems.channels || [];
   const { setSrc, setTitle } = usePlayerStore();
+
+  const { data: newChannelsData, isLoading: loadingNewData } = trpc.new.getNewChannels.useQuery(
+    {
+      playlistId: selectedPlaylist?.id || 0,
+    },
+    {
+      enabled: !!newChannels,
+    },
+  );
 
   useAutoScrollToSelected({
     containerRef: listRef,
@@ -57,14 +63,14 @@ export default function ChannelsSidebar(props: ChannelsSidebarProps) {
             <div className="text-4xl opacity-40">📺</div>
             <p>Select a category to view channels</p>
           </div>
-        ) : isLoading ? (
+        ) : isLoading || loadingNewData ? (
           <LoadingSpinner fullScreen />
-        ) : !channels?.length && !newChannels ? (
+        ) : !channels?.length || !newChannelsData ? (
           <div className="flex flex-col items-center space-y-3 py-12 text-center text-gray-400">
             <div className="text-4xl opacity-40">📂</div>
             <p>No channels in this category</p>
           </div>
-        ) : newChannels && newChannelsData.length > 0 ? (
+        ) : newChannels && newChannelsData ? (
           <div className="flex flex-col gap-2.5">
             {newChannelsData.map((channel, index) => {
               const isSelected = selectedChannelId === index.toString();

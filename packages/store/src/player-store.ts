@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 interface PlayerStoreType {
   volume: number;
@@ -9,7 +9,7 @@ interface PlayerStoreType {
   poster?: string;
   title?: string;
   preferredRate: number;
-  preferredAspectRatio: '16:9' | '4:3' | '1:1';
+  preferredAspectRatio: "16:9" | "4:3" | "1:1";
   setVolume: (volume: number) => void;
   setMutated: (isMuted: boolean) => void;
   toggleFullScreen: (fullScreen: boolean) => void;
@@ -17,7 +17,7 @@ interface PlayerStoreType {
   setPoster: (poster?: string) => void;
   setTitle: (title?: string) => void;
   setPreferredRate: (rate: number) => void;
-  setPreferredAspectRatio: (ratio: '16:9' | '4:3' | '1:1') => void;
+  setPreferredAspectRatio: (ratio: "16:9" | "4:3" | "1:1") => void;
   clearPlayer: () => void;
 }
 
@@ -27,14 +27,14 @@ export const usePlayerStore = create<PlayerStoreType>()(
       volume: 0.5,
       isMuted: false,
       fullScreen: false,
-      src: '',
+      src: "",
       poster: undefined,
       title: undefined,
       preferredRate: 1,
-      preferredAspectRatio: '16:9',
+      preferredAspectRatio: "16:9",
       setVolume: (volume) =>
         set({
-          volume: Math.max(0, Math.min(1, volume)),
+          volume: Math.max(0, Math.min(1, Number(volume.toFixed(2)))),
         }),
       setMutated: (isMuted) =>
         set({
@@ -64,10 +64,10 @@ export const usePlayerStore = create<PlayerStoreType>()(
         set({
           preferredAspectRatio: ratio,
         }),
-      clearPlayer: () => set({ src: '', poster: '', title: '' }),
+      clearPlayer: () => set({ src: "", poster: "", title: "" }),
     }),
     {
-      name: 'player-storage',
-    },
-  ),
+      name: "player-storage",
+    }
+  )
 );

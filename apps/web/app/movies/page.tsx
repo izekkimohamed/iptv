@@ -8,7 +8,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import MovieDetails from '@/features/movies/components/MovieDetails';
 import { trpc } from '@/lib/trpc';
 import VirtualGrid from '@/src/shared/components/common/VirtualGrid';
-import { usePlaylistStore, useRecentUpdateStore } from '@repo/store';
+import { usePlaylistStore } from '@repo/store';
 
 export default function MoviesPage() {
   const router = useRouter();
@@ -18,9 +18,6 @@ export default function MoviesPage() {
   const movieId = searchParams.get('movieId');
 
   const newMovies = useSearchParams().get('new');
-  const selectedPlaylist = usePlaylistStore((state) => state.selectedPlaylist);
-  const recentMovies = useRecentUpdateStore((state) => state.getLatestUpdate(selectedPlaylist?.id));
-  const newMoviesData = recentMovies?.newItems.movies || [];
 
   const { data: movies, isLoading: isFetchingMovies } = trpc.movies.getMovies.useQuery(
     {
@@ -29,6 +26,15 @@ export default function MoviesPage() {
     },
     {
       enabled: !!selectedCategoryId,
+    },
+  );
+
+  const { data: newMoviesData, isLoading: loadingNewData } = trpc.new.getNewMovies.useQuery(
+    {
+      playlistId: playlist?.id || 0,
+    },
+    {
+      enabled: !!newMovies,
     },
   );
 
@@ -87,7 +93,7 @@ export default function MoviesPage() {
             fullScreen
           />
         )}
-        {(isFetchingMovies || isFetchingMovie) && <LoadingSpinner fullScreen />}
+        {(isFetchingMovies || isFetchingMovie || loadingNewData) && <LoadingSpinner fullScreen />}
         {movieId && movie && (
           <MovieDetails
             image={movie.info.movie_image}
@@ -120,31 +126,27 @@ export default function MoviesPage() {
             />
           </div>
         )}
-        {newMoviesData.length > 0 &&
-          !movies &&
-          !isFetchingMovies &&
-          !isFetchingMovie &&
-          !movieId && (
-            <div className="min-h-full bg-linear-to-b from-slate-900/40 to-slate-950">
-              <VirtualGrid
-                className="h-full p-5"
-                items={newMoviesData}
-                renderItem={(movie) => (
-                  <ItemsList
-                    image={movie.streamIcon}
-                    title={movie.name}
-                    rating={movie.rating}
-                    streamId={movie.streamId}
-                    onMovieClick={() => handleMovieClick(movie.streamId)}
-                    itemType="movie"
-                  />
-                )}
-                minItemWidth={230}
-                estimateItemHeight={360}
-                gapClassName="gap-3"
-              />
-            </div>
-          )}
+        {newMoviesData && !movies && !isFetchingMovies && !isFetchingMovie && !movieId && (
+          <div className="min-h-full bg-linear-to-b from-slate-900/40 to-slate-950">
+            <VirtualGrid
+              className="h-full p-5"
+              items={newMoviesData}
+              renderItem={(movie) => (
+                <ItemsList
+                  image={movie.streamIcon}
+                  title={movie.name}
+                  rating={movie.rating}
+                  streamId={movie.streamId}
+                  onMovieClick={() => handleMovieClick(movie.streamId)}
+                  itemType="movie"
+                />
+              )}
+              minItemWidth={230}
+              estimateItemHeight={360}
+              gapClassName="gap-3"
+            />
+          </div>
+        )}
       </div>
     </>
   );

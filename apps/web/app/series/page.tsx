@@ -9,7 +9,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import SeriesDetails from '@/features/series/components/SeriesDetails';
 import { trpc } from '@/lib/trpc';
 import VirtualGrid from '@/src/shared/components/common/VirtualGrid';
-import { usePlaylistStore, useRecentUpdateStore } from '@repo/store';
+import { usePlaylistStore } from '@repo/store';
 
 export default function SeriesPage() {
   const router = useRouter();
@@ -21,8 +21,6 @@ export default function SeriesPage() {
 
   const newSeries = useSearchParams().get('new');
   const selectedPlaylist = usePlaylistStore((state) => state.selectedPlaylist);
-  const recentSeries = useRecentUpdateStore((state) => state.getLatestUpdate(selectedPlaylist?.id));
-  const newSeriesData = recentSeries?.newItems.series || [];
 
   const { data: categories, isLoading } = trpc.series.getSeriesCategories.useQuery({
     playlistId: selectedPlaylist?.id || 0,
@@ -34,6 +32,15 @@ export default function SeriesPage() {
     },
     {
       enabled: !!selectedCategoryId && !!selectedPlaylist,
+    },
+  );
+
+  const { data: newSeriesData, isLoading: loadingNewData } = trpc.new.getNewSeries.useQuery(
+    {
+      playlistId: selectedPlaylist?.id || 0,
+    },
+    {
+      enabled: !!newSeries,
     },
   );
 
@@ -79,12 +86,13 @@ export default function SeriesPage() {
         {!selectedCategoryId && !serieId && !newSeries && (
           <EmptyState
             icon="📺"
-            title="No Categories Found"
+            title="No Data Found"
             description="Please select a category to view series"
             fullScreen
           />
         )}
-        {(isFetchingSeries || isFetchingSerie) && <LoadingSpinner fullScreen />}
+
+        {(isFetchingSeries || isFetchingSerie || loadingNewData) && <LoadingSpinner fullScreen />}
         {serieId && serie && (
           <SeriesDetails
             image={serie.info.cover}
@@ -120,9 +128,10 @@ export default function SeriesPage() {
           </div>
         )}
 
-        {newSeriesData.length > 0 &&
+        {newSeriesData &&
           !series &&
           !isFetchingSeries &&
+          !loadingNewData &&
           !isFetchingSerie &&
           !serieId && (
             <div className="min-h-full bg-linear-to-b from-slate-900/40 to-slate-950">
