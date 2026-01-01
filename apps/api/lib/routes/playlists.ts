@@ -39,8 +39,6 @@ export const playlistsRouter = t.router({
     )
     .output(zodPlaylistsSchema)
     .mutation(async ({ input }) => {
-      console.log("input", input);
-
       const db = getDb();
       const xtreamClient = createXtreamClient(
         input.url,
@@ -48,9 +46,8 @@ export const playlistsRouter = t.router({
         input.password
       );
       const data = await xtreamClient.getProfile();
-      console.log("data", data);
 
-      if (!data.status || data.status !== "Active") {
+      if (!data || data.status !== "Active") {
         throw new Error("Failed to get profile from xtream");
       }
 

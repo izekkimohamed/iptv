@@ -124,7 +124,7 @@ export const EpisodesSection = forwardRef<EpisodesSectionHandle, EpisodesSection
     if (!seasons || seasons.length === 0) return null;
 
     return (
-      <div className="mt-20 space-y-8" data-episodes-section>
+      <div className="p10 mt-20 space-y-8 p-10" data-episodes-section>
         <div className="flex items-center gap-3">
           <div className="h-8 w-1 rounded-full bg-green-500" /> {/* Accent bar */}
           <h2 className="text-2xl font-black tracking-tighter text-white uppercase">Episodes</h2>
@@ -152,7 +152,7 @@ export const EpisodesSection = forwardRef<EpisodesSectionHandle, EpisodesSection
 
         {/* Episodes Grid */}
         {sortedEpisodes.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-5">
             {sortedEpisodes.map((episode) => (
               <div
                 key={episode.id}

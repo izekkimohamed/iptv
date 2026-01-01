@@ -46,7 +46,12 @@ export default function RootLayout({
     <html lang="en">
       <Providers>
         <body className={`${jetBrainsMono.className} font-mono antialiased`}>
-          <div className="flex h-screen flex-col overflow-hidden bg-linear-to-br from-[#030023] to-[#182848] font-mono">
+          <div
+            // style={{
+            //   background: 'radial-gradient(0% 80% at 101.61% 76.99%, #2D0264 0%, #030023 100%);',
+            // }}
+            className="flex h-screen flex-col overflow-hidden bg-[#030023] font-mono"
+          >
             <div>
               <NavBar />
             </div>

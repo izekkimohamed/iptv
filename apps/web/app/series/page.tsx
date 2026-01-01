@@ -73,7 +73,7 @@ export default function SeriesPage() {
         selectedCategoryId={selectedCategoryId}
         categoryType="series"
       />
-      <div className="min-h-full flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto">
         {serieError && (
           <EmptyState
             icon="📺"

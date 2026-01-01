@@ -31,3 +31,32 @@ Here is a list of suggested refactoring and code sharing tasks to improve the pr
 
 - [ ] **Add tests for frontend applications.**
   - **Instructions:** Set up a testing environment for the `web` and `mobile` applications. For the `web` app, `vitest` can be used, similar to the `api` app. For the `mobile` app, `jest` is commonly used with React Native. Start by adding tests for simple components and hooks.
+
+## Package Management
+
+- [ ] **Analyze and remove unused packages.**
+  - **Instructions:** The `depcheck` tool has identified a number of potentially unused packages in the monorepo. Review the list below and remove the packages that are not needed. Be careful not to remove packages that are used indirectly or are false positives.
+  - **`apps/api`:** `@repo/trpc`, `@types/react`, `@types/react-dom`, `eslint-config-next`
+  - **`apps/web`:** `@better-fetch/fetch`, `@ffmpeg-installer/ffmpeg`, `@repo/trpc`, `@types/hls.js`, `fluent-ffmpeg`, `hls.js`, `install`, `mp4box`, `node-fetch`, `react-virtualized-auto-sizer`, `react-window`, `superjson`, `video.js`, `videojs-contrib-quality-levels`, `videojs-hotkeys`, `videojs-http-source-selector`, `vlc.js`, `@tailwindcss/postcss`, `@tauri-apps/cli`, `@types/fluent-ffmpeg`, `@types/node`, `eslint-config-next`, `eslint-config-prettier`, `eslint-plugin-prettier`, `eslint-plugin-simple-import-sort`, `eslint-plugin-tailwindcss`, `prettier-plugin-tailwindcss`, `tailwindcss`, `tw-animate-css`
+  - **`apps/mobile`:** `@react-native-async-storage/async-storage`, `@react-navigation/bottom-tabs`, `@react-navigation/elements`, `@react-navigation/native`, `date-fns`, `expo-audio`, `expo-build-properties`, `expo-dev-client`, `expo-splash-screen`, `expo-symbols`, `expo-system-ui`, `expo-web-browser`, `nativewind`, `zod`
+  - **`packages/hooks`:** `@repo/trpc`, `typescript`
+  - **`packages/store`:** `typescript`
+  - **`packages/trpc`:** `@iptv/xtream-api`, `@types/node`
+  - **`packages/utils`:** `eslint`, `typescript`
+
+- [ ] **Add missing packages.**
+  - **Instructions:** The `depcheck` tool has identified missing packages in some of the workspaces. Add the following packages to the `dependencies` in the corresponding `package.json` files.
+  - **`apps/api`:** `dotenv`
+  - **`apps/web`:** `dotenv`
+  - **`apps/mobile`:** `expo-keep-awake`
+
+## Code Refactoring
+
+- [ ] **Refactor tRPC usage to use the shared `@repo/trpc` package.**
+  - **Instructions:** The `apps/web` application is currently importing the tRPC router directly from the `apps/api` application. This is incorrect and defeats the purpose of the shared `@repo/trpc` package. Refactor the code to use the shared package.
+  - **Steps:**
+    1. In `packages/trpc`, export the `AppRouter` type.
+    2. In `apps/web/lib/trpc.ts`, import `AppRouter` from `@repo/trpc` instead of `../../api/lib/router`.
+    3. In `apps/api/lib/router.ts`, ensure that the `appRouter` is exported.
+    4. In `apps/api/pages/api/trpc/[trpc].ts`, import the `appRouter` from `~/lib/router` and use it to create the tRPC handler.
+    5. Verify that both `apps/web` and `apps/mobile` are using the `@repo/trpc` package for tRPC calls.

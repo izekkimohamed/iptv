@@ -1,4 +1,4 @@
-import { X } from 'lucide-react';
+import { Clock, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { EventTimeline } from './Events';
@@ -86,7 +86,7 @@ export function MatchCenter({ gameId, onClose }: MatchCenterProps) {
 
       {/* 3. THE MODAL: Strictly 70% height and centered */}
       <div
-        className={`relative flex max-h-[70vh] h-70vh animate-in zoom-in  w-full max-w-6xl flex-col overflow-hidden rounded-4xl border border-white/10 bg-linear-to-br from-[#1a1a1a24] to-[#0a0a0a24]  duration-300 ${
+        className={`h-70vh animate-in zoom-in relative flex max-h-[70vh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-linear-to-br from-[#1a1a1a24] to-[#0a0a0a24] duration-300 ${
           isVisible ? 'opacity-100' : 'opacity-0'
         }`}
       >
@@ -104,12 +104,18 @@ export function MatchCenter({ gameId, onClose }: MatchCenterProps) {
           </div>
         ) : (
           /* 4. SCROLLABLE CONTENT: This ensures content stays inside the 70vh */
-          <div className="no-scrollbar flex flex-1 flex-col overflow-y-auto">
+          <div
+            className="flex flex-1 flex-col overflow-y-auto"
+            style={{
+              scrollbarColor: '#f4f4f424 transparent',
+              scrollbarWidth: 'thin',
+            }}
+          >
             {/* Header Section (Score, etc.) */}
-            <div className="shrink-0 border-b border-white/5 p-8 pt-12 text-center">
+            <div className="sticky top-0 z-30 shrink-0 space-y-5 border-white/5 px-8 pt-12 text-center backdrop-blur-md">
               {/* Competition */}
               <div className="mb-6 flex flex-col items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-widest text-white/40">
+                <span className="text-xs font-bold tracking-widest text-white/40 uppercase">
                   {match.competitionDisplayName}
                 </span>
               </div>
@@ -126,7 +132,7 @@ export function MatchCenter({ gameId, onClose }: MatchCenterProps) {
                 </div>
 
                 <div className="flex flex-col items-center gap-2">
-                  <div className=" font-black text-white">
+                  <div className="font-black text-white">
                     {match.statusText === 'Scheduled' ? (
                       <span>The Game Isn't Started Yet</span>
                     ) : (
@@ -149,10 +155,20 @@ export function MatchCenter({ gameId, onClose }: MatchCenterProps) {
                   <span className="text-sm font-bold text-white">{match.awayCompetitor.name}</span>
                 </div>
               </div>
+              <div className="flex items-center justify-center gap-3">
+                <div className="h-px flex-1 bg-linear-to-r from-transparent to-white/10" />
+                <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 backdrop-blur-sm">
+                  <Clock className="h-3.5 w-3.5 text-white/60" />
+                  <span className="text-[10px] font-extrabold tracking-[0.2em] text-white/60 uppercase">
+                    Match Timeline
+                  </span>
+                </div>
+                <div className="h-px flex-1 bg-linear-to-l from-transparent to-white/10" />
+              </div>
             </div>
 
             {/* Event Timeline (The part that usually makes it long) */}
-            <div className="p-8">
+            <div className="px-8">
               <EventTimeline match={match} />
             </div>
           </div>

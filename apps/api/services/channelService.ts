@@ -52,7 +52,6 @@ export async function insertChannels(
 ) {
   if (newChannels.length === 0) return;
 
-  const db = getDb();
   await batchInsert(channels, newChannels, {
     chunkSize: 3000,
     concurrency: 5,

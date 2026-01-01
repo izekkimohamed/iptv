@@ -75,7 +75,7 @@ export default function MoviesPage() {
 
   return (
     <>
-      <div className="min-h-full flex-1 overflow-y-auto">
+      <div className="relative flex-1 overflow-y-auto">
         {movieError && (
           <EmptyState
             icon="📺"

@@ -1,7 +1,7 @@
 'use client';
 
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type VirtualGridProps<T> = {
   items: T[];
@@ -10,6 +10,7 @@ type VirtualGridProps<T> = {
   gapClassName?: string;
   estimateItemHeight?: number;
   className?: string;
+  itemKey?: (item: T, index: number) => string | number;
 };
 
 export default function VirtualGrid<T>({
@@ -19,54 +20,85 @@ export default function VirtualGrid<T>({
   gapClassName = 'gap-3',
   estimateItemHeight = 360,
   className,
+  itemKey,
 }: VirtualGridProps<T>) {
   const parentRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState<number>(0);
 
+  // Debounced resize handler to prevent excessive re-renders
   useEffect(() => {
     if (!parentRef.current) return;
+
+    let timeoutId: NodeJS.Timeout;
     const ro = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      const width = entry.contentRect.width;
-      setContainerWidth(width);
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        const entry = entries[0];
+        const width = entry.contentRect.width;
+        setContainerWidth(width);
+      }, 16); // ~60fps
     });
+
     ro.observe(parentRef.current);
-    return () => ro.disconnect();
+    return () => {
+      clearTimeout(timeoutId);
+      ro.disconnect();
+    };
   }, []);
 
-  const columnCount = Math.max(1, Math.floor(containerWidth / minItemWidth));
-  const rowCount = Math.ceil(items.length / columnCount);
+  // Memoize column and row calculations
+  const { columnCount, rowCount } = useMemo(() => {
+    const cols = Math.max(2, Math.floor(containerWidth / minItemWidth));
+    const rows = Math.ceil(items.length / cols);
+    return { columnCount: cols, rowCount: rows };
+  }, [containerWidth, minItemWidth, items.length]);
+
+  // Memoize virtualizer config
+  const getScrollElement = useCallback(() => parentRef.current, []);
+  const estimateSize = useCallback(() => estimateItemHeight, [estimateItemHeight]);
 
   const virtualizer = useVirtualizer({
     count: rowCount,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => estimateItemHeight,
-    overscan: 5,
+    getScrollElement,
+    estimateSize,
+    overscan: 3, // Reduced from 5 for better performance
   });
 
+  // Pre-calculate rows data structure
   const rows = useMemo(() => {
-    return Array.from({ length: rowCount }).map((_, rowIndex) => {
+    return Array.from({ length: rowCount }, (_, rowIndex) => {
       const start = rowIndex * columnCount;
       const end = Math.min(start + columnCount, items.length);
       return { rowIndex, start, end };
     });
   }, [rowCount, columnCount, items.length]);
 
+  // Memoize grid columns style
   const gridColumnsStyle = useMemo(
     () => ({ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }),
     [columnCount],
   );
 
+  // Memoize virtual items to prevent unnecessary recalculations
+  const virtualItems = virtualizer.getVirtualItems();
+
   return (
-    <div ref={parentRef} className={className} style={{ height: '100%', overflow: 'auto' }}>
+    <div
+      ref={parentRef}
+      className={className}
+      style={{ height: '100%', overflow: 'auto', willChange: 'transform' }}
+    >
       <div
         style={{
           height: virtualizer.getTotalSize(),
           position: 'relative',
+          contain: 'layout style paint', // CSS containment for better performance
         }}
       >
-        {virtualizer.getVirtualItems().map((virtualRow) => {
+        {virtualItems.map((virtualRow) => {
           const { start, end } = rows[virtualRow.index] || { start: 0, end: 0 };
+          const rowItems = items.slice(start, end);
+
           return (
             <div
               key={virtualRow.key}
@@ -78,11 +110,13 @@ export default function VirtualGrid<T>({
                 left: 0,
                 width: '100%',
                 transform: `translateY(${virtualRow.start}px)`,
+                willChange: 'transform',
               }}
             >
-              {Array.from({ length: end - start }).map((_, i) => {
+              {rowItems.map((item, i) => {
                 const itemIndex = start + i;
-                return <div key={itemIndex}>{renderItem(items[itemIndex], itemIndex)}</div>;
+                const key = itemKey ? itemKey(item, itemIndex) : itemIndex;
+                return <div key={key}>{renderItem(item, itemIndex)}</div>;
               })}
             </div>
           );

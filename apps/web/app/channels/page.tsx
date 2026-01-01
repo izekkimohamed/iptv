@@ -8,7 +8,7 @@ import PlayerHeader from '@/components/iptv/PlayerHeader';
 import EmptyState from '@/components/ui/EmptyState';
 import VideoPlayer from '@/features/player/components/VideoPlayer';
 import { trpc } from '@/lib/trpc';
-import { usePlaylistStore, usePlayerStore } from '@repo/store';
+import { usePlayerStore, usePlaylistStore } from '@repo/store';
 
 export default function ChannelsPage() {
   const router = useRouter();
@@ -58,12 +58,6 @@ export default function ChannelsPage() {
     params.set('channelId', target.id.toString());
     router.push(`?${params.toString()}`);
   };
-
-  // const handleChannelClick = (channelId: number) => {
-  //   const params = new URLSearchParams(searchParams.toString());
-  //   params.set('channelId', channelId.toString());
-  //   router.push(`?${params.toString()}`);
-  // };
 
   const selectedChannel = channels?.find((chan) => chan.id.toString() === selectedChannelId);
   // Update player when selectedChannel changes

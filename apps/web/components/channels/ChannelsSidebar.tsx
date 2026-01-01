@@ -65,7 +65,7 @@ export default function ChannelsSidebar(props: ChannelsSidebarProps) {
           </div>
         ) : isLoading || loadingNewData ? (
           <LoadingSpinner fullScreen />
-        ) : !channels?.length || !newChannelsData ? (
+        ) : !channels?.length && !newChannelsData ? (
           <div className="flex flex-col items-center space-y-3 py-12 text-center text-gray-400">
             <div className="text-4xl opacity-40">📂</div>
             <p>No channels in this category</p>

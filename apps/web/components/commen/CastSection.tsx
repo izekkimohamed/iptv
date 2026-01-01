@@ -1,4 +1,4 @@
-import { User2, Users } from 'lucide-react';
+import { User } from 'lucide-react';
 import Image from 'next/image';
 import { FC } from 'react';
 
@@ -8,42 +8,38 @@ export const CastSection: FC<CastSectionProps> = ({ cast }) => {
   if (!cast || cast.length === 0) return null;
 
   return (
-    <div className="mt-16 space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="rounded-lg border border-blue-700 bg-blue-950 p-3">
-          <Users className="h-6 w-6 text-blue-400" />
-        </div>
-        <div>
-          <h2 className="text-3xl font-bold text-white">Cast</h2>
-          <p className="mt-1 text-sm text-slate-400">Featuring talented actors</p>
-        </div>
+    <section className="space-y-6 p-10">
+      <div className="flex items-center gap-4">
+        <div className="h-8 w-1 rounded-full bg-amber-500" />
+        <h2 className="text-2xl font-bold tracking-tight text-white">Top Cast</h2>
       </div>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
         {cast.slice(0, 12).map((actor, idx) => (
-          <div
-            key={`${actor.name}-${idx}`}
-            className="group overflow-hidden rounded-lg border border-white/10 bg-white/5 transition-all duration-300 hover:border-amber-500/50 hover:bg-white/10"
-          >
-            {actor.profilePath ? (
-              <div className="relative h-48 overflow-hidden bg-slate-800">
+          <div key={idx} className="group relative flex flex-col gap-3">
+            <div className="relative aspect-square overflow-hidden rounded-full border-2 border-transparent transition-all duration-300 group-hover:border-amber-500/50 group-hover:shadow-[0_0_20px_rgba(245,158,11,0.2)]">
+              {actor.profilePath ? (
                 <Image
                   src={actor.profilePath}
                   alt={actor.name}
                   fill
-                  className="object-cover transition-transform duration-300 group-hover:scale-110"
+                  className="object-cover transition-transform duration-500 group-hover:scale-110"
                 />
-              </div>
-            ) : (
-              <div className="flex h-48 items-center justify-center bg-linear-to-br from-slate-800 to-slate-900">
-                <User2 size={48} className="text-gray-600" />
-              </div>
-            )}
-            <p className="truncate bg-black/40 px-3 py-2 text-center text-xs font-medium text-gray-200">
-              {actor.name}
-            </p>
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-neutral-800 text-neutral-600">
+                  <User className="h-10 w-10" />
+                </div>
+              )}
+            </div>
+            <div className="text-center">
+              <p className="line-clamp-1 font-bold text-white transition-colors group-hover:text-amber-500">
+                {actor.name}
+              </p>
+              <p className="line-clamp-1 text-xs text-neutral-500">Character Name</p>
+            </div>
           </div>
         ))}
       </div>
-    </div>
+    </section>
   );
 };

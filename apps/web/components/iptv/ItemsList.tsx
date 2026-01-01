@@ -1,9 +1,10 @@
-import { Film, Play } from 'lucide-react';
+import { Check, Film, Play, Star } from 'lucide-react';
 import Image from 'next/image';
 import { useState } from 'react';
 
+import { cn } from '@/lib/utils';
 import { usePlaylistStore, useWatchedMoviesStore, useWatchedSeriesStore } from '@repo/store';
-import { cleanName } from '@repo/utils';
+import { cleanName } from '@repo/utils'; // Assuming cn exists in utils, if not standard clsx/tailwind-merge
 
 interface ItemsListProps {
   streamId: number;
@@ -16,33 +17,43 @@ interface ItemsListProps {
 
 function ItemsList(props: ItemsListProps) {
   const { image, title, rating, streamId, onMovieClick, itemType } = props;
+
+  // Logic
   const ratingValue = Number(rating).toFixed(1);
   const ratingNum = Number(ratingValue);
-  const [loaded, setLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
   const { selectedPlaylist } = usePlaylistStore();
   const { getProgress: getMovieProgress } = useWatchedMoviesStore();
   const { getProgress: getSeriesProgress } = useWatchedSeriesStore();
-  const type = itemType;
+
   const progressPct =
-    type === 'movie'
+    itemType === 'movie'
       ? (() => {
           const item = getMovieProgress(streamId, selectedPlaylist?.id || 0);
           if (!item || !item.duration) return 0;
           return Math.min(item.position / item.duration, 1);
         })()
-      : type === 'series'
+      : itemType === 'series'
         ? Math.min(getSeriesProgress(streamId, selectedPlaylist?.id || 0) || 0, 1)
         : 0;
 
-  // Determine rating tier
-  const isHighRated = ratingNum >= 8;
-  const isMediumRated = ratingNum >= 6 && ratingNum < 8;
+  // Visual Logic
+  const isHighRated = ratingNum >= 7.5;
+  const isAvgRated = ratingNum >= 5 && ratingNum < 7.5;
+
+  const ratingColor = isHighRated
+    ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/20'
+    : isAvgRated
+      ? 'text-amber-400 border-amber-500/30 bg-amber-500/20'
+      : 'text-rose-400 border-rose-500/30 bg-rose-500/20';
 
   return (
     <div
       key={streamId}
       onClick={onMovieClick}
-      className="group relative h-80 cursor-pointer overflow-hidden rounded-lg border border-slate-700 transition-all duration-300 hover:scale-105 hover:border-amber-500 hover:shadow-[0_16px_40px_-8px_rgba(245,158,11,0.3)]"
+      className="group relative aspect-[2/3] w-full cursor-pointer overflow-hidden rounded-xl bg-neutral-900 shadow-2xl transition-all duration-500 hover:shadow-[0_0_30px_-5px_rgba(245,158,11,0.3)] hover:ring-2 hover:ring-amber-500/50"
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
@@ -52,85 +63,76 @@ function ItemsList(props: ItemsListProps) {
         }
       }}
     >
-      {/* Background Poster Image */}
-      <div className="absolute inset-0 z-0">
-        {image && (image.startsWith('http') || image.startsWith('/')) ? (
-          <>
-            <Image
-              src={image}
-              alt={cleanName(title)}
-              fill
-              className="transition-all duration-500 group-hover:scale-105"
-              priority={false}
-              onLoad={() => setLoaded(true)}
-              onError={(e) => {
-                e.currentTarget.src = './icon.png';
-
-                e.currentTarget.height = 0;
-
-                e.currentTarget.width = 0;
-
-                e.currentTarget.style.display = 'none';
-
-                e.currentTarget.style.visibility = 'hidden';
-              }}
-            />
-
-            {!loaded && (
-              <div className="absolute inset-0 animate-pulse bg-linear-to-br from-slate-800 to-slate-900" />
+      {/* 1. IMAGE LAYER */}
+      <div className="absolute inset-0 h-full w-full">
+        {!imageError && image !== '' ? (
+          <Image
+            src={image}
+            alt={cleanName(title)}
+            fill
+            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
+            className={cn(
+              'object-cover transition-transform duration-700 ease-in-out group-hover:scale-110',
+              isLoading ? 'scale-105 blur-lg' : 'blur-0 scale-100',
             )}
-          </>
+            onLoad={() => setIsLoading(false)}
+            onError={() => setImageError(true)}
+          />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/2">
-            <Film className="h-12 w-12 text-white/10" />
-          </div>
-        )}
-      </div>
-
-      {/* Content Overlay */}
-      <div className="relative z-10 flex h-full flex-col p-2">
-        {/* Top Row: Rating & Play Status */}
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/40 px-3 py-1 backdrop-blur-md">
-            <span className="text-sm font-black text-white/90">
-              <span className="text-amber-400">{ratingValue}</span>{' '}
-              <span className="ml-0.5 font-bold text-white/40">IMDB</span>
+          <div className="flex h-full w-full flex-col items-center justify-center bg-neutral-800 text-neutral-600">
+            <Film className="h-12 w-12 opacity-20" />
+            <span className="mt-2 text-[10px] font-medium tracking-widest uppercase opacity-40">
+              No Poster
             </span>
           </div>
+        )}
 
-          {progressPct > 0 && (
-            <div className="flex items-center gap-1.5 rounded-full border border-green-500/30 bg-green-500/20 px-2 py-1">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
-              </span>
-              <span className="text-[9px] font-black tracking-tighter text-green-400 uppercase">
-                Resuming
-              </span>
+        {/* Loading Skeleton */}
+        {isLoading && <div className="absolute inset-0 animate-pulse bg-neutral-800/50" />}
+      </div>
+
+      {/* 2. OVERLAY GRADIENT (Cinematic Darkening) */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-60 transition-opacity duration-300 group-hover:via-black/40 group-hover:opacity-80" />
+
+      {/* 3. HOVER PLAY BUTTON CENTER */}
+      <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-all duration-300 group-hover:opacity-100">
+        <div className="flex h-16 w-16 scale-50 items-center justify-center rounded-full bg-amber-500/90 text-white shadow-[0_0_30px_rgba(245,158,11,0.6)] backdrop-blur-sm transition-all duration-300 group-hover:scale-100 hover:bg-amber-400">
+          <Play className="ml-1 h-7 w-7 fill-current" />
+        </div>
+      </div>
+
+      {/* 4. CONTENT INFO (Bottom) */}
+      <div className="absolute bottom-0 left-0 w-full p-4">
+        <h3 className="line-clamp-2 text-lg leading-tight font-bold text-white drop-shadow-md transition-colors group-hover:text-amber-400">
+          {cleanName(title)}
+        </h3>
+
+        <div className="mt-2 flex items-center justify-between">
+          {/* Rating Badge */}
+          <div
+            className={cn(
+              'flex items-center gap-1.5 rounded-md border px-2 py-1 backdrop-blur-md',
+              ratingColor,
+            )}
+          >
+            <Star className="h-3 w-3 fill-current" />
+            <span className="text-xs font-bold">{ratingValue}</span>
+          </div>
+
+          {/* Watched Status (Small Checkmark if completed, else nothing) */}
+          {progressPct >= 0.9 && (
+            <div className="flex items-center gap-1 text-[10px] font-bold tracking-wider text-emerald-400 uppercase">
+              <Check className="h-3 w-3" /> Watched
             </div>
           )}
         </div>
-
-        {/* Center: Play Icon (Visible on Hover) */}
-        <div className="flex flex-1 items-center justify-center">
-          <div className="flex h-12 w-12 scale-75 transform items-center justify-center rounded-full border border-white/20 bg-white/10 opacity-0 backdrop-blur-xl transition-all duration-300 group-hover:scale-100 group-hover:opacity-100">
-            <Play className="ml-0.5 h-5 w-5 fill-white text-white" />
-          </div>
-        </div>
-
-        {/* Bottom: Info */}
-        <div className="space-y-3">
-          <h3 className="line-clamp-2 text-center text-sm leading-tight font-bold text-white drop-shadow-md">
-            {cleanName(title)}
-          </h3>
-        </div>
       </div>
 
-      {/* Progress Bar (Matches the "Live Clock" green accent style) */}
-      {progressPct > 0 && (
-        <div className="absolute bottom-0 left-0 h-1 w-full bg-white/5">
+      {/* 5. PROGRESS BAR (Integrated at bottom) */}
+      {progressPct > 0 && progressPct < 0.9 && (
+        <div className="absolute bottom-0 left-0 h-1 w-full bg-white/10 backdrop-blur-sm">
           <div
-            className="h-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] transition-all duration-500"
+            className="h-full bg-gradient-to-r from-amber-600 to-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.5)]"
             style={{ width: `${progressPct * 100}%` }}
           />
         </div>

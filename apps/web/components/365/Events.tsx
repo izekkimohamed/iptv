@@ -39,7 +39,7 @@ export function EventIcon({ type, color, size = 14 }: EventIconProps) {
       return (
         <div className="relative">
           <div className="absolute -inset-1 animate-pulse rounded-sm opacity-30 blur-sm" />
-          <RectangleVertical size={size} color={color} fill={color} className="relative drop-" />
+          <RectangleVertical size={size} color={color} fill={color} className="drop- relative" />
         </div>
       );
     }
@@ -52,7 +52,7 @@ export function EventIcon({ type, color, size = 14 }: EventIconProps) {
             size={size}
             color={color}
             fill={color}
-            className="relative animate-pulse drop-"
+            className="drop- relative animate-pulse"
             style={{ animationDuration: '2s' }}
           />
         </div>
@@ -97,16 +97,6 @@ export function EventTimeline({ match }: EventTimelineProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-center gap-3">
-        <div className="h-px flex-1 bg-linear-to-r from-transparent to-white/10" />
-        <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 backdrop-blur-sm">
-          <Clock className="h-3.5 w-3.5 text-white/60" />
-          <span className="text-[10px] font-extrabold tracking-[0.2em] text-white/60 uppercase">
-            Match Timeline
-          </span>
-        </div>
-        <div className="h-px flex-1 bg-linear-to-l from-transparent to-white/10" />
-      </div>
 
       {filteredEvents.length === 0 ? (
         <div className="flex flex-col items-center gap-4 py-16">
@@ -155,7 +145,7 @@ export function EventTimeline({ match }: EventTimelineProps) {
                   }`}
                 >
                   <div
-                    className={`group relative flex items-center gap-3 rounded-2xl  border-white/10 px-5 py-3 backdrop-blur-sm`}
+                    className={`group relative flex items-center gap-3 rounded-2xl border-white/10 px-5 py-3 backdrop-blur-sm`}
                   >
                     {isHome ? (
                       <>
@@ -168,7 +158,7 @@ export function EventTimeline({ match }: EventTimelineProps) {
                       </>
                     ) : (
                       <>
-                        <div className="relative flex gap-5 items-start">
+                        <div className="relative flex items-start gap-5">
                           <span className="text-sm font-bold text-white">
                             {getPlayerName(event.playerId)}
                           </span>
@@ -184,7 +174,7 @@ export function EventTimeline({ match }: EventTimelineProps) {
                   <div className="relative">
                     {/* Badge */}
                     <div
-                      className="relative flex h-11 w-11 items-center justify-center rounded-full border-2 bg-[#0f0f0f] "
+                      className="relative flex h-11 w-11 items-center justify-center rounded-full border-2 bg-[#0f0f0f]"
                       style={{ borderColor: eventColor }}
                     >
                       <span

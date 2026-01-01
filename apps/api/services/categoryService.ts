@@ -62,7 +62,6 @@ export async function insertMissingCategories(
 ) {
   if (categoriesToCreate.length === 0) return;
 
-  const db = getDb();
   await batchInsert(categories, categoriesToCreate, {
     chunkSize: 3000,
     concurrency: 5,
