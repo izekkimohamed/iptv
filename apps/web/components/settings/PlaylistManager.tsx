@@ -111,7 +111,7 @@ const PlaylistManager = ({
                   )}
                 </div>
 
-                <div className="space-y-2">
+                <div>
                   <div className="flex items-center gap-2">
                     <span
                       className={cn(
@@ -123,14 +123,11 @@ const PlaylistManager = ({
                     </span>
                     {isActive && <CheckCircle2 className="h-3 w-3 text-amber-500" />}
                   </div>
-
-                  <div className="flex max-w-50 flex-col gap-1 font-mono text-[11px] text-neutral-500">
-                    <span className="font-bold text-slate-300">Created At: </span>
-                    <span>{new Date(p.createdAt).toLocaleString()}</span>
+                  <div className="max-w-50 truncate font-mono text-[11px] text-neutral-500">
+                    {new URL(p.baseUrl).hostname}
                   </div>
-                  <div className="flex max-w-50 flex-col gap-1 font-mono text-[11px] text-neutral-500">
-                    <span className="font-bold text-slate-300">Last Updated: </span>
-                    <span>{new Date(p.updatedAt).toLocaleString()}</span>
+                  <div className="max-w-50 truncate font-mono text-[11px] text-neutral-500">
+                    {new Date(p.updatedAt).toLocaleString()}
                   </div>
                 </div>
               </div>
