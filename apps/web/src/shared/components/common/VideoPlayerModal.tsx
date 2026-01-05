@@ -2,7 +2,7 @@ import { X } from 'lucide-react';
 import { FC } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { VideoPlayer } from '@/features/player/components/VideoPlayer';
+import VideoPlayer from '@/features/player/components/VideoPlayer';
 import { VideoPlayerModalProps } from '@/lib/types';
 
 type EnhancedProps = VideoPlayerModalProps & {

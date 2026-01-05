@@ -53,7 +53,7 @@ function ItemsList(props: ItemsListProps) {
     <div
       key={streamId}
       onClick={onMovieClick}
-      className="group relative aspect-[2/3] w-full cursor-pointer overflow-hidden rounded-xl bg-neutral-900 shadow-2xl transition-all duration-500 hover:shadow-[0_0_30px_-5px_rgba(245,158,11,0.3)] hover:ring-2 hover:ring-amber-500/50"
+      className="group relative aspect-2/3 w-full cursor-pointer overflow-hidden rounded-xl bg-neutral-900 shadow-2xl transition-all duration-500 hover:shadow-[0_0_30px_-5px_rgba(245,158,11,0.3)] hover:ring-2 hover:ring-amber-500/50"
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
@@ -70,7 +70,7 @@ function ItemsList(props: ItemsListProps) {
             src={image}
             alt={cleanName(title)}
             fill
-            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
+            sizes="20vw"
             className={cn(
               'object-cover transition-transform duration-700 ease-in-out group-hover:scale-110',
               isLoading ? 'scale-105 blur-lg' : 'blur-0 scale-100',

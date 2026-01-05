@@ -1,4 +1,4 @@
-import { formatTime } from '@vidstack/react';
+import { cn } from '@/lib/utils'; // Assuming you have a class merger
 import {
   Expand,
   Maximize,
@@ -6,20 +6,17 @@ import {
   Minimize,
   MoveHorizontal,
   Pause,
+  PictureInPicture,
   Play,
+  Settings,
   SkipBack,
   SkipForward,
+  Volume1,
   Volume2,
   VolumeX,
+  X,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-
-import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import { cn } from '@/lib/utils';
-
-import { cleanName } from '@repo/utils';
-import { AspectRatio } from './VideoPlayer';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface CustomControlsProps {
   currentTime: number;
@@ -29,9 +26,12 @@ interface CustomControlsProps {
   buffered: number;
   volume: number;
   isMuted: boolean;
-  aspectRatio: AspectRatio;
+  aspectRatio: '16:9' | '4:3' | '1:1';
   playbackRate?: number;
   title: string;
+  hasNext?: boolean;
+  hasPrev?: boolean;
+
   onPlayPause: () => void;
   onSeek: (time: number) => void;
   onVolumeChange: (volume: number) => void;
@@ -39,19 +39,36 @@ interface CustomControlsProps {
   onToggleFullscreen: () => void;
   onNext?: () => void;
   onPrev?: () => void;
-  hasNext?: boolean;
-  hasPrev?: boolean;
   onToggleAspectRatio?: () => void;
   onRateIncrease?: () => void;
   onRateDecrease?: () => void;
   onTogglePiP?: () => void;
 }
 
+const formatTime = (seconds: number, padHrs: boolean = false): string => {
+  if (!Number.isFinite(seconds)) return '0:00';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (padHrs && h > 0) {
+    return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  }
+  return `${m}:${s.toString().padStart(2, '0')}`;
+};
+
 const aspectRatioIcon = {
-  '16:9': <Maximize2 className="h-5 w-5 fill-white text-white" />,
-  '4:3': <Expand className="h-5 w-5 fill-white text-white" />,
-  '1:1': <MoveHorizontal className="h-5 w-5 fill-white text-white" />,
-} as const;
+  '16:9': <Maximize2 className="h-5 w-5" />,
+  '4:3': <Expand className="h-5 w-5" />,
+  '1:1': <MoveHorizontal className="h-5 w-5" />,
+};
+
+const VolumeIcon = ({ volume, isMuted }: { volume: number; isMuted: boolean }) => {
+  if (isMuted || volume === 0) return <VolumeX className="h-6 w-6" />;
+  if (volume > 0.5) return <Volume2 className="h-6 w-6" />;
+  return <Volume1 className="h-6 w-6" />;
+};
+
+const speedOptions = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
 export function CustomControls({
   currentTime,
@@ -72,249 +89,334 @@ export function CustomControls({
   onToggleAspectRatio,
   aspectRatio,
   title,
-  playbackRate,
+  playbackRate = 1,
   onRateIncrease,
   onRateDecrease,
   onTogglePiP,
+  buffered,
 }: CustomControlsProps) {
-  const [showHelp, setShowHelp] = useState(false);
-  const [isDraggingSlider, setIsDraggingSlider] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [hoverTime, setHoverTime] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isDraggingVolume, setIsDraggingVolume] = useState(false);
   const [isControlsVisible, setIsControlsVisible] = useState(true);
+
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const progressBarRef = useRef<HTMLDivElement>(null);
+  const volumeBarRef = useRef<HTMLDivElement>(null);
 
-  const scheduleHideControls = () => {
-    if (hideTimeoutRef.current) {
-      clearTimeout(hideTimeoutRef.current);
-    }
+  const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : 0;
+  const displayTime = isDragging ? hoverTime : currentTime;
 
+  // --- Interaction Handlers ---
+
+  const scheduleHideControls = useCallback(() => {
+    if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
     setIsControlsVisible(true);
-
-    if (isFullscreen && isPlaying && !isDraggingSlider) {
-      hideTimeoutRef.current = setTimeout(() => {
-        setIsControlsVisible(false);
-      }, 3000);
+    if (isFullscreen && isPlaying && !isDragging && !isDraggingVolume && !showSettings) {
+      hideTimeoutRef.current = setTimeout(() => setIsControlsVisible(false), 3000);
     }
-  };
+  }, [isFullscreen, isPlaying, isDragging, isDraggingVolume, showSettings]);
 
-  const handleMouseMove = () => {
+  const handleMouseMove = useCallback(() => {
     scheduleHideControls();
+  }, [scheduleHideControls]);
+
+  // --- Progress Bar Logic ---
+
+  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!progressBarRef.current) return;
+    const rect = progressBarRef.current.getBoundingClientRect();
+    const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    onSeek(percent * safeDuration);
   };
 
-  const handleSliderChange = (value: number[]) => {
-    onSeek(value[0]);
+  const handleProgressHover = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!progressBarRef.current) return;
+    const rect = progressBarRef.current.getBoundingClientRect();
+    const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    setHoverTime(percent * safeDuration);
   };
+
+  // --- Volume Slider Logic (Visual Match) ---
+
+  const handleVolumeInteract = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!volumeBarRef.current) return;
+    const rect = volumeBarRef.current.getBoundingClientRect();
+    const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    onVolumeChange(percent);
+  };
+
+  const handleVolumeMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isDraggingVolume) handleVolumeInteract(e);
+  };
+
+  // --- Effects ---
+
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      setIsDragging(false);
+      setIsDraggingVolume(false);
+    };
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, []);
 
   useEffect(() => {
     if (isFullscreen) {
       window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('click', handleMouseMove);
       scheduleHideControls();
     } else {
       window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('click', handleMouseMove);
       setIsControlsVisible(true);
-      if (hideTimeoutRef.current) {
-        clearTimeout(hideTimeoutRef.current);
-      }
     }
-
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('click', handleMouseMove);
-      if (hideTimeoutRef.current) {
-        clearTimeout(hideTimeoutRef.current);
-      }
+      if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
     };
-  }, [isFullscreen, isPlaying, isDraggingSlider]);
+  }, [isFullscreen, handleMouseMove, scheduleHideControls]);
+
+  const buttonBaseClass =
+    'rounded-lg p-2 text-white/90 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed active:scale-95';
 
   return (
     <div
-      className={`absolute bottom-0 left-0 z-10 flex w-full flex-col gap-3 bg-linear-to-t from-black/80 to-transparent px-4 py-3 transition-opacity duration-300`}
-      style={{
-        opacity: isControlsVisible ? 1 : 0,
-        pointerEvents: isControlsVisible || isDraggingSlider ? 'auto' : 'none',
-      }}
+      className={cn(
+        'absolute bottom-0 left-0 z-40 flex w-full flex-col gap-3 p-4 transition-all duration-300',
+        'bg-linear-to-t from-black/90 via-black/60 to-transparent',
+        !isControlsVisible && !showSettings
+          ? 'pointer-events-none opacity-0'
+          : 'pointer-events-auto opacity-100',
+      )}
+      onMouseMove={handleMouseMove}
     >
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-medium whitespace-nowrap text-white">
-          {formatTime(currentTime, {
-            padHrs: true,
-            padMins: true,
-          })}
+      {/* 1. Progress Bar Row */}
+      <div className="flex items-center gap-4 select-none">
+        <span className="min-w-11.25 text-right text-xs font-medium text-white/90 tabular-nums">
+          {formatTime(displayTime, safeDuration > 3600)}
         </span>
-        <Slider
-          value={[currentTime]}
-          onValueChange={handleSliderChange}
-          onPointerDown={() => {
-            setIsDraggingSlider(true);
-            if (hideTimeoutRef.current) {
-              clearTimeout(hideTimeoutRef.current);
-            }
-          }}
-          onPointerUp={() => {
-            setIsDraggingSlider(false);
-            scheduleHideControls();
-          }}
-          max={duration || 0}
-          min={0}
-          step={0.1}
-          className="flex-1"
-        />
-        <span className="text-xs font-medium whitespace-nowrap text-white">
-          {formatTime(duration, {
-            padHrs: true,
-            padMins: true,
-          })}
-        </span>
-      </div>
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center justify-between gap-2">
-          <Button
-            size={'icon-lg'}
-            onClick={onPlayPause}
-            className="rounded-lg bg-transparent p-2 transition-colors hover:bg-amber-400/30"
-            title={isPlaying ? 'Pause' : 'Play'}
+
+        <div
+          ref={progressBarRef}
+          className="group relative h-1.5 flex-1 cursor-pointer touch-none overflow-hidden rounded-full bg-white/20 transition-all select-none hover:h-2.5"
+          onMouseDown={() => setIsDragging(true)}
+          onMouseMove={handleProgressHover}
+          onMouseLeave={() => setHoverTime(0)}
+          onClick={handleProgressClick}
+        >
+          {/* Buffered */}
+          <div
+            className="absolute top-0 left-0 h-full rounded-full bg-white/30"
+            style={{ width: `${safeDuration > 0 ? (buffered / safeDuration) * 100 : 0}%` }}
+          />
+
+          {/* Current */}
+          <div
+            className="absolute top-0 left-0 h-full rounded-full bg-amber-500"
+            style={{ width: `${safeDuration > 0 ? (displayTime / safeDuration) * 100 : 0}%` }}
           >
-            {isPlaying ? (
-              <Pause className="h-5 w-5 fill-white text-white" />
-            ) : (
-              <Play className="h-5 w-5 fill-white text-white" />
-            )}
-          </Button>
-          <div className="flex items-center gap-2">
-            <Button
-              size={'icon-lg'}
-              onClick={onToggleMute}
-              className="rounded-lg bg-transparent p-2 transition-colors hover:bg-amber-400/30"
-              title={isMuted ? 'Unmute' : 'Mute'}
-            >
-              {isMuted || volume === 0 ? (
-                <VolumeX className="h-5 w-5 text-white" />
-              ) : (
-                <Volume2 className="h-5 w-5 text-white" />
-              )}
-            </Button>
-            <div className="flex w-24 items-center gap-2">
-              <Slider
-                value={[isMuted ? 0 : volume]}
-                onValueChange={(value) => onVolumeChange(value[0])}
-                max={1}
-                min={0}
-                step={0.01}
-                className="w-full"
-              />
-            </div>
+            {/* Handle Endpoint */}
+            <div className="absolute top-1/2 right-0 h-3.5 w-3.5 translate-x-1/2 -translate-y-1/2 rounded-full bg-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100" />
           </div>
-          {onPrev && (
-            <Button
-              disabled={!hasPrev}
-              size={'icon-lg'}
-              onClick={onPrev}
-              className={cn(
-                'rounded-lg bg-transparent p-2 transition-colors hover:bg-amber-400/30',
-                !hasPrev && 'cursor-not-allowed',
-              )}
-              title="Next"
+
+          {/* Hover Ghost */}
+          <div
+            className="pointer-events-none absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/50 opacity-0 group-hover:opacity-100"
+            style={{ left: `${safeDuration > 0 ? (hoverTime / safeDuration) * 100 : 0}%` }}
+          />
+
+          {/* Timestamp Tooltip */}
+          {hoverTime > 0 && (
+            <div
+              className="absolute bottom-full mb-3 -translate-x-1/2 rounded-md border border-white/10 bg-black/80 px-2 py-1 text-xs font-bold text-white shadow-sm backdrop-blur-md"
+              style={{ left: `${safeDuration > 0 ? (hoverTime / safeDuration) * 100 : 0}%` }}
             >
-              <SkipBack className="h-5 w-5 fill-white text-white" />
-            </Button>
-          )}
-          {onNext && (
-            <Button
-              disabled={!hasNext}
-              size={'icon-lg'}
-              onClick={onNext}
-              className={cn(
-                'rounded-lg bg-transparent p-2 transition-colors hover:bg-amber-400/30',
-                !hasNext && 'cursor-not-allowed',
-              )}
-              title="Next"
-            >
-              <SkipForward className="h-5 w-5 fill-white text-white" />
-            </Button>
-          )}
-          {title && (
-            <span className="font-medium whitespace-nowrap text-white">{cleanName(title)}</span>
+              {formatTime(hoverTime, safeDuration > 3600)}
+            </div>
           )}
         </div>
 
-        <div className="flex items-center justify-between gap-2">
-          {onToggleAspectRatio && (
-            <Button
-              size={'icon-lg'}
-              onClick={onToggleAspectRatio}
-              className="rounded-lg bg-transparent p-2 transition-colors hover:bg-amber-400/30"
-              title="Toggle Aspect Ratio"
-            >
-              {aspectRatioIcon[aspectRatio]}
-            </Button>
-          )}
-          {onTogglePiP && (
-            <Button
-              size={'sm'}
-              onClick={onTogglePiP}
-              className="rounded-lg bg-transparent px-3 py-2 text-white transition-colors hover:bg-amber-400/30"
-              title="Picture-in-Picture"
-            >
-              PiP
-            </Button>
-          )}
-          <Button
-            size={'sm'}
-            onClick={() => setShowHelp((s) => !s)}
-            className="rounded-lg bg-transparent px-3 py-2 text-white transition-colors hover:bg-amber-400/30"
-            title="Shortcuts Help"
-          >
-            ?
-          </Button>
-          {(onRateIncrease || onRateDecrease) && (
-            <div className="flex items-center gap-2">
-              <Button
-                size={'sm'}
-                onClick={onRateDecrease}
-                className="rounded-lg bg-transparent px-3 py-2 text-white transition-colors hover:bg-amber-400/30"
-                title="Decrease Speed"
-              >
-                −
-              </Button>
-              <span className="text-sm text-white">{(playbackRate ?? 1).toFixed(2)}x</span>
-              <Button
-                size={'sm'}
-                onClick={onRateIncrease}
-                className="rounded-lg bg-transparent px-3 py-2 text-white transition-colors hover:bg-amber-400/30"
-                title="Increase Speed"
-              >
-                +
-              </Button>
+        <span className="min-w-11.25 text-xs font-medium text-white/90 tabular-nums">
+          {formatTime(safeDuration, safeDuration > 3600)}
+        </span>
+      </div>
+
+      {/* 2. Controls Row */}
+      <div className="flex items-center justify-between">
+        {/* LEFT: Playback & Volume */}
+        <div className="flex items-center gap-1 md:gap-2">
+          <button onClick={onPlayPause} className={buttonBaseClass} title="Play/Pause">
+            {isPlaying ? (
+              <Pause className="h-6 w-6 fill-current" />
+            ) : (
+              <Play className="h-6 w-6 fill-current" />
+            )}
+          </button>
+
+          {(onPrev || onNext) && (
+            <div className="hidden items-center sm:flex">
+              {onPrev && (
+                <button
+                  onClick={onPrev}
+                  disabled={!hasPrev}
+                  className={buttonBaseClass}
+                  title="Previous"
+                >
+                  <SkipBack className="h-5 w-5" />
+                </button>
+              )}
+              {onNext && (
+                <button
+                  onClick={onNext}
+                  disabled={!hasNext}
+                  className={buttonBaseClass}
+                  title="Next"
+                >
+                  <SkipForward className="h-5 w-5" />
+                </button>
+              )}
             </div>
           )}
-          <Button
-            size={'icon-lg'}
-            onClick={onToggleFullscreen}
-            className="rounded-lg bg-transparent p-2 transition-colors hover:bg-amber-500/30"
-            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-          >
-            {isFullscreen ? (
-              <Minimize className="h-5 w-5 fill-white text-white" />
-            ) : (
-              <Maximize className="h-5 w-5 fill-white text-white" />
+
+          {/* Custom Volume Control */}
+          <div className="group/vol relative ml-2 flex items-center">
+            <button onClick={onToggleMute} className={buttonBaseClass}>
+              <VolumeIcon volume={volume} isMuted={isMuted} />
+            </button>
+
+            <div
+              ref={volumeBarRef}
+              className="relative ml-2 h-1.5 w-0 cursor-pointer rounded-full bg-white/20 opacity-0 transition-all duration-300 group-focus-within/vol:w-20 group-focus-within/vol:opacity-100 group-hover/vol:w-20 group-hover/vol:opacity-100"
+              onMouseDown={() => setIsDraggingVolume(true)}
+              onMouseMove={handleVolumeMouseMove}
+              onClick={handleVolumeInteract}
+            >
+              <div
+                className="absolute top-0 left-0 h-full rounded-full bg-amber-500"
+                style={{ width: `${isMuted ? 0 : volume * 100}%` }}
+              />
+              <div
+                className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white opacity-0 shadow-md group-hover/vol:opacity-100"
+                style={{ left: `${isMuted ? 0 : volume * 100}%` }}
+              />
+            </div>
+          </div>
+
+          {title && (
+            <span className="ml-4 hidden max-w-[200px] truncate text-sm font-medium text-white/90 md:block">
+              {title}
+            </span>
+          )}
+        </div>
+
+        {/* RIGHT: Tools & Screen */}
+        <div className="flex items-center gap-1 md:gap-2">
+          {/* Desktop Only Tools */}
+          <div className="hidden items-center gap-1 md:flex">
+            {onToggleAspectRatio && (
+              <button
+                onClick={onToggleAspectRatio}
+                className={buttonBaseClass}
+                title="Aspect Ratio"
+              >
+                {aspectRatioIcon[aspectRatio]}
+              </button>
             )}
-          </Button>
+            {onTogglePiP && (
+              <button onClick={onTogglePiP} className={buttonBaseClass} title="Picture in Picture">
+                <PictureInPicture className="h-5 w-5" />
+              </button>
+            )}
+          </div>
+
+          {/* Settings Menu */}
+          <div className="relative">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowSettings(!showSettings);
+              }}
+              className={cn(buttonBaseClass, showSettings && 'bg-white/10 text-white')}
+              title="Settings"
+            >
+              <Settings className="h-5 w-5" />
+            </button>
+
+            {showSettings && (
+              <div
+                className="animate-in slide-in-from-bottom-2 fade-in absolute right-0 bottom-full z-50 mb-4 w-64 rounded-xl border border-white/10 bg-black/95 p-4 shadow-2xl backdrop-blur-md"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="mb-3 flex items-center justify-between border-b border-white/10 pb-2">
+                  <span className="text-sm font-bold text-white">Settings</span>
+                  <button
+                    onClick={() => setShowSettings(false)}
+                    className="text-white/50 hover:text-white"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                {/* Mobile: Extra Tools inside settings */}
+                <div className="mb-4 space-y-3 md:hidden">
+                  {onToggleAspectRatio && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-white/70">Aspect Ratio</span>
+                      <button
+                        onClick={onToggleAspectRatio}
+                        className="rounded bg-white/10 px-2 py-1 text-xs text-amber-400"
+                      >
+                        {aspectRatio}
+                      </button>
+                    </div>
+                  )}
+                  {onTogglePiP && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-white/70">Picture in Picture</span>
+                      <button
+                        onClick={onTogglePiP}
+                        className="rounded bg-white/10 px-2 py-1 text-xs text-white hover:bg-white/20"
+                      >
+                        Toggle
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <span className="text-xs font-medium text-white/60 uppercase">
+                    Playback Speed
+                  </span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {speedOptions.map((speed) => (
+                      <button
+                        key={speed}
+                        onClick={() => {
+                          if (speed > playbackRate) onRateIncrease?.();
+                          else if (speed < playbackRate) onRateDecrease?.();
+                          // Ideally set exact rate if supported
+                        }}
+                        className={cn(
+                          'rounded py-1.5 text-xs font-medium transition-colors',
+                          Math.abs(playbackRate - speed) < 0.1
+                            ? 'bg-amber-500 text-black'
+                            : 'bg-white/10 text-white hover:bg-white/20',
+                        )}
+                      >
+                        {speed}x
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <button onClick={onToggleFullscreen} className={buttonBaseClass} title="Fullscreen">
+            {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
+          </button>
         </div>
       </div>
-      {showHelp && (
-        <div className="absolute right-4 bottom-20 max-w-xs space-y-1 rounded-lg border border-white/10 bg-black/80 p-3 text-xs text-white backdrop-blur-md">
-          <div className="mb-1 font-semibold text-amber-300">Shortcuts</div>
-          <div>Space: Play/Pause</div>
-          <div>M: Mute/Unmute</div>
-          <div>F: Fullscreen</div>
-          <div>P: Picture-in-Picture</div>
-          <div>+: Increase Speed</div>
-          <div>-: Decrease Speed</div>
-          <div>←/→: Seek 5s</div>
-          <div>N/B: Next/Prev Episode (Series)</div>
-        </div>
-      )}
     </div>
   );
 }

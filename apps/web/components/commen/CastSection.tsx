@@ -35,7 +35,7 @@ export const CastSection: FC<CastSectionProps> = ({ cast }) => {
               <p className="line-clamp-1 font-bold text-white transition-colors group-hover:text-amber-500">
                 {actor.name}
               </p>
-              <p className="line-clamp-1 text-xs text-neutral-500">Character Name</p>
+              {/* <p className="line-clamp-1 text-xs text-neutral-500">{actor.}/p> */}
             </div>
           </div>
         ))}

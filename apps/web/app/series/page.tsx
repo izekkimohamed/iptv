@@ -66,14 +66,14 @@ export default function SeriesPage() {
     router.push(`?${params.toString()}`);
   };
   return (
-    <div className="flex flex-1 overflow-y-auto">
+    <div className="flex h-full">
       <CategoriesSidebar
         categories={categories}
         isLoading={isLoading}
         selectedCategoryId={selectedCategoryId}
         categoryType="series"
       />
-      <div className="flex-1 overflow-y-auto">
+      <div className="h-full w-full overflow-y-auto pb-20">
         {serieError && (
           <EmptyState
             icon="📺"
@@ -107,7 +107,7 @@ export default function SeriesPage() {
         )}
 
         {series && !isFetchingSeries && !isFetchingSerie && !serieId && (
-          <div className="min-h-full bg-linear-to-b from-slate-900/40 to-slate-950">
+          <div className="h-full bg-linear-to-b from-slate-900/40 to-slate-950">
             <VirtualGrid
               className="h-full p-5"
               items={series}
@@ -121,9 +121,7 @@ export default function SeriesPage() {
                   itemType="series"
                 />
               )}
-              minItemWidth={230}
-              estimateItemHeight={360}
-              gapClassName="gap-3"
+              gapClassName="gap-5"
             />
           </div>
         )}
@@ -134,7 +132,7 @@ export default function SeriesPage() {
           !loadingNewData &&
           !isFetchingSerie &&
           !serieId && (
-            <div className="min-h-full bg-linear-to-b from-slate-900/40 to-slate-950">
+            <div className="h-full bg-linear-to-b from-slate-900/40 to-slate-950">
               <VirtualGrid
                 className="h-full p-5"
                 items={newSeriesData}
@@ -148,8 +146,6 @@ export default function SeriesPage() {
                     itemType="series"
                   />
                 )}
-                minItemWidth={230}
-                estimateItemHeight={360}
                 gapClassName="gap-3"
               />
             </div>

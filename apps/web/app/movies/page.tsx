@@ -106,7 +106,7 @@ export default function MoviesPage() {
           />
         )}
         {movies && !isFetchingMovies && !isFetchingMovie && !movieId && (
-          <div className="min-h-full bg-linear-to-b from-slate-900/40 to-slate-950">
+          <div className="h-full bg-linear-to-b from-slate-900/40 to-slate-950">
             <VirtualGrid
               className="h-full p-5"
               items={movies}
@@ -120,14 +120,12 @@ export default function MoviesPage() {
                   itemType="movie"
                 />
               )}
-              minItemWidth={230}
-              estimateItemHeight={360}
               gapClassName="gap-3"
             />
           </div>
         )}
         {newMoviesData && !movies && !isFetchingMovies && !isFetchingMovie && !movieId && (
-          <div className="min-h-full bg-linear-to-b from-slate-900/40 to-slate-950">
+          <div className="h-full bg-linear-to-b from-slate-900/40 to-slate-950">
             <VirtualGrid
               className="h-full p-5"
               items={newMoviesData}
@@ -141,8 +139,6 @@ export default function MoviesPage() {
                   itemType="movie"
                 />
               )}
-              minItemWidth={230}
-              estimateItemHeight={360}
               gapClassName="gap-3"
             />
           </div>

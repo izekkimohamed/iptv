@@ -16,29 +16,28 @@ type VirtualGridProps<T> = {
 export default function VirtualGrid<T>({
   items,
   renderItem,
-  minItemWidth = 230,
+  minItemWidth = 180,
   gapClassName = 'gap-3',
-  estimateItemHeight = 360,
+  estimateItemHeight = 200,
   className,
   itemKey,
 }: VirtualGridProps<T>) {
   const parentRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState<number>(0);
 
-  // Debounced resize handler to prevent excessive re-renders
+  // Resize Observer logic...
   useEffect(() => {
     if (!parentRef.current) return;
-
     let timeoutId: NodeJS.Timeout;
     const ro = new ResizeObserver((entries) => {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         const entry = entries[0];
-        const width = entry.contentRect.width;
-        setContainerWidth(width);
-      }, 16); // ~60fps
+        if (entry) {
+          setContainerWidth(entry.contentRect.width);
+        }
+      }, 16);
     });
-
     ro.observe(parentRef.current);
     return () => {
       clearTimeout(timeoutId);
@@ -46,14 +45,14 @@ export default function VirtualGrid<T>({
     };
   }, []);
 
-  // Memoize column and row calculations
+  // Calculate columns
   const { columnCount, rowCount } = useMemo(() => {
-    const cols = Math.max(2, Math.floor(containerWidth / minItemWidth));
+    if (containerWidth === 0) return { columnCount: 1, rowCount: 0 };
+    const cols = Math.max(1, Math.floor(containerWidth / minItemWidth)); // Ensure at least 1 col
     const rows = Math.ceil(items.length / cols);
     return { columnCount: cols, rowCount: rows };
   }, [containerWidth, minItemWidth, items.length]);
 
-  // Memoize virtualizer config
   const getScrollElement = useCallback(() => parentRef.current, []);
   const estimateSize = useCallback(() => estimateItemHeight, [estimateItemHeight]);
 
@@ -61,10 +60,10 @@ export default function VirtualGrid<T>({
     count: rowCount,
     getScrollElement,
     estimateSize,
-    overscan: 3, // Reduced from 5 for better performance
+    overscan: 3,
   });
 
-  // Pre-calculate rows data structure
+  // Pre-calculate data slices
   const rows = useMemo(() => {
     return Array.from({ length: rowCount }, (_, rowIndex) => {
       const start = rowIndex * columnCount;
@@ -73,26 +72,19 @@ export default function VirtualGrid<T>({
     });
   }, [rowCount, columnCount, items.length]);
 
-  // Memoize grid columns style
-  const gridColumnsStyle = useMemo(
-    () => ({ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }),
-    [columnCount],
-  );
-
-  // Memoize virtual items to prevent unnecessary recalculations
   const virtualItems = virtualizer.getVirtualItems();
 
   return (
     <div
       ref={parentRef}
       className={className}
-      style={{ height: '100%', overflow: 'auto', willChange: 'transform' }}
+      style={{ height: '100%', overflowY: 'auto', contain: 'strict' }}
     >
       <div
         style={{
           height: virtualizer.getTotalSize(),
           position: 'relative',
-          contain: 'layout style paint', // CSS containment for better performance
+          width: '100%',
         }}
       >
         {virtualItems.map((virtualRow) => {
@@ -102,15 +94,19 @@ export default function VirtualGrid<T>({
           return (
             <div
               key={virtualRow.key}
+              data-index={virtualRow.index} // 1. Important: Index for the measurer
+              ref={virtualizer.measureElement} // 2. Critical Fix: Allows dynamic height measurement
               className={`grid ${gapClassName}`}
               style={{
-                ...gridColumnsStyle,
+                display: 'grid',
+                gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
                 position: 'absolute',
                 top: 0,
                 left: 0,
                 width: '100%',
                 transform: `translateY(${virtualRow.start}px)`,
-                willChange: 'transform',
+                // Add padding bottom to simulate vertical gap since we are absolute positioning
+                paddingBottom: '12px',
               }}
             >
               {rowItems.map((item, i) => {
