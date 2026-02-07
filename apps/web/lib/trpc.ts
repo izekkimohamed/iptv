@@ -1,14 +1,15 @@
 import { QueryClient } from '@tanstack/react-query';
-import { CreateTRPCReact, createTRPCReact, httpBatchLink } from '@trpc/react-query';
+import { createTRPCReact, httpBatchLink } from '@trpc/react-query';
+import superjson from 'superjson';
 
-import { AppRouter } from '../../api/lib/router';
+import type { AppRouter } from '../../api/lib/router';
 
-export const trpc: CreateTRPCReact<AppRouter, object> = createTRPCReact<AppRouter, object>();
+export const trpc = createTRPCReact<AppRouter>();
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      gcTime: 1000 * 60 * 15, // 15 minutes
+      gcTime: 1000 * 60 * 15,
       retry: 3,
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
       refetchOnWindowFocus: false,
@@ -21,11 +22,7 @@ export const createTrpcClient = (url: string) => {
     links: [
       httpBatchLink({
         url,
-        fetch(url, options) {
-          return fetch(url, {
-            ...options,
-          });
-        },
+        transformer: superjson,
       }),
     ],
   });
