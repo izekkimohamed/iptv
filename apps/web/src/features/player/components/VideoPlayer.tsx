@@ -105,6 +105,18 @@ export function VideoPlayer({
     feedbackTimeout.current = setTimeout(() => setFeedbackAction(null), 600);
   }, []);
 
+  // Clear error state when source changes
+  useEffect(() => {
+    setPlaybackError(null);
+  }, [src]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (feedbackTimeout.current) clearTimeout(feedbackTimeout.current);
+    };
+  }, []);
+
   const videoType = getVideoType(src);
 
   // --- Logic: Saving Progress (Same as your original, kept concise here) ---
@@ -231,8 +243,21 @@ export function VideoPlayer({
   if (!src) return null;
 
   if (playbackError) {
-    // ... Error UI (Keep your original implementation)
-    return <div>Error: {playbackError.message}</div>;
+    return (
+      <div className="relative flex h-full w-full items-center justify-center bg-black">
+        <div className="space-y-4 text-center">
+          <div className="text-lg font-semibold text-red-500">Playback Error</div>
+          <p className="max-w-md text-gray-300">{playbackError.message}</p>
+          <div className="text-sm text-gray-400">Error Code: {playbackError.code}</div>
+          <button
+            onClick={() => setPlaybackError(null)}
+            className="mt-4 rounded bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (

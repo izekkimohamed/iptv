@@ -35,7 +35,7 @@ export interface UsePlayerReturn {
 }
 
 export function usePlayer(): UsePlayerReturn {
-  const [player, setPlayer] = useState<MediaPlayerInstance | null>(null);
+  const playerInstanceRef = useRef<MediaPlayerInstance | null>(null);
   const unsubscribeRef = useRef<Array<() => void>>([]);
 
   // State
@@ -58,7 +58,7 @@ export function usePlayer(): UsePlayerReturn {
     unsubscribeRef.current = [];
 
     if (node) {
-      setPlayer(node);
+      playerInstanceRef.current = node;
 
       // Setup subscriptions immediately
       const subs = [
@@ -81,7 +81,7 @@ export function usePlayer(): UsePlayerReturn {
 
       unsubscribeRef.current = subs;
     } else {
-      setPlayer(null);
+      playerInstanceRef.current = null;
     }
   }, []);
 
@@ -93,88 +93,78 @@ export function usePlayer(): UsePlayerReturn {
   }, []);
 
   // Actions
-  const play = useCallback(() => player?.play(), [player]);
-  const pause = useCallback(() => player?.pause(), [player]);
+  const play = useCallback(() => playerInstanceRef.current?.play(), []);
+  const pause = useCallback(() => playerInstanceRef.current?.pause(), []);
 
   const togglePlay = useCallback(() => {
+    const player = playerInstanceRef.current;
     if (!player) return;
     player.paused ? player.play() : player.pause();
-  }, [player]);
+  }, []);
 
-  const seek = useCallback(
-    (time: number) => {
-      if (!player) return;
-      player.currentTime = Math.max(0, Math.min(time, player.state.duration));
-    },
-    [player],
-  );
+  const seek = useCallback((time: number) => {
+    const player = playerInstanceRef.current;
+    if (!player) return;
+    player.currentTime = Math.max(0, Math.min(time, player.state.duration));
+  }, []);
 
-  const setVolume = useCallback(
-    (vol: number) => {
-      if (!player) return;
-      player.volume = Math.max(0, Math.min(1, vol));
-    },
-    [player],
-  );
+  const setVolume = useCallback((vol: number) => {
+    const player = playerInstanceRef.current;
+    if (!player) return;
+    player.volume = Math.max(0, Math.min(1, vol));
+  }, []);
 
   const toggleMute = useCallback(() => {
+    const player = playerInstanceRef.current;
     if (!player) return;
     player.muted = !player.muted;
-  }, [player]);
+  }, []);
 
   const toggleFullscreen = useCallback(() => {
+    const player = playerInstanceRef.current;
     if (!player) return;
     player.state.fullscreen ? player.exitFullscreen() : player.enterFullscreen();
-  }, [player]);
+  }, []);
 
   const togglePiP = useCallback(() => {
+    const player = playerInstanceRef.current;
     if (!player) return;
     player.state.pictureInPicture ? player.exitPictureInPicture() : player.enterPictureInPicture();
-  }, [player]);
+  }, []);
 
-  const forward = useCallback(
-    (seconds: number) => {
-      if (!player) return;
-      player.currentTime = Math.min(player.state.duration, player.currentTime + seconds);
-    },
-    [player],
-  );
+  const forward = useCallback((seconds: number) => {
+    const player = playerInstanceRef.current;
+    if (!player) return;
+    player.currentTime = Math.min(player.state.duration, player.currentTime + seconds);
+  }, []);
 
-  const backward = useCallback(
-    (seconds: number) => {
-      if (!player) return;
-      player.currentTime = Math.max(0, player.currentTime - seconds);
-    },
-    [player],
-  );
+  const backward = useCallback((seconds: number) => {
+    const player = playerInstanceRef.current;
+    if (!player) return;
+    player.currentTime = Math.max(0, player.currentTime - seconds);
+  }, []);
 
-  const setPlaybackRate = useCallback(
-    (rate: number) => {
-      if (!player) return;
-      player.playbackRate = Math.max(0.25, Math.min(3, rate));
-    },
-    [player],
-  );
+  const setPlaybackRate = useCallback((rate: number) => {
+    const player = playerInstanceRef.current;
+    if (!player) return;
+    player.playbackRate = Math.max(0.25, Math.min(3, rate));
+  }, []);
 
-  const increasePlaybackRate = useCallback(
-    (amount = 0.25) => {
-      if (!player) return;
-      player.playbackRate = Math.min(3, player.playbackRate + amount);
-    },
-    [player],
-  );
+  const increasePlaybackRate = useCallback((amount = 0.25) => {
+    const player = playerInstanceRef.current;
+    if (!player) return;
+    player.playbackRate = Math.min(3, player.playbackRate + amount);
+  }, []);
 
-  const decreasePlaybackRate = useCallback(
-    (amount = 0.25) => {
-      if (!player) return;
-      player.playbackRate = Math.max(0.25, player.playbackRate - amount);
-    },
-    [player],
-  );
+  const decreasePlaybackRate = useCallback((amount = 0.25) => {
+    const player = playerInstanceRef.current;
+    if (!player) return;
+    player.playbackRate = Math.max(0.25, player.playbackRate - amount);
+  }, []);
 
   return {
     playerRef, // Pass this to <MediaPlayer ref={...}>
-    instance: player,
+    instance: playerInstanceRef.current,
     currentTime,
     duration,
     isPlaying,
