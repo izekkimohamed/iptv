@@ -4,9 +4,11 @@ import '@vidstack/react/player/styles/default/layouts/video.css';
 import '@vidstack/react/player/styles/default/theme.css';
 
 import { MediaPlayer, MediaProvider } from '@vidstack/react';
+import { AlertTriangle, Pause, Play } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { Button } from '@/components/ui/button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { usePlayer } from '@/features/player/hooks/player';
 import { cn } from '@/lib/utils';
@@ -19,9 +21,7 @@ import {
 
 import { getVideoType } from '@repo/utils';
 import { CustomControls } from './CustomControls';
-import { FeedbackAction, SeekFeedback } from './SeekFeedback';
 
-// ... interface VideoPlayerProps (same as before) ...
 interface VideoPlayerProps {
   src: string;
   poster?: string;
@@ -73,10 +73,8 @@ export function VideoPlayer({
   hasPrev,
 }: VideoPlayerProps) {
   const mediaType = usePathname();
-  const player = usePlayer(); // Uses the new Hook
+  const player = usePlayer();
   const { selectedPlaylist } = usePlaylistStore();
-
-  // Zustand Stores
   const {
     volume,
     isMuted,
@@ -95,43 +93,22 @@ export function VideoPlayer({
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>(preferredAspectRatio);
   const [playbackError, setPlaybackError] = useState<PlayerError>(null);
 
-  // New State for Visual Feedback
-  const [feedbackAction, setFeedbackAction] = useState<FeedbackAction>(null);
-  const feedbackTimeout = useRef<NodeJS.Timeout | null>(null);
-
-  const triggerFeedback = useCallback((action: FeedbackAction) => {
-    setFeedbackAction(action);
-    if (feedbackTimeout.current) clearTimeout(feedbackTimeout.current);
-    feedbackTimeout.current = setTimeout(() => setFeedbackAction(null), 600);
-  }, []);
-
-  // Clear error state when source changes
-  useEffect(() => {
-    setPlaybackError(null);
-  }, [src]);
-
-  // Cleanup timeouts on unmount
-  useEffect(() => {
-    return () => {
-      if (feedbackTimeout.current) clearTimeout(feedbackTimeout.current);
-    };
-  }, []);
+  const saveProgressRef = useRef<() => void>(() => {});
 
   const videoType = getVideoType(src);
 
-  // --- Logic: Saving Progress (Same as your original, kept concise here) ---
-  const saveProgressRef = useRef<() => void>(() => {});
-
   const saveMovieProgress = useCallback(() => {
-    if (!player.instance) return; // Note: using .instance now
-    const currentTime = player.currentTime;
-    const duration = player.duration;
+    if (!player.playerRef.current) return;
+
+    const currentTime = player.playerRef.current.currentTime;
+    const duration = player.playerRef.current.duration;
     const movieItem = movies.find((item) => item.id.toString() === movieId);
 
     if (duration > 0 && currentTime >= duration - 5 && movieItem) {
       removeItem(movieItem.id, selectedPlaylist?.id || 0);
       return;
     }
+
     if (duration <= 0 || currentTime <= 0) return;
 
     saveProgress({
@@ -145,9 +122,6 @@ export function VideoPlayer({
       playlistId: selectedPlaylist?.id || 0,
     });
   }, [
-    player.instance,
-    player.currentTime,
-    player.duration,
     movieId,
     categoryId,
     poster,
@@ -159,216 +133,339 @@ export function VideoPlayer({
     removeItem,
   ]);
 
-  // ... saveEpisodeProgress similar implementation using player.instance ...
+  const saveEpisodeProgress = useCallback(() => {
+    if (!player.playerRef.current) return;
+
+    const currentTime = player.playerRef.current.currentTime;
+    const duration = player.playerRef.current.duration;
+    const episodeNum = episodeNumber || 0;
+    const seriesIdNum = parseInt(serieId || '0');
+
+    if (duration <= 0 || currentTime <= 0 || !seriesIdNum) return;
+
+    saveProgressSeries(
+      {
+        id: seriesIdNum,
+        categoryId: parseInt(categoryId || '0'),
+        poster,
+        title,
+        totalEpisodes,
+        playlistId: selectedPlaylist?.id || 0,
+      },
+      {
+        episodeNumber: episodeNum,
+        seasonId: seasonId || 0,
+        position: Math.max(0, currentTime - 10),
+        duration,
+        src,
+      },
+    );
+  }, [
+    episodeNumber,
+    seasonId,
+    serieId,
+    categoryId,
+    poster,
+    title,
+    totalEpisodes,
+    selectedPlaylist?.id,
+    saveProgressSeries,
+    src,
+  ]);
 
   useEffect(() => {
     if (mediaType === '/movies' || mediaType === '/movies/movie') {
       saveProgressRef.current = saveMovieProgress;
+    } else if (mediaType === '/series' || mediaType === '/series/serie') {
+      saveProgressRef.current = saveEpisodeProgress;
     }
-    // ... else logic
-  }, [mediaType, saveMovieProgress]); // simplified deps
+  }, [mediaType, saveMovieProgress, saveEpisodeProgress]);
 
-  // --- Handlers ---
+  // const handlePlayNext = useCallback(() => {
+  //   if (!hasNext || !playNext) return;
+  //   saveEpisodeProgress();
+  //   playNext();
+  // }, [hasNext, playNext, saveEpisodeProgress]);
+
+  // const handlePlayPrev = useCallback(() => {
+  //   if (!hasPrev || !playPrev) return;
+  //   saveEpisodeProgress();
+  //   playPrev();
+  // }, [hasPrev, playPrev, saveEpisodeProgress]);
 
   const handlePlayNext = useCallback(() => {
     if (!hasNext || !playNext) return;
-    saveProgressRef.current(); // Use ref to call correct save fn
-    const wasFullscreen = player.instance?.state.fullscreen ?? fullScreen;
+    saveEpisodeProgress();
+    // Store current fullscreen state before navigating
+    const wasFullscreen = player.playerRef.current?.state.fullscreen ?? fullScreen;
     playNext();
+    // Re-enter fullscreen after navigation
     setTimeout(() => {
-      if (wasFullscreen && player.instance) player.instance.enterFullscreen();
+      if (wasFullscreen && player.playerRef.current) {
+        player.playerRef.current.enterFullscreen();
+      }
     }, 100);
-  }, [hasNext, playNext, fullScreen, player.instance]);
+  }, [hasNext, playNext, saveEpisodeProgress, fullScreen, player]);
 
   const handlePlayPrev = useCallback(() => {
     if (!hasPrev || !playPrev) return;
-    saveProgressRef.current();
-    const wasFullscreen = player.instance?.state.fullscreen ?? fullScreen;
+    saveEpisodeProgress();
+    // Store current fullscreen state before navigating
+    const wasFullscreen = player.playerRef.current?.state.fullscreen ?? fullScreen;
     playPrev();
+    // Re-enter fullscreen after navigation
     setTimeout(() => {
-      if (wasFullscreen && player.instance) player.instance.enterFullscreen();
+      if (wasFullscreen && player.playerRef.current) {
+        player.playerRef.current.enterFullscreen();
+      }
     }, 100);
-  }, [hasPrev, playPrev, fullScreen, player.instance]);
-
-  // --- Effects ---
+  }, [hasPrev, playPrev, saveEpisodeProgress, fullScreen, player]);
 
   useEffect(() => {
-    // Restore Position
-    if (!player.instance) return;
+    setPlaybackError(null);
 
-    // logic to restore position from store
-    // (Ensure you check player.canPlay before seeking ideally, or rely on Vidstack internal behavior)
-    if (mediaType.includes('movie')) {
-      const item = movies.find((m) => m.id.toString() === movieId);
-      if (item) player.instance.currentTime = item.position;
+    if (mediaType === '/movies' || mediaType === '/movies/movie') {
+      const movieItem = movies.find((item) => item.id.toString() === movieId);
+      if (movieItem && player.playerRef.current) {
+        player.playerRef.current.currentTime = movieItem.position;
+      }
+    } else if (mediaType === '/series' || mediaType === '/series/serie') {
+      const episodeProgress = getEpisodeProgress(
+        parseInt(serieId || '0'),
+        episodeNumber || 0,
+        seasonId || 0,
+      );
+
+      if (episodeProgress && player.playerRef.current) {
+        player.playerRef.current.currentTime = episodeProgress.position;
+      }
     }
-    // ... series logic
-  }, [src, player.instance, movieId, mediaType, movies]); // simplified
+  }, [src, movieId, serieId, episodeNumber, seasonId, mediaType, movies, getEpisodeProgress]);
 
-  // Keyboard Controls with Visual Feedback
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (player.isPlaying) {
+        saveProgressRef.current();
+      }
+    }, 30000);
+
+    return () => {
+      clearInterval(interval);
+      saveProgressRef.current();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (mediaType === '/series' || mediaType === '/series/serie') {
+      const handleEnded = () => {
+        saveEpisodeProgress();
+        onEnded?.();
+      };
+
+      const playerElement = player.playerRef.current;
+      if (playerElement) {
+        playerElement.addEventListener('ended', handleEnded);
+        return () => {
+          playerElement.removeEventListener('ended', handleEnded);
+        };
+      }
+    }
+  }, [mediaType, saveEpisodeProgress, onEnded]);
+
+  useEffect(() => {
+    if (onTimeUpdate) {
+      onTimeUpdate(player.currentTime);
+    }
+  }, [player.currentTime, onTimeUpdate]);
+
+  useEffect(() => {
+    if (fullScreen === true) {
+      player.playerRef.current?.enterFullscreen();
+    } else {
+      player.playerRef.current?.exitFullscreen();
+    }
+  }, [fullScreen, player.playerRef]);
+
+  useEffect(() => {
+    // Apply persisted playback rate on mount
+    player.setPlaybackRate(preferredRate);
+  }, [preferredRate, player]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return;
-
-      switch (e.key) {
-        case ' ':
-        case 'k':
-        case 'K':
-          e.preventDefault();
-          player.togglePlay();
-          triggerFeedback(player.isPlaying ? 'pause' : 'play');
-          break;
-        case 'ArrowRight':
-          player.forward(5);
-          triggerFeedback('forward');
-          break;
-        case 'ArrowLeft':
-          player.backward(5);
-          triggerFeedback('backward');
-          break;
-        case 'f':
-        case 'F':
-          player.toggleFullscreen();
-          break;
-        case 'm':
-        case 'M':
-          player.toggleMute();
-          break;
+      if (e.key === ' ') {
+        e.preventDefault();
+        player.togglePlay();
       }
+      if (e.key === 'm' || e.key === 'M') {
+        player.toggleMute();
+      }
+      if (e.key === 'f' || e.key === 'F') {
+        player.toggleFullscreen();
+      }
+      if (e.key === 'p' || e.key === 'P') {
+        player.togglePiP();
+      }
+      if (e.key === '+' || e.key === '=') {
+        player.setPlaybackRate(player.playbackRate + 0.25);
+      }
+      if (e.key === '-' || e.key === '_') {
+        player.setPlaybackRate(player.playbackRate - 0.25);
+      }
+      if (e.key === 'ArrowRight') {
+        player.forward(5);
+      }
+      if (e.key === 'ArrowLeft') {
+        player.backward(5);
+      }
+      if (e.key === 'n' || e.key === 'N') {
+        handlePlayNext();
+      }
+      if (e.key === 'b' || e.key === 'B') {
+        handlePlayPrev();
+      }
+      return;
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [player, triggerFeedback]);
 
-  if (!src) return null;
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handlePlayNext, player]);
+
+  if (!src) {
+    return null;
+  }
 
   if (playbackError) {
+    let errorMessage = 'An unknown playback error occurred.';
+    let detailedMessage = '';
+
+    if (playbackError.code === 1 && playbackError.message.includes('405')) {
+      errorMessage = 'Video Source Error: Access Denied (405).';
+      detailedMessage =
+        'The server rejected the request to load the video. This often means the stream link is invalid or expired. Try selecting a different source.';
+    } else if (playbackError.code === 2) {
+      errorMessage = 'Network Error.';
+      detailedMessage =
+        'Could not load the media due to a network issue. Please check your connection.';
+    } else if (playbackError.message) {
+      errorMessage = `Playback Error: ${playbackError.message.split(': ')[0]}`;
+      detailedMessage = 'A problem occurred while decoding or loading the media.';
+    }
+
     return (
-      <div className="relative flex h-full w-full items-center justify-center bg-black">
-        <div className="space-y-4 text-center">
-          <div className="text-lg font-semibold text-red-500">Playback Error</div>
-          <p className="max-w-md text-gray-300">{playbackError.message}</p>
-          <div className="text-sm text-gray-400">Error Code: {playbackError.code}</div>
-          <button
-            onClick={() => setPlaybackError(null)}
-            className="mt-4 rounded bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700"
-          >
-            Try Again
-          </button>
-        </div>
+      <div className="flex h-full w-full flex-col items-center justify-center rounded-lg bg-slate-900 p-8">
+        <AlertTriangle className="mb-4 h-16 w-16 text-red-500" />
+        <h2 className="mb-2 text-xl font-bold text-white">{errorMessage}</h2>
+        <p className="mb-6 max-w-lg text-center text-gray-400">{detailedMessage}</p>
+        <Button
+          onClick={() => setPlaybackError(null)}
+          className="flex items-center gap-2 rounded-full bg-white/10 px-6 py-3 text-white transition-colors hover:bg-white/20"
+        >
+          <Play className="h-4 w-4" /> Try Again
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="group/video relative h-full w-full bg-black">
+    <div className="relative h-full w-full">
       <MediaPlayer
         key={src}
-        ref={player.playerRef} // Pass callback ref
+        ref={player.playerRef}
         src={src}
         poster={poster}
         volume={volume}
-        onVolumeChange={(detail) => {
-          setVolume(detail.volume);
-          setMutated(detail.muted);
+        onVolumeChange={(details) => {
+          setVolume(details.volume);
+          setMutated(details.muted);
         }}
+        title={title}
         autoPlay={autoPlay}
         muted={isMuted}
         loop={loop}
-        playsInline
+        playsInline={true}
         onEnded={onEnded}
-        onFullscreenChange={toggleFullScreen}
+        onFullscreenChange={(details) => {
+          toggleFullScreen(details);
+        }}
         onEnd={() => {
-          if (hasNext) handlePlayNext();
+          if (hasNext && playNext) {
+            handlePlayNext();
+          }
         }}
-        onError={(_, details) =>
+        onError={(_, errorDetails) => {
           setPlaybackError({
-            message: details.detail.message,
-            code: details.detail.code ?? 0,
-            error: details.detail.error,
-          })
-        }
-        className={cn('relative h-full w-full overflow-hidden')}
+            message: errorDetails.detail.message,
+            code: errorDetails.detail.code || 0,
+            error: errorDetails.detail.error,
+          });
+        }}
+        onDoubleClick={() => toggleFullScreen(!fullScreen)}
+        onClick={() => player.togglePlay()}
+        className={cn('relative h-full w-full overflow-hidden bg-black')}
+        data-isfullscreen={fullScreen}
         data-aspect-ratio={aspectRatio}
-        // Double click to toggle fullscreen
-        onDoubleClick={(e) => {
-          // Prevent double click if target is controls
-          if (!(e.target as HTMLElement).closest('.controls-layer')) {
-            player.toggleFullscreen();
-          }
-        }}
-        // Click to toggle play (optional, Netflix style)
-        onClick={(e) => {
-          if (!(e.target as HTMLElement).closest('.controls-layer')) {
-            player.togglePlay();
-            triggerFeedback(player.isPlaying ? 'pause' : 'play');
-          }
-        }}
       >
         <MediaProvider>
           <source src={src} type={videoType} />
         </MediaProvider>
 
-        {/* Visual Feedback Overlay */}
-        <SeekFeedback action={feedbackAction} />
-
-        {/* Big Play Button (Initial State) */}
-        {!player.isPlaying && !player.isLoading && player.currentTime === 0 && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/40">
-            {/* Icon */}
+        {!player.isPlaying && !player.isLoading && (
+          <div className="pointer-events-none absolute inset-0 flex w-full items-center justify-center bg-linear-to-t from-black/80 via-transparent to-black/80">
+            <div className="rounded-full bg-amber-400/20 p-5 backdrop-blur-sm">
+              <Pause className="h-10 w-10 fill-white text-white" />
+            </div>
           </div>
         )}
 
-        {/* Loading Spinner */}
-        {player.isLoading && (
-          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
-            <LoadingSpinner size="large" message="Buffering..." />
+        {player.isLoading && !player.isPlaying && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <LoadingSpinner size="large" message="Loading..." />
           </div>
         )}
 
-        {/* Controls */}
-        <div
-          className="controls-layer absolute bottom-0 w-full"
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div className="absolute bottom-0 w-full" onClick={(e) => e.stopPropagation()}>
           <CustomControls
             currentTime={player.currentTime}
-            duration={player.duration}
+            duration={player.duration || 0}
             isPlaying={player.isPlaying}
             isFullscreen={player.isFullscreen}
             buffered={player.buffered}
             volume={volume}
             isMuted={isMuted}
             playbackRate={player.playbackRate}
-            aspectRatio={aspectRatio}
-            title={title || ''}
-            hasNext={hasNext}
-            hasPrev={hasPrev}
-            onPlayPause={() => {
-              player.togglePlay();
-              // No visual feedback needed for button clicks usually, but optional
-            }}
+            onPlayPause={player.togglePlay}
             onSeek={player.seek}
-            onVolumeChange={player.setVolume}
+            onVolumeChange={setVolume}
             onToggleMute={player.toggleMute}
             onToggleFullscreen={player.toggleFullscreen}
             onNext={handlePlayNext}
             onPrev={handlePlayPrev}
-            onTogglePiP={player.togglePiP}
+            hasNext={hasNext}
+            hasPrev={hasPrev}
+            title={title || ''}
             onToggleAspectRatio={() => {
-              const next =
-                ASPECT_RATIOS[(ASPECT_RATIOS.indexOf(aspectRatio) + 1) % ASPECT_RATIOS.length];
+              const currentIndex = ASPECT_RATIOS.indexOf(aspectRatio);
+              const nextIndex = (currentIndex + 1) % ASPECT_RATIOS.length;
+              const next = ASPECT_RATIOS[nextIndex];
               setAspectRatio(next);
               setPreferredAspectRatio(next);
             }}
             onRateIncrease={() => {
-              const next = Math.min(2, player.playbackRate + 0.25);
+              const next = player.playbackRate + 0.25;
               player.setPlaybackRate(next);
+              setPreferredRate(next);
             }}
             onRateDecrease={() => {
-              const next = Math.max(0.5, player.playbackRate - 0.25);
+              const next = player.playbackRate - 0.25;
               player.setPlaybackRate(next);
+              setPreferredRate(next);
             }}
+            onTogglePiP={player.togglePiP}
+            aspectRatio={aspectRatio}
           />
         </div>
       </MediaPlayer>

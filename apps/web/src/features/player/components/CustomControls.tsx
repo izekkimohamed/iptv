@@ -42,6 +42,7 @@ interface CustomControlsProps {
   onToggleAspectRatio?: () => void;
   onRateIncrease?: () => void;
   onRateDecrease?: () => void;
+  onRateSet?: (rate: number) => void;
   onTogglePiP?: () => void;
 }
 
@@ -92,6 +93,7 @@ export function CustomControls({
   playbackRate = 1,
   onRateIncrease,
   onRateDecrease,
+  onRateSet,
   onTogglePiP,
   buffered,
 }: CustomControlsProps) {
@@ -100,8 +102,11 @@ export function CustomControls({
   const [isDragging, setIsDragging] = useState(false);
   const [isDraggingVolume, setIsDraggingVolume] = useState(false);
   const [isControlsVisible, setIsControlsVisible] = useState(true);
+  const [showKeyboardHints, setShowKeyboardHints] = useState(false);
+  const [volumeChangedByKeyboard, setVolumeChangedByKeyboard] = useState(false);
 
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const volumeFeedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
   const volumeBarRef = useRef<HTMLDivElement>(null);
 
@@ -113,10 +118,17 @@ export function CustomControls({
   const scheduleHideControls = useCallback(() => {
     if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
     setIsControlsVisible(true);
-    if (isFullscreen && isPlaying && !isDragging && !isDraggingVolume && !showSettings) {
+    if (
+      isFullscreen &&
+      isPlaying &&
+      !isDragging &&
+      !isDraggingVolume &&
+      !showSettings &&
+      !showKeyboardHints
+    ) {
       hideTimeoutRef.current = setTimeout(() => setIsControlsVisible(false), 3000);
     }
-  }, [isFullscreen, isPlaying, isDragging, isDraggingVolume, showSettings]);
+  }, [isFullscreen, isPlaying, isDragging, isDraggingVolume, showSettings, showKeyboardHints]);
 
   const handleMouseMove = useCallback(() => {
     scheduleHideControls();
@@ -173,6 +185,7 @@ export function CustomControls({
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+      if (volumeFeedbackTimeoutRef.current) clearTimeout(volumeFeedbackTimeoutRef.current);
     };
   }, [isFullscreen, handleMouseMove, scheduleHideControls]);
 
@@ -286,7 +299,12 @@ export function CustomControls({
 
             <div
               ref={volumeBarRef}
-              className="relative ml-2 h-1.5 w-0 cursor-pointer rounded-full bg-white/20 opacity-0 transition-all duration-300 group-focus-within/vol:w-20 group-focus-within/vol:opacity-100 group-hover/vol:w-20 group-hover/vol:opacity-100"
+              className={cn(
+                'relative ml-2 h-1.5 cursor-pointer rounded-full bg-white/20 transition-all duration-300',
+                volumeChangedByKeyboard
+                  ? 'w-20 opacity-100'
+                  : 'w-0 opacity-0 group-focus-within/vol:w-20 group-focus-within/vol:opacity-100 group-hover/vol:w-20 group-hover/vol:opacity-100',
+              )}
               onMouseDown={() => setIsDraggingVolume(true)}
               onMouseMove={handleVolumeMouseMove}
               onClick={handleVolumeInteract}
@@ -303,7 +321,7 @@ export function CustomControls({
           </div>
 
           {title && (
-            <span className="ml-4 hidden max-w-[200px] truncate text-sm font-medium text-white/90 md:block">
+            <span className="ml-4 hidden max-w-50 truncate text-sm font-medium text-white/90 md:block">
               {title}
             </span>
           )}
@@ -326,6 +344,55 @@ export function CustomControls({
               <button onClick={onTogglePiP} className={buttonBaseClass} title="Picture in Picture">
                 <PictureInPicture className="h-5 w-5" />
               </button>
+            )}
+          </div>
+
+          {/* Keyboard Shortcuts Help */}
+          <div className="relative hidden sm:block">
+            <button
+              onClick={() => setShowKeyboardHints(!showKeyboardHints)}
+              className={cn(buttonBaseClass, showKeyboardHints && 'bg-white/10 text-white')}
+              title="Keyboard Shortcuts"
+            >
+              <kbd className="text-xs font-bold">?</kbd>
+            </button>
+            {showKeyboardHints && (
+              <div
+                className="animate-in slide-in-from-bottom-2 fade-in absolute right-0 bottom-full z-50 mb-4 w-80 rounded-xl border border-white/10 bg-black/95 p-4 shadow-2xl backdrop-blur-md"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="mb-3 flex items-center justify-between border-b border-white/10 pb-2">
+                  <span className="text-sm font-bold text-white">Keyboard Shortcuts</span>
+                  <button
+                    onClick={() => setShowKeyboardHints(false)}
+                    className="text-white/50 hover:text-white"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="space-y-2 text-xs text-white/80">
+                  <div className="flex justify-between">
+                    <span>Play/Pause</span>
+                    <kbd className="rounded bg-white/10 px-2 py-1">Space / K</kbd>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Forward 5s</span>
+                    <kbd className="rounded bg-white/10 px-2 py-1">→</kbd>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Backward 5s</span>
+                    <kbd className="rounded bg-white/10 px-2 py-1">←</kbd>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Mute/Unmute</span>
+                    <kbd className="rounded bg-white/10 px-2 py-1">M</kbd>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Fullscreen</span>
+                    <kbd className="rounded bg-white/10 px-2 py-1">F</kbd>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
 
@@ -392,9 +459,13 @@ export function CustomControls({
                       <button
                         key={speed}
                         onClick={() => {
-                          if (speed > playbackRate) onRateIncrease?.();
-                          else if (speed < playbackRate) onRateDecrease?.();
-                          // Ideally set exact rate if supported
+                          if (onRateSet) {
+                            onRateSet(speed);
+                          } else if (speed > playbackRate) {
+                            onRateIncrease?.();
+                          } else if (speed < playbackRate) {
+                            onRateDecrease?.();
+                          }
                         }}
                         className={cn(
                           'rounded py-1.5 text-xs font-medium transition-colors',

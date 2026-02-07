@@ -1,7 +1,16 @@
 import { cn } from '@/lib/utils';
-import { Pause, Play, RotateCcw, RotateCw } from 'lucide-react';
+import { Pause, Play, RotateCcw, RotateCw, Volume2, VolumeX } from 'lucide-react';
 
-export type FeedbackAction = 'forward' | 'backward' | 'play' | 'pause' | null;
+export type FeedbackAction =
+  | 'forward'
+  | 'backward'
+  | 'play'
+  | 'pause'
+  | 'volumeUp'
+  | 'volumeDown'
+  | 'volumeOff'
+  | 'volumeOn'
+  | null;
 
 interface SeekFeedbackProps {
   action: FeedbackAction;
@@ -22,6 +31,8 @@ export function SeekFeedback({ action }: SeekFeedbackProps) {
         {action === 'backward' && <RotateCcw className="h-8 w-8" />}
         {action === 'play' && <Play className="h-8 w-8 fill-current" />}
         {action === 'pause' && <Pause className="h-8 w-8 fill-current" />}
+        {(action === 'volumeUp' || action === 'volumeOn') && <Volume2 className="h-8 w-8" />}
+        {(action === 'volumeDown' || action === 'volumeOff') && <VolumeX className="h-8 w-8" />}
       </div>
     </div>
   );
