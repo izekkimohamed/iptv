@@ -72,11 +72,6 @@ export default function SeriesDetails({
       if (episode && episodesSectionRef.current) {
         episodesSectionRef.current.playEpisode(episode);
         const el = document.querySelector('[data-episodes-section]');
-        if (el) {
-          setTimeout(() => {
-            el.scrollIntoView({ behavior: 'smooth' });
-          }, 100);
-        }
       }
     }
   };
