@@ -5,7 +5,7 @@ import useSWR from 'swr';
 
 import { Game } from '@/trpc/types';
 import { formatDateForAPI, formatDisplayDate } from '@repo/utils';
-import { WifiOff } from 'lucide-react';
+import { Calendar, WifiOff } from 'lucide-react';
 import { CompetitionSection } from './CompetitionSection';
 import { DateNavigator } from './DateNavigator';
 import { LiveMatchesSection } from './LiveMatchesSection';
@@ -90,9 +90,7 @@ export default function LiveScores() {
     <div className="h-full w-full space-y-8 overflow-y-auto p-4 text-white">
       <DateNavigator
         currentDate={currentDate}
-        onPrevDay={handlePrevDay}
-        onNextDay={handleNextDay}
-        onGoToToday={handleGoToToday}
+        onSelectDate={setCurrentDate}
         onRefresh={handleRefresh}
         isLoading={isLoading}
       />
@@ -135,32 +133,22 @@ export default function LiveScores() {
         </div>
       )}
 
+      {/* Empty State */}
       {hasNoGames && (
-        <div className="mx-auto flex max-w-2xl flex-col items-center justify-center py-20">
-          <div className="mb-6 rounded-full bg-white/5 p-8">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="64"
-              height="64"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-white/20"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 6v6l4 2" />
-            </svg>
+        <div className="mx-auto flex max-w-2xl flex-col items-center justify-center py-20 animate-in fade-in zoom-in duration-700">
+          <div className="group relative mb-8">
+            <div className="absolute inset-0 animate-pulse rounded-full bg-primary/10 blur-3xl" />
+            <div className="relative flex h-32 w-32 items-center justify-center rounded-full border border-white/10 bg-white/5 backdrop-blur-xl transition-transform group-hover:scale-110">
+              <Calendar className="h-12 w-12 text-primary/40" />
+            </div>
           </div>
-          <h3 className="mb-2 text-2xl font-black text-white/40">No Matches Scheduled</h3>
-          <p className="mb-8 text-center text-sm text-white/30">
-            There are no matches scheduled for {formatDisplayDate(currentDate)}
+          <h3 className="mb-2 text-3xl font-black tracking-tight text-white/50">Rest Day</h3>
+          <p className="mb-10 text-center text-sm font-medium text-white/30 max-w-sm">
+            There are no matches scheduled for {formatDisplayDate(currentDate)}. Check other dates in the calendar above.
           </p>
           <button
-            onClick={handleGoToToday}
-            className="rounded-xl bg-white/10 px-6 py-3 font-bold text-white transition-all hover:bg-white/20 active:scale-95"
+            onClick={() => setCurrentDate(new Date())}
+            className="flex items-center gap-2 rounded-2xl bg-primary px-8 py-4 font-black tracking-widest text-primary-foreground uppercase shadow-lg shadow-primary/20 transition-all hover:scale-105 hover:brightness-110 active:scale-95"
           >
             Go to Today
           </button>

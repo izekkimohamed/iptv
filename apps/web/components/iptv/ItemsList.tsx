@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import { cn } from '@/lib/utils';
 import { usePlaylistStore, useWatchedMoviesStore, useWatchedSeriesStore } from '@repo/store';
-import { cleanName } from '@repo/utils'; // Assuming cn exists in utils, if not standard clsx/tailwind-merge
+import { cleanName } from '@repo/utils';
 
 interface ItemsListProps {
   streamId: number;
@@ -18,7 +18,6 @@ interface ItemsListProps {
 function ItemsList(props: ItemsListProps) {
   const { image, title, rating, streamId, onMovieClick, itemType } = props;
 
-  // Logic
   const ratingValue = Number(rating).toFixed(1);
   const ratingNum = Number(ratingValue);
   const [imageError, setImageError] = useState(false);
@@ -39,21 +38,11 @@ function ItemsList(props: ItemsListProps) {
         ? Math.min(getSeriesProgress(streamId, selectedPlaylist?.id || 0) || 0, 1)
         : 0;
 
-  // Visual Logic
-  const isHighRated = ratingNum >= 7.5;
-  const isAvgRated = ratingNum >= 5 && ratingNum < 7.5;
-
-  const ratingColor = isHighRated
-    ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/20'
-    : isAvgRated
-      ? 'text-amber-400 border-amber-500/30 bg-amber-500/20'
-      : 'text-rose-400 border-rose-500/30 bg-rose-500/20';
-
   return (
     <div
       key={streamId}
       onClick={onMovieClick}
-      className="group relative aspect-2/3 w-full cursor-pointer overflow-hidden rounded-xl bg-neutral-900 shadow-2xl transition-all duration-500 hover:shadow-[0_0_30px_-5px_rgba(245,158,11,0.3)] hover:ring-2 hover:ring-amber-500/50"
+      className="group relative aspect-[2/3] w-full cursor-pointer overflow-hidden rounded-2xl border border-white/5 bg-white/5 transition-all duration-500 hover:border-primary/50 hover:shadow-[0_0_40px_rgba(var(--primary),0.2)]"
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
@@ -63,7 +52,7 @@ function ItemsList(props: ItemsListProps) {
         }
       }}
     >
-      {/* 1. IMAGE LAYER */}
+      {/* Image Layer */}
       <div className="absolute inset-0 h-full w-full">
         {!imageError && image !== '' ? (
           <Image
@@ -79,60 +68,53 @@ function ItemsList(props: ItemsListProps) {
             onError={() => setImageError(true)}
           />
         ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center bg-neutral-800 text-neutral-600">
-            <Film className="h-12 w-12 opacity-20" />
-            <span className="mt-2 text-[10px] font-medium tracking-widest uppercase opacity-40">
+          <div className="flex h-full w-full flex-col items-center justify-center bg-white/5 text-muted-foreground">
+            <Film className="h-10 w-10 opacity-20" />
+            <span className="mt-3 text-[10px] font-bold tracking-widest uppercase opacity-40">
               No Poster
             </span>
           </div>
         )}
-
-        {/* Loading Skeleton */}
-        {isLoading && <div className="absolute inset-0 animate-pulse bg-neutral-800/50" />}
+        {isLoading && <div className="absolute inset-0 animate-pulse bg-white/5" />}
       </div>
 
-      {/* 2. OVERLAY GRADIENT (Cinematic Darkening) */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-60 transition-opacity duration-300 group-hover:via-black/40 group-hover:opacity-80" />
+      {/* Cinematic Gradient */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
 
-      {/* 3. HOVER PLAY BUTTON CENTER */}
-      <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-all duration-300 group-hover:opacity-100">
-        <div className="flex h-16 w-16 scale-50 items-center justify-center rounded-full bg-amber-500/90 text-white shadow-[0_0_30px_rgba(245,158,11,0.6)] backdrop-blur-sm transition-all duration-300 group-hover:scale-100 hover:bg-amber-400">
-          <Play className="ml-1 h-7 w-7 fill-current" />
-        </div>
+      {/* Hover Play Button */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+         <div className="h-16 w-16 translate-y-4 rounded-full bg-primary opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
+            <div className="flex h-full w-full items-center justify-center">
+               <Play className="ml-1 h-8 w-8 fill-primary-foreground text-primary-foreground" />
+            </div>
+         </div>
       </div>
 
-      {/* 4. CONTENT INFO (Bottom) */}
-      <div className="absolute bottom-0 left-0 w-full p-4">
-        <h3 className="line-clamp-2 text-lg leading-tight font-bold text-white drop-shadow-md transition-colors group-hover:text-amber-400">
+      {/* Content Info */}
+      <div className="absolute inset-x-0 bottom-0 p-4 pt-10 bg-gradient-to-t from-black via-black/40 to-transparent">
+        <h3 className="line-clamp-2 text-base font-bold text-white drop-shadow-md transition-colors group-hover:text-primary">
           {cleanName(title)}
         </h3>
 
-        <div className="mt-2 flex items-center justify-between">
-          {/* Rating Badge */}
-          <div
-            className={cn(
-              'flex items-center gap-1.5 rounded-md border px-2 py-1 backdrop-blur-md',
-              ratingColor,
-            )}
-          >
-            <Star className="h-3 w-3 fill-current" />
-            <span className="text-xs font-bold">{ratingValue}</span>
+        <div className="mt-2.5 flex items-center justify-between">
+          <div className="flex items-center gap-1.5 rounded-lg bg-black/40 px-2 py-1 text-[10px] font-black text-amber-400 backdrop-blur-md border border-white/5 shadow-lg">
+             <Star className="h-3 w-3 fill-current" />
+             {ratingValue}
           </div>
 
-          {/* Watched Status (Small Checkmark if completed, else nothing) */}
           {progressPct >= 0.9 && (
-            <div className="flex items-center gap-1 text-[10px] font-bold tracking-wider text-emerald-400 uppercase">
+            <div className="flex items-center gap-1 text-[10px] font-black text-emerald-400 uppercase tracking-tight">
               <Check className="h-3 w-3" /> Watched
             </div>
           )}
         </div>
       </div>
 
-      {/* 5. PROGRESS BAR (Integrated at bottom) */}
+      {/* Progress Bar */}
       {progressPct > 0 && progressPct < 0.9 && (
-        <div className="absolute bottom-0 left-0 h-1 w-full bg-white/10 backdrop-blur-sm">
+        <div className="absolute bottom-0 left-0 h-1.5 w-full bg-white/10 overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-amber-600 to-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.5)]"
+            className="h-full bg-primary transition-all duration-1000 group-hover:brightness-125"
             style={{ width: `${progressPct * 100}%` }}
           />
         </div>
@@ -142,3 +124,4 @@ function ItemsList(props: ItemsListProps) {
 }
 
 export default ItemsList;
+

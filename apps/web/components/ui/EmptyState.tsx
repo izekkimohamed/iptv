@@ -3,12 +3,13 @@ import { ChevronLeft } from 'lucide-react';
 import { Button } from './button';
 
 interface EmptyStateProps {
-  icon?: string;
+  icon?: React.ReactNode;
   title: string;
   description?: string;
   fullScreen?: boolean;
   goBack?: boolean;
 }
+
 
 export default function EmptyState({
   icon = '📂',
@@ -24,7 +25,10 @@ export default function EmptyState({
   return (
     <div className={containerClasses}>
       <div className="text-center">
-        <div className="mb-4 text-6xl opacity-50">{icon}</div>
+        <div className="mb-4 flex justify-center text-6xl opacity-50">
+          {typeof icon === 'string' ? icon : icon}
+        </div>
+
         <h2 className="mb-2 text-2xl font-bold text-white">{title}</h2>
         {description && <p className="mx-auto max-w-md text-gray-400">{description}</p>}
         {goBack && (

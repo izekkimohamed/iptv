@@ -1,4 +1,6 @@
-import { Flame, Play, Star, TrendingUp, X } from 'lucide-react';
+'use client';
+
+import { Clock, Flame, Play, Star, TrendingUp, Tv, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -25,61 +27,57 @@ function HomeLanding() {
   const { data: trendingMovies } = trpc.home.getHome.useQuery();
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="mx-auto max-w-[90vw] space-y-16 px-4 py-10 sm:px-6 lg:px-8">
+    <div className="flex-1 overflow-y-auto overflow-x-hidden">
+
+      <div className="mx-auto max-w-[85vw] space-y-20 px-6 py-12 lg:px-12">
         {/* Favorite Channels */}
         {favoriteChannels && favoriteChannels.length > 0 && (
-          <section className="space-y-6">
-            <div className="flex items-center gap-4">
-              <div className="rounded-xl border border-amber-700 bg-amber-950 p-3">
-                <Star className="h-8 w-8 text-amber-400" />
-              </div>
-              <div>
-                <h2 className="text-3xl font-bold text-white">
-                  Favorite Channels{' '}
-                  <span className="text-xs font-semibold text-slate-400">
-                    ({favoriteChannels.length})
-                  </span>
+          <section className="space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-100 fill-mode-both">
+            <div className="flex items-end justify-between">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-primary">
+                  <Star className="h-5 w-5 fill-primary" />
+                  <span className="text-xs font-bold uppercase tracking-widest">Your Picks</span>
+                </div>
+                <h2 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+                  Favorite Channels
                 </h2>
-                <p className="mt-1 text-sm text-slate-400">Your most-watched channels</p>
               </div>
+              <p className="text-sm font-medium text-muted-foreground">
+                {favoriteChannels.length} Channels
+              </p>
             </div>
 
-            <HorizontalCarousel
-              scrollBy={600}
-              ariaLabelLeft="Scroll favorites left"
-              ariaLabelRight="Scroll favorites right"
-            >
+            <HorizontalCarousel scrollBy={600}>
               {favoriteChannels?.map((channel) => (
                 <Link
                   href={`/channels?categoryId=${channel.categoryId}&channelId=${channel.id}`}
                   key={channel.id}
-                  className="group"
+                  className="group relative flex w-32 shrink-0 flex-col gap-3 sm:w-40"
                 >
-                  <div className="sm:w-37.5ex-shrink-0 w-30">
-                    <div className="relative aspect-square cursor-pointer overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 transition-all duration-300 hover:border-amber-500 hover:shadow-[0_8px_16px_-4px_rgba(245,158,11,0.2)]">
-                      <Image
-                        className="h-full w-full transition-transform duration-300 group-hover:scale-105"
-                        fill
-                        src={channel.streamIcon || '/icon.png'}
-                        alt={channel.name}
-                        onError={(e) => {
-                          e.currentTarget.src = '/icon.png';
-                        }}
-                      />
-                      <div className="absolute top-2 left-2 rounded-full border border-red-500/60 bg-red-600/80 px-2 py-0.5 text-[10px] font-bold text-white">
-                        LIVE
-                      </div>
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                        <div className="rounded-full bg-amber-500 p-2.5 shadow-lg shadow-amber-600/40">
-                          <Play className="ml-0.5 h-5 w-5 fill-white text-white" />
-                        </div>
+                  <div className="relative aspect-square overflow-hidden rounded-2xl border border-white/5 bg-white/5 transition-all duration-500 group-hover:border-primary/50 group-hover:shadow-[0_0_30px_rgba(var(--primary),0.2)]">
+                    <Image
+                      className="h-full w-full object-contain p-4 transition-transform duration-500 group-hover:scale-110"
+                      fill
+                      src={channel.streamIcon || '/icon.png'}
+                      alt={channel.name}
+                      onError={(e) => {
+                        e.currentTarget.src = '/icon.png';
+                      }}
+                    />
+                    <div className="absolute top-2 left-2 flex items-center gap-1.5 rounded-full bg-red-500/90 px-2 py-0.5 text-[10px] font-bold text-white shadow-lg">
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+                      LIVE
+                    </div>
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 backdrop-blur-[2px] transition-all duration-300 group-hover:opacity-100">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-xl transition-transform duration-300 group-hover:scale-110">
+                        <Play className="ml-1 h-6 w-6 fill-current" />
                       </div>
                     </div>
-                    <p className="mt-2.5 truncate text-center text-xs font-semibold text-white transition-colors group-hover:text-amber-300">
-                      {channel.name}
-                    </p>
                   </div>
+                  <p className="truncate text-center text-sm font-semibold transition-colors group-hover:text-primary">
+                    {channel.name}
+                  </p>
                 </Link>
               ))}
             </HorizontalCarousel>
@@ -88,245 +86,224 @@ function HomeLanding() {
 
         {/* Continue Watching Movies Section */}
         {movies.filter((item) => item.playlistId === playlist?.id || 0).length > 0 && (
-          <>
-            <div className="flex items-center gap-4">
-              <div className="rounded-xl border border-red-700 bg-red-950 p-3">
-                <Play className="h-8 w-8 text-red-400" />
-              </div>
-              <div>
-                <h2 className="text-3xl font-bold text-white">
-                  Continue Watching Movies{' '}
-                  <span className="text-xs font-semibold text-slate-400">
-                    ({movies.filter((i) => i.playlistId === (playlist?.id || 0)).length})
-                  </span>
+          <section className="space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-200 fill-mode-both">
+             <div className="flex items-end justify-between">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-primary">
+                  <Clock className="h-5 w-5" />
+                  <span className="text-xs font-bold uppercase tracking-widest">Resume</span>
+                </div>
+                <h2 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl text-nowrap">
+                  Continue Watching
                 </h2>
-                <p className="mt-1 text-sm text-slate-400">Resume where you left off</p>
               </div>
             </div>
-            <HorizontalCarousel
-              scrollBy={800}
-              ariaLabelLeft="Scroll continue movies left"
-              ariaLabelRight="Scroll continue movies right"
-            >
+
+            <HorizontalCarousel scrollBy={800}>
               {movies
                 .filter((item) => item.playlistId === playlist?.id || 0)
                 .map((item) => {
-                  const progress =
-                    item.position && item.duration ? item.position / item.duration : 0;
-
+                  const progress = item.position && item.duration ? item.position / item.duration : 0;
                   return (
-                    <Link
-                      key={item.id}
-                      href={`movies?categoryId=${item.categoryId}&movieId=${item.id}&play=true`}
-                      className="group relative w-62.5 shrink-0 overflow-hidden rounded-2xl border-2 border-slate-700 transition-all duration-300 hover:border-amber-500 hover:shadow-[0_12px_24px_-8px_rgba(245,158,11,0.2)]"
-                    >
-                      <div className="relative bg-slate-800">
-                        {/* Thumbnail */}
-                        <div className="relative h-75 overflow-hidden bg-slate-800">
+                    <div key={item.id} className="group relative w-64 shrink-0 lg:w-72">
+                      <Link
+                        href={`movies?categoryId=${item.categoryId}&movieId=${item.id}&play=true`}
+                        className="block overflow-hidden rounded-2xl border border-white/5 bg-white/5 transition-all duration-500 group-hover:border-primary/30 group-hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]"
+                      >
+                        <div className="relative aspect-video overflow-hidden">
                           <Image
-                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                             fill
                             src={item.poster || '/icon.png'}
                             alt={item.title || 'Untitled'}
                           />
-                          {progress > 0 && (
-                            <div className="absolute top-2 left-2 rounded-full border border-white/10 bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white">
-                              Resume • {Math.round(progress * 100)}%
-                            </div>
-                          )}
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                            <div className="rounded-full bg-amber-500 p-2 shadow-lg shadow-amber-600/40">
-                              <Play className="ml-0.5 h-5 w-5 fill-white text-white" />
-                            </div>
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+
+                          <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                             <div className="flex items-center gap-2 rounded-full bg-black/40 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-md border border-white/10">
+                                {Math.round(progress * 100)}% Complete
+                             </div>
+                          </div>
+
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                             <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-md border border-white/20">
+                                <Play className="ml-0.5 h-6 w-6 text-white fill-white" />
+                             </div>
                           </div>
                         </div>
 
-                        {/* Progress Bar */}
-                        {progress > 0 && (
-                          <div className="absolute bottom-0 left-0 h-1.5 w-full bg-slate-800/80">
-                            <div
-                              className="h-full bg-amber-500 shadow-[inset_0_0_6px_rgba(245,158,11,0.3)]"
-                              style={{
-                                width: `${Math.min(progress * 100, 100)}%`,
-                                transition: 'width 0.3s ease-out',
-                              }}
-                            />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Title */}
-                      <div className="border-t border-slate-700 bg-slate-900/80 p-3">
-                        <p className="truncate text-xs font-semibold text-white transition-colors group-hover:text-amber-300">
-                          {item.title}
-                        </p>
-                      </div>
+                        <div className="p-4">
+                           <p className="truncate text-sm font-bold text-foreground transition-colors group-hover:text-primary">
+                             {item.title}
+                           </p>
+                           {/* Progress Bar */}
+                           <div className="mt-3 relative h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+                              <div
+                                className="h-full bg-primary rounded-full transition-all duration-1000 group-hover:brightness-125"
+                                style={{ width: `${Math.round(progress * 100)}%` }}
+                              />
+                           </div>
+                        </div>
+                      </Link>
 
                       {/* Remove Button */}
                       <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={(e) => {
                           e.preventDefault();
                           removeItem(item.id, playlist?.id || 0);
                         }}
-                        className="absolute top-2 right-2 cursor-pointer rounded-full bg-black/20 p-1.5 text-white shadow-md backdrop-blur-sm transition-all duration-200"
+                        className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-background border border-white/10 text-muted-foreground opacity-0 transition-all duration-300 hover:text-destructive group-hover:opacity-100"
                       >
                         <X className="h-4 w-4" />
                       </Button>
-                    </Link>
+                    </div>
                   );
                 })}
             </HorizontalCarousel>
-          </>
+          </section>
         )}
 
         {/* Continue Watching Series Section */}
-        {series.filter((item) => item.playlistId === playlist?.id || 0).length > 0 && (
-          <>
-            <div className="flex items-center gap-4">
-              <div className="rounded-xl border border-emerald-700 bg-emerald-950 p-3">
-                <TrendingUp className="h-8 w-8 text-emerald-400" />
-              </div>
-              <div>
-                <h2 className="text-3xl font-bold text-white">
-                  Continue Watching Series{' '}
-                  <span className="text-xs font-semibold text-slate-400">
-                    ({series.filter((i) => i.playlistId === (playlist?.id || 0)).length})
-                  </span>
+        {series.filter((s) => s.playlistId === playlist?.id || 0).length > 0 && (
+          <section className="space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-300 fill-mode-both">
+            <div className="flex items-end justify-between">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-primary">
+                  <Tv className="h-5 w-5" />
+                  <span className="text-xs font-bold uppercase tracking-widest">Resume Series</span>
+                </div>
+                <h2 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl text-nowrap">
+                  Keep Watching
                 </h2>
-                <p className="mt-1 text-sm text-slate-400">Pick up where you left off</p>
               </div>
             </div>
-            <HorizontalCarousel
-              scrollBy={800}
-              ariaLabelLeft="Scroll continue series left"
-              ariaLabelRight="Scroll continue series right"
-            >
+
+            <HorizontalCarousel scrollBy={800}>
               {series
-                .filter((item) => item.playlistId === playlist?.id || 0)
-                .map((item) => {
-                  const progress = getProgress(item.id, playlist?.id || 0) ?? 0;
-                  const episode = item.episodes[item.episodes.length - 1];
+                .filter((s) => s.playlistId === playlist?.id || 0)
+                .map((s) => {
+                  const lastEp = s.episodes[s.episodes.length - 1];
+                  if (!lastEp) return null;
+                  const progress = lastEp.duration > 0 ? lastEp.position / lastEp.duration : 0;
 
                   return (
-                    <Link
-                      key={item.id}
-                      href={`series?categoryId=${item.categoryId}&serieId=${item.id}&seasonId=${episode.seasonId}&episodeNumber=${episode.episodeNumber}`}
-                      className="group relative w-62.5 shrink-0 overflow-hidden rounded-2xl border-2 border-slate-700 transition-all duration-300 hover:border-amber-500 hover:shadow-[0_12px_24px_-8px_rgba(245,158,11,0.2)]"
-                    >
-                      <div className="relative bg-slate-800">
-                        {/* Thumbnail */}
-                        <div className="relative h-75 overflow-hidden bg-slate-800">
+                    <div key={s.id} className="group relative w-64 shrink-0 lg:w-72">
+                      <Link
+                        href={`series?categoryId=${s.categoryId}&serieId=${s.id}&seasonId=${lastEp.seasonId}&episodeNumber=${lastEp.episodeNumber}&play=true`}
+                        className="block overflow-hidden rounded-2xl border border-white/5 bg-white/5 transition-all duration-500 group-hover:border-primary/30 group-hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]"
+                      >
+                        <div className="relative aspect-video overflow-hidden">
                           <Image
-                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                             fill
-                            src={item.poster || '/icon.png'}
-                            alt={item.title || 'Untitled'}
+                            src={s.poster || '/icon.png'}
+                            alt={s.title || 'Untitled'}
                           />
-                          <div className="absolute top-2 left-2 rounded-full border border-white/10 bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white">
-                            Resume • S{episode.seasonId}E{episode.episodeNumber}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+
+                          <div className="absolute top-3 left-3">
+                             <div className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-black text-primary backdrop-blur-md border border-primary/20">
+                                S{lastEp.seasonId} E{lastEp.episodeNumber}
+                             </div>
                           </div>
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                            <div className="rounded-full bg-amber-500 p-2 shadow-lg shadow-amber-600/40">
-                              <Play className="ml-0.5 h-5 w-5 fill-white text-white" />
-                            </div>
+
+                          <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                             <div className="flex items-center gap-2 rounded-full bg-black/40 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-md border border-white/10">
+                                {Math.round(progress * 100)}% Complete
+                             </div>
+                          </div>
+
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                             <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-md border border-white/20">
+                                <Play className="ml-0.5 h-6 w-6 text-white fill-white" />
+                             </div>
                           </div>
                         </div>
 
-                        {/* Progress Bar */}
-                        {progress > 0 && (
-                          <div className="bottom-0 left-0 h-1.5 w-full bg-slate-800/80">
-                            <div
-                              className="h-full bg-amber-500 shadow-[inset_0_0_6px_rgba(245,158,11,0.3)]"
-                              style={{
-                                width: `${Math.min(progress * 100, 100)}%`,
-                                transition: 'width 0.3s ease-out',
-                              }}
-                            />
-                          </div>
-                        )}
-                        {/* Title & Episode */}
-                        <div className="space-y-1 overflow-hidden border-t border-slate-700 bg-slate-900/80 p-3">
-                          <p className="truncate text-xs font-semibold text-white transition-colors group-hover:text-amber-300">
-                            {item.title}
-                          </p>
-                          <p className="text-xs font-semibold text-amber-400">
-                            S{episode.seasonId}E{episode.episodeNumber}
-                          </p>
+                        <div className="p-4">
+                           <p className="truncate text-sm font-bold text-foreground transition-colors group-hover:text-primary">
+                             {s.title}
+                           </p>
+                           {/* Progress Bar */}
+                           <div className="mt-3 relative h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+                              <div
+                                className="h-full bg-primary rounded-full transition-all duration-1000 group-hover:brightness-125"
+                                style={{ width: `${Math.round(progress * 100)}%` }}
+                              />
+                           </div>
                         </div>
-                      </div>
+                      </Link>
 
                       {/* Remove Button */}
                       <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={(e) => {
                           e.preventDefault();
-                          removeSeriesItem(item.id);
+                          removeSeriesItem(s.id);
                         }}
-                        className="absolute top-2 right-2 cursor-pointer rounded-full bg-black/20 p-1.5 text-white shadow-md backdrop-blur-sm transition-all duration-200"
+                        className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-background border border-white/10 text-muted-foreground opacity-0 transition-all duration-300 hover:text-destructive group-hover:opacity-100"
                       >
                         <X className="h-4 w-4" />
                       </Button>
-                    </Link>
+                    </div>
                   );
                 })}
             </HorizontalCarousel>
-          </>
+          </section>
         )}
 
         {/* Popular Movies Section */}
         {trendingMovies?.movies && trendingMovies.movies.length > 0 && (
-          <section className="space-y-6">
-            <div className="flex items-center gap-4">
-              <div className="rounded-xl border border-red-700 bg-red-950 p-3">
-                <Flame className="h-8 w-8 text-red-400" />
-              </div>
-              <div>
-                <h2 className="text-3xl font-bold text-white">
-                  Popular Movies{' '}
-                  <span className="text-xs font-semibold text-slate-400">
-                    ({trendingMovies?.movies?.length || 0})
-                  </span>
+          <section className="space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-400 fill-mode-both">
+            <div className="flex items-end justify-between">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-primary">
+                  <Flame className="h-5 w-5" />
+                  <span className="text-xs font-bold uppercase tracking-widest">Trending</span>
+                </div>
+                <h2 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+                  Popular Movies
                 </h2>
-                <p className="mt-1 text-sm text-slate-400">Trending now on StreamMax</p>
               </div>
             </div>
 
-            <HorizontalCarousel
-              scrollBy={800}
-              ariaLabelLeft="Scroll popular movies left"
-              ariaLabelRight="Scroll popular movies right"
-            >
-              {trendingMovies?.movies?.slice(0, 12).map((movie) => (
+            <HorizontalCarousel scrollBy={800}>
+              {trendingMovies?.movies?.slice(0, 15).map((movie) => (
                 <Link
                   href={`movies/movie?movieId=${movie.id}`}
                   key={movie.id}
-                  className="group w-62.5 shrink-0"
+                  className="group relative w-48 shrink-0 lg:w-56"
                 >
-                  <div className="relative cursor-pointer overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 transition-all duration-300 hover:border-amber-500 hover:shadow-[0_12px_24px_-8px_rgba(245,158,11,0.2)]">
-                    <div className="relative h-100 overflow-hidden">
-                      <Image
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        fill
-                        src={movie.backdropUrl || '/icon.png'}
-                        alt={movie.title}
-                      />
-                      {movie.releaseDate && (
-                        <div className="absolute top-2 left-2 rounded-full border border-white/10 bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white">
-                          {movie.releaseDate.split('-')[0]}
-                        </div>
-                      )}
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                        <div className="rounded-full bg-amber-500 p-3 shadow-lg shadow-amber-600/40">
-                          <Play className="ml-0.5 h-6 w-6 fill-white text-white" />
-                        </div>
-                      </div>
+                  <div className="relative aspect-[2/3] overflow-hidden rounded-2xl border border-white/5 bg-white/5 transition-all duration-500 group-hover:border-primary/50 group-hover:shadow-[0_0_40px_rgba(var(--primary),0.2)]">
+                    <Image
+                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      fill
+                      src={movie.backdropUrl || '/icon.png'}
+                      alt={movie.title}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+
+                    {/* Hover Info */}
+                    <div className="absolute inset-0 flex flex-col justify-end p-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                       <div className="mb-2 flex items-center gap-1.5">
+                          <div className="rounded border border-primary/50 bg-primary/20 px-1.5 py-0.5 text-[10px] font-bold text-primary">
+                             {movie.releaseDate?.split('-')[0] || 'N/A'}
+                          </div>
+                       </div>
+                       <p className="line-clamp-2 text-sm font-bold text-white">
+                          {movie.title}
+                       </p>
                     </div>
-                    <div className="absolute right-0 bottom-0 left-0 border-t border-white/5 bg-black/90 p-4">
-                      <p className="truncate text-sm font-semibold text-white transition-colors group-hover:text-amber-300">
-                        {movie.title}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-400">
-                        {movie.releaseDate?.split('-')[0]}
-                      </p>
+
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                       <div className="h-16 w-16 translate-y-4 rounded-full bg-primary opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
+                          <div className="flex h-full w-full items-center justify-center">
+                             <Play className="ml-1 h-8 w-8 fill-primary-foreground text-primary-foreground" />
+                          </div>
+                       </div>
                     </div>
                   </div>
                 </Link>
@@ -337,53 +314,43 @@ function HomeLanding() {
 
         {/* Popular Series Section */}
         {trendingMovies?.series && trendingMovies.series.length > 0 && (
-          <section className="space-y-6 pb-8">
-            <div className="flex items-center gap-4">
-              <div className="rounded-xl border border-emerald-700 bg-emerald-950 p-3">
-                <TrendingUp className="h-8 w-8 text-emerald-400" />
-              </div>
-              <div>
-                <h2 className="text-3xl font-bold text-white">
-                  Popular Series{' '}
-                  <span className="text-xs font-semibold text-slate-400">
-                    ({trendingMovies?.series?.length || 0})
-                  </span>
+          <section className="space-y-6 pb-12 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-500 fill-mode-both">
+            <div className="flex items-end justify-between">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-primary">
+                  <TrendingUp className="h-5 w-5" />
+                  <span className="text-xs font-bold uppercase tracking-widest">Binge-worthy</span>
+                </div>
+                <h2 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+                  Popular Series
                 </h2>
-                <p className="mt-1 text-sm text-slate-400">Binge-worthy shows trending now</p>
               </div>
             </div>
 
-            <HorizontalCarousel
-              scrollBy={800}
-              ariaLabelLeft="Scroll popular series left"
-              ariaLabelRight="Scroll popular series right"
-            >
-              {trendingMovies?.series?.slice(0, 12).map((s) => (
-                <div key={s.id} className="group w-62.5 shrink-0">
-                  <div className="relative cursor-pointer overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 transition-all duration-300 hover:border-amber-500 hover:shadow-[0_12px_24px_-8px_rgba(245,158,11,0.2)]">
-                    <div className="relative h-100 overflow-hidden">
-                      <Image
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        fill
-                        src={s.backdropUrl || '/icon.png'}
-                        alt={s.name}
-                      />
-                      {s.firstAirDate && (
-                        <div className="absolute top-2 left-2 rounded-full border border-white/10 bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white">
-                          {s.firstAirDate.split('-')[0]}
-                        </div>
-                      )}
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                        <div className="rounded-full bg-amber-500 p-3 shadow-lg shadow-amber-600/40">
-                          <Play className="ml-0.5 h-6 w-6 fill-white text-white" />
-                        </div>
-                      </div>
+            <HorizontalCarousel scrollBy={800}>
+              {trendingMovies?.series?.slice(0, 15).map((s) => (
+                <div key={s.id} className="group relative w-48 shrink-0 lg:w-56">
+                  <div className="relative aspect-[2/3] overflow-hidden rounded-2xl border border-white/5 bg-white/5 transition-all duration-500 group-hover:border-primary/50">
+                    <Image
+                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      fill
+                      src={s.backdropUrl || '/icon.png'}
+                      alt={s.name}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+
+                    <div className="absolute inset-0 flex flex-col justify-end p-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                       <p className="line-clamp-2 text-sm font-bold text-white">
+                          {s.name}
+                       </p>
                     </div>
-                    <div className="absolute right-0 bottom-0 left-0 border-t border-white/5 bg-black/90 p-4">
-                      <p className="truncate text-sm font-semibold text-white transition-colors group-hover:text-amber-300">
-                        {s.name}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-400">{s.firstAirDate?.split('-')[0]}</p>
+
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                       <div className="h-12 w-12 rounded-full bg-primary opacity-0 transition-all duration-300 group-hover:opacity-100">
+                          <div className="flex h-full w-full items-center justify-center">
+                             <Play className="ml-1 h-6 w-6 fill-primary-foreground text-primary-foreground" />
+                          </div>
+                       </div>
                     </div>
                   </div>
                 </div>
@@ -397,3 +364,4 @@ function HomeLanding() {
 }
 
 export default HomeLanding;
+

@@ -2,7 +2,9 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 
-import CategoriesSidebar from '@/components/commen/CategoriesSidebar';
+import { Tv } from 'lucide-react';
+
+import CategoriesSidebar from '@/components/common/CategoriesSidebar';
 import ItemsList from '@/components/iptv/ItemsList';
 import EmptyState from '@/components/ui/EmptyState';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -10,6 +12,7 @@ import SeriesDetails from '@/features/series/components/SeriesDetails';
 import { trpc } from '@/lib/trpc';
 import VirtualGrid from '@/src/shared/components/common/VirtualGrid';
 import { usePlaylistStore } from '@repo/store';
+
 
 export default function SeriesPage() {
   const router = useRouter();
@@ -73,7 +76,7 @@ export default function SeriesPage() {
         selectedCategoryId={selectedCategoryId}
         categoryType="series"
       />
-      <div className="h-full w-full overflow-y-auto pb-20">
+      <div className="h-full w-full overflow-y-auto bg-background/50 backdrop-blur-3xl scrollbar-hide ">
         {serieError && (
           <EmptyState
             icon="📺"
@@ -85,14 +88,18 @@ export default function SeriesPage() {
         )}
         {!selectedCategoryId && !serieId && !newSeries && (
           <EmptyState
-            icon="📺"
-            title="No Data Found"
-            description="Please select a category to view series"
+            icon={<Tv className="h-12 w-12 text-muted-foreground/40" />}
+            title="No Series Selected"
+            description="Please select a category from the sidebar to continue"
             fullScreen
           />
         )}
 
-        {(isFetchingSeries || isFetchingSerie || loadingNewData) && <LoadingSpinner fullScreen />}
+        {(isFetchingSeries || isFetchingSerie || loadingNewData) && (
+          <div className="flex h-full items-center justify-center">
+             <LoadingSpinner />
+          </div>
+        )}
         {serieId && serie && (
           <SeriesDetails
             image={serie.info.cover}
@@ -107,9 +114,9 @@ export default function SeriesPage() {
         )}
 
         {series && !isFetchingSeries && !isFetchingSerie && !serieId && (
-          <div className="h-full bg-linear-to-b from-slate-900/40 to-slate-950">
+
             <VirtualGrid
-              className="h-full p-5"
+              className="h-full p-3"
               items={series}
               renderItem={(serie) => (
                 <ItemsList
@@ -121,9 +128,9 @@ export default function SeriesPage() {
                   itemType="series"
                 />
               )}
-              gapClassName="gap-5"
+              gapClassName="gap-6"
             />
-          </div>
+
         )}
 
         {newSeriesData &&
@@ -132,9 +139,9 @@ export default function SeriesPage() {
           !loadingNewData &&
           !isFetchingSerie &&
           !serieId && (
-            <div className="h-full bg-linear-to-b from-slate-900/40 to-slate-950">
+
               <VirtualGrid
-                className="h-full p-5"
+                className="h-full p-3"
                 items={newSeriesData}
                 renderItem={(serie) => (
                   <ItemsList
@@ -146,11 +153,12 @@ export default function SeriesPage() {
                     itemType="series"
                   />
                 )}
-                gapClassName="gap-3"
+                gapClassName="gap-6"
               />
-            </div>
+
           )}
       </div>
+
     </div>
   );
 }

@@ -39,11 +39,11 @@ const PlaylistManager = ({
     <div className="space-y-6">
       {/* Active Node Card */}
       <div className="group relative overflow-hidden rounded-2xl border border-slate-500/10 bg-linear-to-br from-neutral-100/10 to-neutral-100/5 p-6">
-        <div className="absolute top-0 right-0 -mt-4 -mr-4 h-32 w-32 rounded-full bg-amber-500/10 blur-3xl transition-all group-hover:bg-amber-500/20" />
+        <div className="absolute top-0 right-0 -mt-4 -mr-4 h-32 w-32 rounded-full bg-primary/10 blur-3xl transition-all group-hover:bg-primary/20" />
 
         <div className="relative z-10 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div className="space-y-1">
-            <div className="mb-1 flex items-center gap-2 text-amber-500">
+            <div className="mb-1 flex items-center gap-2 text-primary">
               <Server className="h-4 w-4" />
               <span className="text-xs font-bold tracking-widest uppercase">Active Playlist</span>
             </div>
@@ -60,7 +60,7 @@ const PlaylistManager = ({
               <Button
                 onClick={() => handleUpdate()}
                 variant="outline"
-                className="h-10 rounded-lg border-amber-500/30 bg-amber-500/5 text-amber-500 hover:bg-amber-500 hover:text-white"
+                className="h-10 rounded-lg border-primary/30 bg-primary/5 text-primary hover:bg-primary hover:text-primary-foreground"
               >
                 <RefreshCw className="mr-2 h-4 w-4" /> Update
               </Button>
@@ -100,7 +100,7 @@ const PlaylistManager = ({
                   className={cn(
                     'flex h-10 w-10 items-center justify-center rounded-full transition-colors',
                     isActive
-                      ? 'bg-amber-500 text-black'
+                      ? 'bg-primary text-primary-foreground'
                       : 'bg-neutral-800 text-neutral-500 group-hover:bg-neutral-700 group-hover:text-neutral-300',
                   )}
                 >
@@ -116,12 +116,12 @@ const PlaylistManager = ({
                     <span
                       className={cn(
                         'text-sm font-semibold',
-                        isActive ? 'text-amber-400' : 'text-neutral-300',
+                        isActive ? 'text-primary' : 'text-neutral-300',
                       )}
                     >
                       {p.username}
                     </span>
-                    {isActive && <CheckCircle2 className="h-3 w-3 text-amber-500" />}
+                    {isActive && <CheckCircle2 className="h-3 w-3 text-primary" />}
                   </div>
                   <div className="max-w-50 truncate font-mono text-[11px] text-neutral-500">
                     {new URL(p.baseUrl).hostname}

@@ -1,5 +1,9 @@
-import type { MediaPlayerInstance } from '@vidstack/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import type {
+  MediaPlayerInstance,
+  MediaProgressEventDetail,
+  MediaTimeUpdateEventDetail
+} from '@vidstack/react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 export interface UsePlayerReturn {
   playerRef: React.RefObject<MediaPlayerInstance | null>;
@@ -11,6 +15,18 @@ export interface UsePlayerReturn {
   isLoading: boolean;
   playbackRate: number;
   isPiP: boolean;
+  isPaused: boolean;
+  // Event Handlers
+  onTimeUpdate: (detail: MediaTimeUpdateEventDetail) => void;
+  onDurationChange: (duration: number) => void;
+  onPlay: () => void;
+  onPause: () => void;
+  onLoading: (isLoading: boolean) => void;
+  onFullscreenChange: (isFullscreen: boolean) => void;
+  onProgress: (detail: MediaProgressEventDetail) => void;
+  onPlaybackRateChange: (rate: number) => void;
+  onPiPChange: (isPiP: boolean) => void;
+  // Commands
   play: () => void;
   pause: () => void;
   togglePlay: () => void;
@@ -24,141 +40,138 @@ export interface UsePlayerReturn {
   togglePiP: () => void;
 }
 
+/**
+ * Event-Driven Robust Player Hook.
+ * This implementation avoids Vidstack's internal state proxy for reading state,
+ * which resolves the "this.$state[prop2] is not a function" error.
+ * It uses standard React state updated via MediaPlayer events.
+ */
 export function usePlayer(): UsePlayerReturn {
   const playerRef = useRef<MediaPlayerInstance | null>(null);
-  const unsubscribeRef = useRef<Array<() => void>>([]);
 
+  // --- Internal State ---
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [buffered, setBuffered] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [playbackRate, setPlaybackRateState] = useState(1);
+  const [playbackRate, setPlaybackRate] = useState(1);
   const [isPiP, setIsPiP] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
 
-  const setupSubscriptions = useCallback((player: MediaPlayerInstance | null) => {
-    unsubscribeRef.current.forEach((fn) => fn?.());
-    unsubscribeRef.current = [];
+  // --- Event Handlers (Native Vidstack Events) ---
+  const onTimeUpdate = useCallback((detail: MediaTimeUpdateEventDetail) => {
+    setCurrentTime(detail.currentTime);
+  }, []);
 
-    if (!player) return;
+  const onDurationChange = useCallback((d: number) => {
+    setDuration(d);
+  }, []);
 
-    try {
-      unsubscribeRef.current = [
-        player.subscribe(({ currentTime }) => setCurrentTime(currentTime ?? 0)),
-        player.subscribe(({ duration }) => setDuration(duration ?? 0)),
-        player.subscribe(({ paused }) => setIsPlaying(!paused)),
-        player.subscribe(({ fullscreen }) => setIsFullscreen(fullscreen ?? false)),
-        player.subscribe(({ buffered }) => {
-          if (buffered && buffered.length > 0) {
-            setBuffered(buffered.end(buffered.length - 1) ?? 0);
-          }
-        }),
-        player.subscribe(({ bufferedEnd }) => setIsLoading(bufferedEnd === 0)),
-        player.subscribe(({ playbackRate }) => setPlaybackRateState(playbackRate ?? 1)),
-        player.subscribe(({ pictureInPicture }) => setIsPiP(pictureInPicture ?? false)),
-      ];
-    } catch (error) {
-      console.error('Failed to setup player subscriptions:', error);
+  const onPlay = useCallback(() => {
+    setIsPlaying(true);
+    setIsPaused(false);
+  }, []);
+
+  const onPause = useCallback(() => {
+    setIsPlaying(false);
+    setIsPaused(true);
+  }, []);
+
+  const onLoading = useCallback((loading: boolean) => setIsLoading(loading), []);
+
+  const onFullscreenChange = useCallback((isFullscreen: boolean) => {
+    setIsFullscreen(isFullscreen);
+  }, []);
+
+  const onProgress = useCallback((detail: MediaProgressEventDetail) => {
+    if (detail.buffered.length > 0) {
+      setBuffered(detail.buffered.end(detail.buffered.length - 1));
     }
   }, []);
 
-  useEffect(() => {
-    const checkInterval = setInterval(() => {
-      const currentPlayer = playerRef.current;
-      if (currentPlayer) {
-        setupSubscriptions(currentPlayer);
-      }
-    }, 100);
-
-    setupSubscriptions(playerRef.current);
-
-    return () => {
-      clearInterval(checkInterval);
-      unsubscribeRef.current.forEach((fn) => fn?.());
-    };
-  }, [setupSubscriptions]);
-
-  const play = useCallback(() => {
-    playerRef.current?.play();
+  const onPlaybackRateChange = useCallback((rate: number) => {
+    setPlaybackRate(rate);
   }, []);
 
-  const pause = useCallback(() => {
-    playerRef.current?.pause();
+  const onPiPChange = useCallback((pip: boolean) => {
+    setIsPiP(pip);
   }, []);
+
+  // --- Commands (Using ref directly for stability) ---
+  const play = useCallback(() => playerRef.current?.play(), []);
+  const pause = useCallback(() => playerRef.current?.pause(), []);
 
   const togglePlay = useCallback(() => {
     const player = playerRef.current;
-    if (player?.state.paused) {
-      player.play();
-    } else {
-      player?.pause();
-    }
+    if (!player) return;
+    if (player.paused) player.play();
+    else player.pause();
   }, []);
 
   const seek = useCallback((time: number) => {
-    if (playerRef.current) {
-      playerRef.current.currentTime = time;
-    }
+    if (playerRef.current) playerRef.current.currentTime = time;
   }, []);
 
   const setVolume = useCallback((vol: number) => {
-    if (playerRef.current) {
-      playerRef.current.volume = Math.max(0, Math.min(1, vol));
-    }
+    if (playerRef.current) playerRef.current.volume = Math.max(0, Math.min(1, vol));
   }, []);
 
   const toggleMute = useCallback(() => {
-    if (playerRef.current) {
-      playerRef.current.muted = !playerRef.current.muted;
-    }
+    if (playerRef.current) playerRef.current.muted = !playerRef.current.muted;
   }, []);
 
-  const toggleFullscreen = useCallback(() => {
-    if (playerRef.current) {
-      if (playerRef.current.state.fullscreen) {
-        playerRef.current.exitFullscreen();
+  const toggleFullscreen = useCallback(async () => {
+    const player = playerRef.current;
+    if (!player) return;
+
+    try {
+      if (isFullscreen) {
+        await player.exitFullscreen();
       } else {
-        playerRef.current.enterFullscreen();
+        await player.enterFullscreen();
+      }
+    } catch (err) {
+      // Silently handle orientation lock errors on desktop/unsupported devices
+      if (err instanceof Error && !err.message.includes('orientation')) {
+        console.error('Fullscreen error:', err);
       }
     }
-  }, []);
+  }, [isFullscreen]);
 
   const forward = useCallback((seconds: number) => {
     if (playerRef.current) {
-      playerRef.current.currentTime = Math.min(
-        playerRef.current.state.duration ?? 0,
-        (playerRef.current.state.currentTime ?? 0) + seconds,
-      );
+      playerRef.current.currentTime = Math.min(duration, currentTime + seconds);
     }
-  }, []);
+  }, [currentTime, duration]);
 
   const backward = useCallback((seconds: number) => {
     if (playerRef.current) {
-      playerRef.current.currentTime = Math.max(
-        0,
-        (playerRef.current.state.currentTime ?? 0) - seconds,
-      );
+      playerRef.current.currentTime = Math.max(0, currentTime - seconds);
     }
+  }, [currentTime]);
+
+  const setPlaybackRateCmd = useCallback((rate: number) => {
+    if (playerRef.current) playerRef.current.playbackRate = rate;
   }, []);
 
-  const setPlaybackRate = useCallback((rate: number) => {
-    if (playerRef.current) {
-      playerRef.current.playbackRate = Math.max(0.25, Math.min(3, rate));
-    }
-  }, []);
+  const togglePiP = useCallback(async () => {
+    const player = playerRef.current;
+    if (!player) return;
 
-  const togglePiP = useCallback(() => {
-    if (playerRef.current) {
-      if (playerRef.current.state.pictureInPicture) {
-        playerRef.current.exitPictureInPicture();
+    try {
+      if (isPiP) {
+        await player.exitPictureInPicture();
       } else {
-        playerRef.current.enterPictureInPicture();
+        await player.enterPictureInPicture();
       }
+    } catch (err) {
+      console.warn('PiP not supported:', err);
     }
-  }, []);
+  }, [isPiP]);
 
-  return {
+  return useMemo(() => ({
     playerRef,
     currentTime,
     duration,
@@ -168,6 +181,16 @@ export function usePlayer(): UsePlayerReturn {
     isLoading,
     playbackRate,
     isPiP,
+    isPaused,
+    onTimeUpdate,
+    onDurationChange,
+    onPlay,
+    onPause,
+    onLoading,
+    onFullscreenChange,
+    onProgress,
+    onPlaybackRateChange,
+    onPiPChange,
     play,
     pause,
     togglePlay,
@@ -177,7 +200,14 @@ export function usePlayer(): UsePlayerReturn {
     toggleFullscreen,
     forward,
     backward,
-    setPlaybackRate,
+    setPlaybackRate: setPlaybackRateCmd,
     togglePiP,
-  };
+  }), [
+    currentTime, duration, isPlaying, isFullscreen, buffered, isLoading, playbackRate, isPiP, isPaused,
+    onTimeUpdate, onDurationChange, onPlay, onPause, onLoading, onFullscreenChange, onProgress,
+    onPlaybackRateChange, onPiPChange, play, pause,
+    togglePlay, seek, setVolume, toggleMute, toggleFullscreen, forward, backward,
+    setPlaybackRateCmd, togglePiP
+  ]);
 }
+

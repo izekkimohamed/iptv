@@ -54,8 +54,8 @@ export function CompetitionSection({
               </h3>
               <div className="flex items-center gap-3 text-[10px] font-bold uppercase">
                 {liveCount > 0 && (
-                  <span className="flex items-center gap-1.5 text-green-400">
-                    <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
+                  <span className="flex items-center gap-1.5 text-primary">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
                     {liveCount} Live
                   </span>
                 )}
@@ -125,8 +125,8 @@ export function CompetitionSection({
                   </h2>
                   <div className="flex items-center gap-3 text-xs font-bold uppercase">
                     {liveCount > 0 && (
-                      <span className="flex items-center gap-1.5 text-green-400">
-                        <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
+                      <span className="flex items-center gap-1.5 text-primary">
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
                         {liveCount} Live
                       </span>
                     )}

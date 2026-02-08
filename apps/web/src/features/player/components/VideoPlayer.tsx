@@ -181,23 +181,11 @@ export function VideoPlayer({
     }
   }, [mediaType, saveMovieProgress, saveEpisodeProgress]);
 
-  // const handlePlayNext = useCallback(() => {
-  //   if (!hasNext || !playNext) return;
-  //   saveEpisodeProgress();
-  //   playNext();
-  // }, [hasNext, playNext, saveEpisodeProgress]);
-
-  // const handlePlayPrev = useCallback(() => {
-  //   if (!hasPrev || !playPrev) return;
-  //   saveEpisodeProgress();
-  //   playPrev();
-  // }, [hasPrev, playPrev, saveEpisodeProgress]);
-
   const handlePlayNext = useCallback(() => {
     if (!hasNext || !playNext) return;
     saveEpisodeProgress();
     // Store current fullscreen state before navigating
-    const wasFullscreen = player.playerRef.current?.state.fullscreen ?? fullScreen;
+    const wasFullscreen = player.isFullscreen;
     playNext();
     // Re-enter fullscreen after navigation
     setTimeout(() => {
@@ -205,13 +193,13 @@ export function VideoPlayer({
         player.playerRef.current.enterFullscreen();
       }
     }, 100);
-  }, [hasNext, playNext, saveEpisodeProgress, fullScreen, player]);
+  }, [hasNext, playNext, saveEpisodeProgress, player]);
 
   const handlePlayPrev = useCallback(() => {
     if (!hasPrev || !playPrev) return;
     saveEpisodeProgress();
     // Store current fullscreen state before navigating
-    const wasFullscreen = player.playerRef.current?.state.fullscreen ?? fullScreen;
+    const wasFullscreen = player.isFullscreen;
     playPrev();
     // Re-enter fullscreen after navigation
     setTimeout(() => {
@@ -219,7 +207,7 @@ export function VideoPlayer({
         player.playerRef.current.enterFullscreen();
       }
     }, 100);
-  }, [hasPrev, playPrev, saveEpisodeProgress, fullScreen, player]);
+  }, [hasPrev, playPrev, saveEpisodeProgress, player]);
 
   useEffect(() => {
     setPlaybackError(null);
@@ -278,13 +266,8 @@ export function VideoPlayer({
     }
   }, [player.currentTime, onTimeUpdate]);
 
-  useEffect(() => {
-    if (fullScreen === true) {
-      player.playerRef.current?.enterFullscreen();
-    } else {
-      player.playerRef.current?.exitFullscreen();
-    }
-  }, [fullScreen, player.playerRef]);
+  // Removed conflicting fullscreen sync effect that caused crashes on exit
+  // We now rely on native Vidstack events and player.toggleFullscreen()
 
   useEffect(() => {
     // Apply persisted playback rate on mount
@@ -293,6 +276,15 @@ export function VideoPlayer({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
       if (e.key === ' ') {
         e.preventDefault();
         player.togglePlay();
@@ -332,7 +324,7 @@ export function VideoPlayer({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [handlePlayNext, player]);
+  }, [handlePlayNext, handlePlayPrev, player]);
 
   if (!src) {
     return null;
@@ -356,15 +348,15 @@ export function VideoPlayer({
     }
 
     return (
-      <div className="flex h-full w-full flex-col items-center justify-center rounded-lg bg-slate-900 p-8">
-        <AlertTriangle className="mb-4 h-16 w-16 text-red-500" />
+      <div className="flex h-full w-full flex-col items-center justify-center rounded-lg border border-white/10 bg-card/50 p-8 backdrop-blur-xl">
+        <AlertTriangle className="mb-4 h-16 w-16 text-destructive" />
         <h2 className="mb-2 text-xl font-bold text-white">{errorMessage}</h2>
         <p className="mb-6 max-w-lg text-center text-gray-400">{detailedMessage}</p>
         <Button
           onClick={() => setPlaybackError(null)}
-          className="flex items-center gap-2 rounded-full bg-white/10 px-6 py-3 text-white transition-colors hover:bg-white/20"
+          className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-6 py-3 text-white transition-all hover:bg-white/20"
         >
-          <Play className="h-4 w-4" /> Try Again
+          <Play className="h-4 w-4 fill-current" /> Try Again
         </Button>
       </div>
     );
@@ -387,9 +379,28 @@ export function VideoPlayer({
         muted={isMuted}
         loop={loop}
         playsInline={true}
-        onEnded={onEnded}
-        onFullscreenChange={(details) => {
-          toggleFullScreen(details);
+        onTimeUpdate={player.onTimeUpdate}
+        onDurationChange={player.onDurationChange}
+        onPlay={player.onPlay}
+        onPause={player.onPause}
+        onWaiting={() => player.onLoading(true)}
+        onSeeking={() => player.onLoading(true)}
+        onCanPlay={() => player.onLoading(false)}
+        onEnded={() => {
+          player.onPause();
+          onEnded?.();
+        }}
+        onFullscreenChange={(isFullscreen) => {
+          toggleFullScreen(isFullscreen);
+          player.onFullscreenChange(isFullscreen);
+        }}
+        onProgress={player.onProgress}
+        onRateChange={(playbackRate) => {
+          player.onPlaybackRateChange(playbackRate);
+          setPreferredRate(playbackRate);
+        }}
+        onPictureInPictureChange={(isPiP) => {
+          player.onPiPChange(isPiP);
         }}
         onEnd={() => {
           if (hasNext && playNext) {
@@ -403,27 +414,30 @@ export function VideoPlayer({
             error: errorDetails.detail.error,
           });
         }}
-        onDoubleClick={() => toggleFullScreen(!fullScreen)}
+        onDoubleClick={(e) => {
+          e.preventDefault();
+          player.toggleFullscreen();
+        }}
         onClick={() => player.togglePlay()}
         className={cn('relative h-full w-full overflow-hidden bg-black')}
-        data-isfullscreen={fullScreen}
+        data-isfullscreen={player.isFullscreen}
         data-aspect-ratio={aspectRatio}
       >
         <MediaProvider>
           <source src={src} type={videoType} />
         </MediaProvider>
 
-        {!player.isPlaying && !player.isLoading && (
-          <div className="pointer-events-none absolute inset-0 flex w-full items-center justify-center bg-linear-to-t from-black/80 via-transparent to-black/80">
-            <div className="rounded-full bg-amber-400/20 p-5 backdrop-blur-sm">
-              <Pause className="h-10 w-10 fill-white text-white" />
-            </div>
-          </div>
-        )}
 
-        {player.isLoading && !player.isPlaying && (
+        {player.isLoading && !player.isPaused && !player.isPlaying && (
           <div className="absolute inset-0 flex items-center justify-center">
             <LoadingSpinner size="large" message="Loading..." />
+          </div>
+        )}
+        {player.playerRef.current?.paused && (
+          <div className="pointer-events-none absolute inset-0 flex w-full items-center justify-center bg-linear-to-t from-black/80 via-transparent to-black/80">
+            <div className="rounded-full bg-primary/20 p-5 backdrop-blur-sm border border-primary/20">
+              <Pause className="h-10 w-10 fill-white text-white" />
+            </div>
           </div>
         )}
 

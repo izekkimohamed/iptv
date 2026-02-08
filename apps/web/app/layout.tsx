@@ -3,12 +3,12 @@
 import './globals.css';
 
 import { invoke } from '@tauri-apps/api/core';
-import { JetBrains_Mono } from 'next/font/google';
+import { Inter, JetBrains_Mono, Outfit } from 'next/font/google';
 import { usePathname } from 'next/navigation';
 import { type ReactNode, Suspense, useEffect } from 'react';
 
-import NavBar from '@/components/Navbar';
 import Providers from '@/components/providers';
+import Sidebar from '@/components/Sidebar';
 import { Toaster } from '@/components/ui/sonner';
 import { useTauri } from '@/hooks/useTauri';
 import { usePlayerStore } from '@repo/store';
@@ -17,6 +17,17 @@ const jetBrainsMono = JetBrains_Mono({
   variable: '--font-jetbrains-mono',
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
+});
+
+const outfit = Outfit({
+  variable: '--font-outfit',
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700', '800'],
+});
+
+const inter = Inter({
+  variable: '--font-inter',
+  subsets: ['latin'],
 });
 
 export default function RootLayout({
@@ -45,17 +56,24 @@ export default function RootLayout({
   return (
     <html lang="en">
       <Providers>
-        <body className={`${jetBrainsMono.className} font-mono antialiased`}>
-          <div
-            // style={{
-            //   background: 'radial-gradient(0% 80% at 101.61% 76.99%, #2D0264 0%, #030023 100%);',
-            // }}
-            className="flex h-screen flex-col overflow-hidden bg-[#030023] font-mono"
-          >
-            <div>
-              <NavBar />
+        <body
+          className={`${outfit.variable} ${inter.variable} ${jetBrainsMono.variable} font-sans antialiased`}
+        >
+          <div className="relative flex h-screen w-full overflow-hidden bg-background text-foreground">
+            {/* Background Gradient */}
+            <div className="pointer-events-none fixed inset-0 z-0">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,_oklch(0.2_0.05_260_/_0.15)_0%,_transparent_50%)]" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_70%,_oklch(0.2_0.05_260_/_0.15)_0%,_transparent_50%)]" />
             </div>
-            <Suspense>{children}</Suspense>
+
+            <Sidebar />
+
+
+            <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
+              <main className="flex-1 overflow-hidden">
+                <Suspense>{children}</Suspense>
+              </main>
+            </div>
           </div>
           <Toaster />
         </body>
@@ -63,3 +81,4 @@ export default function RootLayout({
     </html>
   );
 }
+

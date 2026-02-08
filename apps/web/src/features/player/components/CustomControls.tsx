@@ -1,20 +1,20 @@
 import { cn } from '@/lib/utils'; // Assuming you have a class merger
 import {
-  Expand,
-  Maximize,
-  Maximize2,
-  Minimize,
-  MoveHorizontal,
-  Pause,
-  PictureInPicture,
-  Play,
-  Settings,
-  SkipBack,
-  SkipForward,
-  Volume1,
-  Volume2,
-  VolumeX,
-  X,
+    Expand,
+    Maximize,
+    Maximize2,
+    Minimize,
+    MoveHorizontal,
+    Pause,
+    PictureInPicture,
+    Play,
+    Settings,
+    SkipBack,
+    SkipForward,
+    Volume1,
+    Volume2,
+    VolumeX,
+    X,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -190,7 +190,7 @@ export function CustomControls({
   }, [isFullscreen, handleMouseMove, scheduleHideControls]);
 
   const buttonBaseClass =
-    'rounded-lg p-2 text-white/90 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed active:scale-95';
+    'rounded-lg p-2 text-white/90 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed active:scale-95';
 
   return (
     <div
@@ -225,7 +225,7 @@ export function CustomControls({
 
           {/* Current */}
           <div
-            className="absolute top-0 left-0 h-full rounded-full bg-amber-500"
+            className="absolute top-0 left-0 h-full rounded-full bg-primary"
             style={{ width: `${safeDuration > 0 ? (displayTime / safeDuration) * 100 : 0}%` }}
           >
             {/* Handle Endpoint */}
@@ -310,7 +310,7 @@ export function CustomControls({
               onClick={handleVolumeInteract}
             >
               <div
-                className="absolute top-0 left-0 h-full rounded-full bg-amber-500"
+                className="absolute top-0 left-0 h-full rounded-full bg-primary"
                 style={{ width: `${isMuted ? 0 : volume * 100}%` }}
               />
               <div
@@ -431,7 +431,7 @@ export function CustomControls({
                       <span className="text-xs text-white/70">Aspect Ratio</span>
                       <button
                         onClick={onToggleAspectRatio}
-                        className="rounded bg-white/10 px-2 py-1 text-xs text-amber-400"
+                        className="rounded bg-white/10 px-2 py-1 text-xs text-primary"
                       >
                         {aspectRatio}
                       </button>
@@ -470,7 +470,7 @@ export function CustomControls({
                         className={cn(
                           'rounded py-1.5 text-xs font-medium transition-colors',
                           Math.abs(playbackRate - speed) < 0.1
-                            ? 'bg-amber-500 text-black'
+                            ? 'bg-primary text-primary-foreground'
                             : 'bg-white/10 text-white hover:bg-white/20',
                         )}
                       >

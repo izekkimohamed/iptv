@@ -9,6 +9,7 @@ import MovieDetails from '@/features/movies/components/MovieDetails';
 import { trpc } from '@/lib/trpc';
 import VirtualGrid from '@/src/shared/components/common/VirtualGrid';
 import { usePlaylistStore } from '@repo/store';
+import { Film } from 'lucide-react';
 
 export default function MoviesPage() {
   const router = useRouter();
@@ -75,7 +76,7 @@ export default function MoviesPage() {
 
   return (
     <>
-      <div className="relative flex-1 overflow-y-auto">
+      <div className="relative flex-1 overflow-y-auto bg-background/50 backdrop-blur-3xl scrollbar-hide">
         {movieError && (
           <EmptyState
             icon="📺"
@@ -87,13 +88,17 @@ export default function MoviesPage() {
         )}
         {!selectedCategoryId && !movieId && !newMovies && (
           <EmptyState
-            icon="📺"
+            icon={<Film className="h-12 w-12 text-muted-foreground/40" />}
             title="No Categories Found"
-            description="Please select a category to view movies"
+            description="Please select a category from the sidebar to start browsing"
             fullScreen
           />
         )}
-        {(isFetchingMovies || isFetchingMovie || loadingNewData) && <LoadingSpinner fullScreen />}
+        {(isFetchingMovies || isFetchingMovie || loadingNewData) && (
+          <div className="flex h-full items-center justify-center">
+             <LoadingSpinner />
+          </div>
+        )}
         {movieId && movie && (
           <MovieDetails
             image={movie.info.movie_image}
@@ -106,9 +111,9 @@ export default function MoviesPage() {
           />
         )}
         {movies && !isFetchingMovies && !isFetchingMovie && !movieId && (
-          <div className="h-full bg-linear-to-b from-slate-900/40 to-slate-950">
+
             <VirtualGrid
-              className="h-full p-5"
+              className="h-full p-3"
               items={movies}
               renderItem={(movie) => (
                 <ItemsList
@@ -120,14 +125,14 @@ export default function MoviesPage() {
                   itemType="movie"
                 />
               )}
-              gapClassName="gap-3"
+              gapClassName="gap-6"
             />
-          </div>
+
         )}
         {newMoviesData && !movies && !isFetchingMovies && !isFetchingMovie && !movieId && (
-          <div className="h-full bg-linear-to-b from-slate-900/40 to-slate-950">
+
             <VirtualGrid
-              className="h-full p-5"
+              className="h-full p-3"
               items={newMoviesData}
               renderItem={(movie) => (
                 <ItemsList
@@ -139,11 +144,12 @@ export default function MoviesPage() {
                   itemType="movie"
                 />
               )}
-              gapClassName="gap-3"
+              gapClassName="gap-6"
             />
-          </div>
+
         )}
       </div>
+
     </>
   );
 }

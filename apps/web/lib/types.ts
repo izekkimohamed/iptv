@@ -45,7 +45,7 @@ export interface Tmdb {
   poster?: string | null;
   backdrop?: string | null;
   director?: string | null;
-  cast?: { name: string; profilePath: string | null }[];
+  cast?: { name: string; profilePath: string | null; character?: string | null }[];
   videos?: {
     id: string;
     key: string;
@@ -127,6 +127,7 @@ export interface CastSectionProps {
   cast?: Array<{
     name: string;
     profilePath?: string | null;
+    character?: string | null;
   }>;
 }
 

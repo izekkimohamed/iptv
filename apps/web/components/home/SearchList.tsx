@@ -1,7 +1,8 @@
-import { LayoutGrid, Play, Rows3, Sparkles } from 'lucide-react';
+'use client';
+
+import { LayoutGrid, Play, Rows3, Sparkles, Star } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 
 import { useDebounce } from '@/hooks/useDebounce';
@@ -9,6 +10,7 @@ import { trpc } from '@/lib/trpc';
 import HorizontalCarousel from '@/src/shared/components/common/HorizontalCarousel';
 import { usePlaylistStore } from '@repo/store';
 
+import { cn } from '@/lib/utils';
 import { Button } from '../ui/button';
 
 interface SearchListProps {
@@ -21,14 +23,13 @@ const filters = [
   { id: 'all', label: 'All', icon: '🎯' },
   { id: 'channels', label: 'Channels', icon: '📺' },
   { id: 'movies', label: 'Movies', icon: '🎬' },
-  { id: 'series', label: 'Series', icon: '📺' },
+  { id: 'series', label: 'Series', icon: '📼' },
 ] as const;
 
 function SearchList({ searchQuery }: SearchListProps) {
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'carousel'>('carousel');
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
-  const router = useRouter();
 
   const { selectedPlaylist: playlist } = usePlaylistStore();
 
@@ -53,6 +54,7 @@ function SearchList({ searchQuery }: SearchListProps) {
         : [];
     return { channels, movies, series };
   }, [globalSearchResults, activeFilter]);
+
   const hasResults =
     (filteredResults.channels?.length ?? 0) > 0 ||
     (filteredResults.movies?.length ?? 0) > 0 ||
@@ -71,8 +73,6 @@ function SearchList({ searchQuery }: SearchListProps) {
     [globalSearchResults],
   );
 
-  const order: FilterType[] = ['all', 'channels', 'movies', 'series'];
-
   const highlight = (text: string, query: string) => {
     if (!query) return text;
     const q = query.trim();
@@ -81,7 +81,7 @@ function SearchList({ searchQuery }: SearchListProps) {
       const parts = String(text).split(regex);
       return parts.map((part, i) =>
         part.toLowerCase() === q.toLowerCase() ? (
-          <span key={i} className="rounded bg-amber-500/20 px-0.5 text-amber-300">
+          <span key={i} className="rounded bg-primary/20 px-1 text-primary">
             {part}
           </span>
         ) : (
@@ -95,367 +95,193 @@ function SearchList({ searchQuery }: SearchListProps) {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="mx-auto max-w-[90vw] space-y-10 px-4 py-12 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex-1">
-            <div className="mb-2 flex items-center gap-2">
-              <Sparkles className="h-10 w-10 text-amber-400" />
-              <span className="text-sm font-semibold text-amber-400">SEARCH RESULTS</span>
+      <div className="mx-auto max-w-[95vw] space-y-10 px-6 py-12 lg:px-12">
+        {/* Search Header */}
+        <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-primary">
+              <Sparkles className="h-5 w-5 fill-primary" />
+              <span className="text-xs font-bold uppercase tracking-widest text-primary">Discovery</span>
             </div>
-            <h2 className="text-4xl font-bold text-white">
-              Results for{' '}
-              <span className="bg-linear-to-r from-amber-500 to-yellow-400 bg-clip-text text-transparent">
-                "{searchQuery}"
-              </span>
+            <h2 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
+              Results for <span className="text-primary italic">"{searchQuery}"</span>
             </h2>
-            <p className="mt-2 text-gray-400">
-              Found <span className="font-semibold text-amber-400">{counts.all}</span> results
+            <p className="text-sm font-medium text-muted-foreground">
+              Total <span className="text-foreground">{counts.all}</span> matches found
             </p>
           </div>
-          <Link href="/" className="hidden sm:block">
-            <Button className="border border-white/10 bg-white/5 text-gray-300 hover:bg-white/10">
-              Clear
-            </Button>
-          </Link>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-2 rounded-2xl border border-white/5 bg-white/5 p-1.5 backdrop-blur-xl">
             <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setViewMode('carousel')}
-              className={`rounded-lg border px-3 py-2 ${
-                viewMode === 'carousel'
-                  ? 'border-amber-400/50 bg-linear-to-r from-amber-600 to-yellow-500 text-white'
-                  : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10'
-              }`}
+              className={cn(
+                'rounded-xl px-4 transition-all duration-300',
+                viewMode === 'carousel' ? 'bg-primary text-primary-foreground shadow-lg' : 'hover:bg-white/5'
+              )}
             >
-              <Rows3 className="mr-2 h-5 w-5" />
+              <Rows3 className="mr-2 h-4 w-4" />
               Carousel
             </Button>
             <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setViewMode('grid')}
-              className={`rounded-lg border px-3 py-2 ${
-                viewMode === 'grid'
-                  ? 'border-amber-400/50 bg-linear-to-r from-amber-600 to-yellow-500 text-white'
-                  : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10'
-              }`}
+              className={cn(
+                'rounded-xl px-4 transition-all duration-300',
+                viewMode === 'grid' ? 'bg-primary text-primary-foreground shadow-lg' : 'hover:bg-white/5'
+              )}
             >
-              <LayoutGrid className="mr-2 h-5 w-5" />
+              <LayoutGrid className="mr-2 h-4 w-4" />
               Grid
             </Button>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        {/* Filters */}
+        <div className="flex flex-wrap gap-3">
           {filters.map((filter) => (
-            <Button
+            <button
               key={filter.id}
-              onClick={() => setActiveFilter(filter.id)}
-              className={`flex items-center gap-2 rounded-lg border px-4 py-2 font-medium transition-all duration-300 ${
+              onClick={() => setActiveFilter(filter.id as FilterType)}
+              className={cn(
+                'flex items-center gap-2.5 rounded-2xl border px-5 py-2.5 text-sm font-bold transition-all duration-300',
                 activeFilter === filter.id
-                  ? 'border-amber-400/50 bg-linear-to-r from-amber-600 to-yellow-500 text-white shadow-lg shadow-amber-500/20'
-                  : 'border-white/10 bg-white/5 text-gray-300 hover:border-white/20 hover:bg-white/10'
-              }`}
+                  ? 'border-primary/50 bg-primary/20 text-primary shadow-[0_0_20px_rgba(var(--primary),0.1)]'
+                  : 'border-white/5 bg-white/5 text-muted-foreground hover:border-white/10 hover:bg-white/10 hover:text-foreground'
+              )}
             >
-              <span className="text-base">{filter.icon}</span>
+              <span className="text-lg opacity-80">{filter.icon}</span>
               {filter.label}
-              <span className="ml-2 rounded-full border border-white/10 bg-black/30 px-2 py-0.5 text-xs">
+              <span className={cn(
+                'ml-1 rounded-full px-2 py-0.5 text-[10px] font-black',
+                activeFilter === filter.id ? 'bg-primary text-primary-foreground' : 'bg-white/10 text-muted-foreground'
+              )}>
                 {counts[filter.id as FilterType]}
               </span>
-            </Button>
+            </button>
           ))}
         </div>
 
-        <div className="space-y-14">
+        <div className="space-y-16">
           {isGlobalSearchLoading && (
-            <div className="space-y-10">
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                {Array.from({ length: 10 }).map((_, i) => (
-                  <div
-                    key={`sk-${i}`}
-                    className="relative h-full animate-pulse overflow-hidden rounded-xl border border-white/10 bg-white/5"
-                  >
-                    <div className="animate-shimmer aspect-2/3 bg-linear-to-r from-slate-800 via-slate-700 to-slate-800" />
-                    <div className="p-3">
-                      <div className="mb-2 h-3 w-2/3 rounded bg-white/10" />
-                      <div className="h-3 w-1/3 rounded bg-white/10" />
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <div key={i} className="space-y-4 animate-pulse">
+                  <div className="aspect-[2/3] rounded-2xl bg-white/5" />
+                  <div className="h-4 w-3/4 rounded-lg bg-white/5" />
+                </div>
+              ))}
             </div>
           )}
 
           {!isGlobalSearchLoading && !hasResults && (
-            <div className="py-20 text-center">
-              <div className="mb-6 text-8xl opacity-40">🔍</div>
-              <h3 className="mb-2 text-2xl font-bold text-white">No Results Found</h3>
-              <p className="mx-auto max-w-md text-lg text-gray-400">
-                We couldn't find anything matching "
-                <span className="font-semibold text-amber-400">{searchQuery}</span>
-                ". Try a different search term.
-              </p>
-              <div className="mt-8 flex flex-wrap justify-center gap-2">
-                {['football', 'news', 'action', 'comedy', 'drama'].map((suggestion) => (
-                  <Link key={suggestion} href={`/?q=${encodeURIComponent(suggestion)}`}>
-                    <Button className="border border-white/10 bg-white/5 text-gray-300 hover:bg-white/10">
-                      {suggestion}
-                    </Button>
-                  </Link>
-                ))}
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="relative mb-8">
+                 <div className="absolute inset-0 blur-3xl bg-primary/20 rounded-full" />
+                 <div className="relative flex h-32 w-32 items-center justify-center rounded-full bg-white/5 border border-white/5 backdrop-blur-xl">
+                    <Sparkles className="h-16 w-16 text-primary/40" />
+                 </div>
               </div>
+              <h3 className="text-3xl font-bold text-foreground mb-3">No Results Found</h3>
+              <p className="max-w-md text-muted-foreground mb-8">
+                We couldn't find any media matching your request. Try refining your search or explore other categories.
+              </p>
+              <Link href="/">
+                 <Button className="rounded-2xl px-8 h-12 text-base font-bold shadow-lg shadow-primary/20">
+                    Back to Dashboard
+                 </Button>
+              </Link>
             </div>
           )}
 
-          {(filteredResults.channels || []).length > 0 && (
-            <section className="space-y-6">
-              <div className="flex items-center justify-between">
+          {/* Render Sections */}
+          {['channels', 'movies', 'series'].map((type) => {
+            const results = filteredResults[type as keyof typeof filteredResults] || [];
+            if (results.length === 0) return null;
+
+            return (
+              <section key={type} className="space-y-8">
                 <div className="flex items-center gap-3">
-                  <div className="rounded-lg border border-purple-500/30 bg-linear-to-r from-purple-500/20 to-pink-500/20 p-2">
-                    <Play className="h-10 w-10 text-purple-300" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-white">
-                    Channels{' '}
-                    <span className="text-gray-500">({filteredResults.channels?.length || 0})</span>
+                  <div className="h-10 w-1 rounded-full bg-primary shadow-[0_0_15px_rgba(var(--primary),0.5)]" />
+                  <h3 className="text-2xl font-black capitalize tracking-tight text-foreground">
+                    {type} <span className="text-muted-foreground/40 ml-2">({results.length})</span>
                   </h3>
                 </div>
-              </div>
 
-              {viewMode === 'grid' ? (
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                  {(filteredResults.channels || []).map((channel) => (
-                    <Link
-                      href={`/channels?categoryId=${channel.categoryId}&channelId=${channel.id}`}
-                      key={channel.id}
-                      className="group"
-                    >
-                      <div className="relative h-full cursor-pointer overflow-hidden rounded-xl border border-white/5 bg-slate-800 transition-all duration-300 hover:border-white/20">
-                        <div className="relative aspect-square overflow-hidden">
-                          <Image
-                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
-                            fill
-                            src={channel.streamIcon || '/icon.png'}
-                            alt={channel.name}
-                            onError={(e) => {
-                              e.currentTarget.src = '/icon.png';
-                            }}
-                          />
-                          <div className="absolute inset-0 flex items-center justify-center bg-linear-to-t from-black/80 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                            <div className="rounded-full bg-amber-600 p-3">
-                              <Play className="h-10 w-10 fill-white text-white" />
-                            </div>
-                          </div>
-                          <div className="absolute top-2 right-2 rounded-full bg-red-600 px-2 py-1">
-                            <span className="flex items-center gap-1 text-xs font-bold text-white">
-                              <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
-                              LIVE
-                            </span>
-                          </div>
-                        </div>
-                        <div className="bg-linear-to-t from-black to-transparent p-3">
-                          <p className="truncate text-sm font-semibold text-white transition-colors group-hover:text-amber-300">
-                            {highlight(channel.name, searchQuery)}
-                          </p>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <HorizontalCarousel
-                  scrollBy={800}
-                  ariaLabelLeft="Scroll channels left"
-                  ariaLabelRight="Scroll channels right"
-                >
-                  {(filteredResults.channels || []).map((channel) => (
-                    <Link
-                      href={`/channels?categoryId=${channel.categoryId}&channelId=${channel.id}`}
-                      key={channel.id}
-                      className="group w-50 shrink-0"
-                    >
-                      <div className="relative h-full cursor-pointer overflow-hidden rounded-xl border border-white/5 bg-slate-800 transition-all duration-300 hover:border-white/20">
-                        <div className="relative aspect-square overflow-hidden">
-                          <Image
-                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
-                            fill
-                            src={channel.streamIcon || '/icon.png'}
-                            alt={channel.name}
-                            onError={(e) => {
-                              e.currentTarget.src = '/icon.png';
-                            }}
-                          />
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                            <div className="rounded-full bg-amber-500 p-2.5 shadow-lg shadow-amber-600/40">
-                              <Play className="ml-0.5 h-5 w-5 fill-white text-white" />
-                            </div>
-                          </div>
-                          <div className="absolute top-2 right-2 rounded-full bg-red-600 px-2 py-1">
-                            <span className="flex items-center gap-1 text-[10px] font-bold text-white">
-                              <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
-                              LIVE
-                            </span>
-                          </div>
-                        </div>
-                        <div className="bg-linear-to-t from-black to-transparent p-3">
-                          <p className="truncate text-xs font-semibold text-white transition-colors group-hover:text-amber-300">
-                            {highlight(channel.name, searchQuery)}
-                          </p>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </HorizontalCarousel>
-              )}
-            </section>
-          )}
+                {viewMode === 'grid' ? (
+                  <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                    {results.map((item: any) => (
+                      <Link
+                        key={item.id}
+                        href={type === 'channels' ? `/channels?categoryId=${item.categoryId}&channelId=${item.id}` : type === 'movies' ? `/movies?categoryId=${item.categoryId}&movieId=${item.streamId}` : `/series?categoryId=${item.categoryId}&serieId=${item.seriesId}`}
+                        className="group relative"
+                      >
+                         <div className="relative aspect-[2/3] overflow-hidden rounded-2xl border border-white/5 bg-white/5 transition-all duration-500 group-hover:border-primary/50 group-hover:shadow-[0_0_30px_rgba(var(--primary),0.1)]">
+                            <Image
+                              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                              fill
+                              src={type === 'channels' ? (item.streamIcon || '/icon.png') : type === 'movies' ? (item.streamIcon || '/icon.png') : (item.cover || '/icon.png')}
+                              alt={item.name}
+                              onError={(e) => { e.currentTarget.src = '/icon.png'; }}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-100 transition-opacity" />
 
-          {(filteredResults.movies || []).length > 0 && (
-            <section className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-lg border border-red-500/30 bg-linear-to-r from-red-500/20 to-pink-500/20 p-2">
-                    <Play className="h-10 w-10 text-red-300" />
+                            {item.rating && (
+                              <div className="absolute top-3 left-3 flex items-center gap-1 rounded-lg bg-black/40 px-2 py-1 text-[10px] font-black text-amber-400 backdrop-blur-md border border-white/5">
+                                 <Star className="h-3 w-3 fill-current" />
+                                 {parseFloat(item.rating).toFixed(1)}
+                              </div>
+                            )}
+
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-all duration-300 group-hover:opacity-100">
+                               <div className="h-14 w-14 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-2xl scale-75 group-hover:scale-100 transition-transform">
+                                  <Play className="ml-1 h-8 w-8 fill-current" />
+                               </div>
+                            </div>
+                         </div>
+                         <div className="mt-3">
+                            <p className="truncate text-sm font-bold text-foreground transition-colors group-hover:text-primary">
+                              {highlight(item.name || item.plot || '', searchQuery)}
+                            </p>
+                         </div>
+                      </Link>
+                    ))}
                   </div>
-                  <h3 className="text-2xl font-bold text-white">
-                    Movies{' '}
-                    <span className="text-gray-500">({(filteredResults.movies || []).length})</span>
-                  </h3>
-                </div>
-              </div>
-
-              {viewMode === 'grid' ? (
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                  {(filteredResults.movies || []).map((movie) => (
-                    <Link
-                      href={`/movies?categoryId=${movie.categoryId}&movieId=${movie.streamId}`}
-                      key={movie.id}
-                      className="group"
-                    >
-                      <div className="relative h-full cursor-pointer overflow-hidden rounded-xl border border-amber-400/5 bg-slate-800 transition-all duration-300 hover:border-amber-400/20">
-                        <div className="relative aspect-2/3 overflow-hidden">
-                          <Image
-                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
-                            fill
-                            src={movie.streamIcon || '/icon.png'}
-                            alt={movie.name}
-                            onError={(e) => {
-                              e.currentTarget.src = '/icon.png';
-                            }}
-                          />
-                          <div className="absolute inset-0 flex items-center justify-center bg-linear-to-t from-black/80 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                            <div className="rounded-full bg-amber-600 p-3">
-                              <Play className="h-10 w-10 fill-white text-white" />
+                ) : (
+                  <HorizontalCarousel scrollBy={800}>
+                    {results.map((item: any) => (
+                      <Link
+                        key={item.id}
+                        href={type === 'channels' ? `/channels?categoryId=${item.categoryId}&channelId=${item.id}` : type === 'movies' ? `/movies?categoryId=${item.categoryId}&movieId=${item.streamId}` : `/series?categoryId=${item.categoryId}&serieId=${item.seriesId}`}
+                        className="group relative w-48 shrink-0 lg:w-56"
+                      >
+                         <div className="relative aspect-[2/3] overflow-hidden rounded-2xl border border-white/5 bg-white/5 transition-all duration-500 group-hover:border-primary/50 group-hover:shadow-[0_0_30px_rgba(var(--primary),0.1)]">
+                            <Image
+                              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                              fill
+                              src={type === 'channels' ? (item.streamIcon || '/icon.png') : type === 'movies' ? (item.streamIcon || '/icon.png') : (item.cover || '/icon.png')}
+                              alt={item.name}
+                              onError={(e) => { e.currentTarget.src = '/icon.png'; }}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-all duration-300 group-hover:opacity-100">
+                               <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-2xl">
+                                  <Play className="ml-0.5 h-6 w-6 fill-current" />
+                               </div>
                             </div>
-                          </div>
-                        </div>
-                        <div className="bg-linear-to-t from-black to-transparent p-3">
-                          <p className="truncate text-sm font-semibold text-white transition-colors group-hover:text-amber-300">
-                            {highlight(movie.name, searchQuery)}
-                          </p>
-                          <p className="mt-1 text-xs font-bold text-yellow-400">
-                            ⭐ {parseFloat(movie.rating || '0').toFixed(1)}
-                          </p>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <HorizontalCarousel
-                  scrollBy={800}
-                  ariaLabelLeft="Scroll movies left"
-                  ariaLabelRight="Scroll movies right"
-                >
-                  {(filteredResults.movies || []).map((movie) => (
-                    <Link
-                      href={`/movies?categoryId=${movie.categoryId}&movieId=${movie.streamId}`}
-                      key={movie.id}
-                      className="group w-55 shrink-0"
-                    >
-                      <div className="relative h-full cursor-pointer overflow-hidden rounded-xl border border-amber-400/5 bg-slate-800 transition-all duration-300 hover:border-amber-400/20">
-                        <div className="relative aspect-2/3 overflow-hidden">
-                          <Image
-                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
-                            fill
-                            src={movie.streamIcon || '/icon.png'}
-                            alt={movie.name}
-                            onError={(e) => {
-                              e.currentTarget.src = '/icon.png';
-                            }}
-                          />
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                            <div className="rounded-full bg-amber-500 p-2.5 shadow-lg shadow-amber-600/40">
-                              <Play className="ml-0.5 h-5 w-5 fill-white text-white" />
-                            </div>
-                          </div>
-                          {movie.rating && (
-                            <div className="absolute top-2 left-2 rounded-full border border-white/10 bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white">
-                              ⭐ {parseFloat(movie.rating || '0').toFixed(1)}
-                            </div>
-                          )}
-                        </div>
-                        <div className="bg-linear-to-t from-black to-transparent p-3">
-                          <p className="truncate text-xs font-semibold text-white transition-colors group-hover:text-amber-300">
-                            {highlight(movie.name, searchQuery)}
-                          </p>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </HorizontalCarousel>
-              )}
-            </section>
-          )}
-
-          {(filteredResults.series || []).length > 0 && (
-            <section className="space-y-6 pb-8">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-lg border border-yellow-500/30 bg-linear-to-r from-yellow-500/20 to-amber-500/20 p-2">
-                    <Play className="h-10 w-10 text-yellow-300" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-white">
-                    Series{' '}
-                    <span className="text-gray-500">({(filteredResults.series || []).length})</span>
-                  </h3>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                {(filteredResults.series || []).map((series) => (
-                  <Link
-                    href={`/series?categoryId=${series.categoryId}&serieId=${series.seriesId}`}
-                    key={series.id}
-                    className="group"
-                  >
-                    <div className="relative h-full cursor-pointer overflow-hidden rounded-xl border border-amber-400/5 bg-slate-800 transition-all duration-300 hover:border-amber-400/20 hover:shadow-lg hover:shadow-amber-400/20">
-                      <div className="relative aspect-2/3 overflow-hidden">
-                        <Image
-                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
-                          fill
-                          src={series.cover || '/icon.png'}
-                          alt={series.name || series.plot || ''}
-                          onError={(e) => {
-                            e.currentTarget.src = '/icon.png';
-                          }}
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center bg-linear-to-t from-black/80 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                          <div className="rounded-full bg-amber-600 p-3">
-                            <Play className="h-10 w-10 fill-white text-white" />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="bg-linear-to-t from-black to-transparent p-3">
-                        <p className="truncate text-sm font-semibold text-white transition-colors group-hover:text-amber-300">
-                          {highlight(series.name || series.plot || '', searchQuery)}
-                        </p>
-                        <p className="mt-1 text-xs font-bold text-yellow-400">
-                          ⭐ {parseFloat(series.rating || '0').toFixed(1)}
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
+                         </div>
+                         <p className="mt-3 truncate text-sm font-bold transition-colors group-hover:text-primary">
+                            {highlight(item.name || item.plot || '', searchQuery)}
+                         </p>
+                      </Link>
+                    ))}
+                  </HorizontalCarousel>
+                )}
+              </section>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -463,3 +289,4 @@ function SearchList({ searchQuery }: SearchListProps) {
 }
 
 export default SearchList;
+

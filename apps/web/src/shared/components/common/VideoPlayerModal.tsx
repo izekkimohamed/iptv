@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
-import { FC } from 'react';
+import { FC, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import { Button } from '@/components/ui/button';
 import VideoPlayer from '@/features/player/components/VideoPlayer';
@@ -35,24 +36,38 @@ export const VideoPlayerModal: FC<EnhancedProps> = ({
   movieId,
   totalEpisodes,
 }) => {
-  if (!isOpen) return null;
+  const [mounted, setMounted] = useState(false);
 
-  return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
-      <div className="relative z-50 w-full max-w-5xl overflow-hidden rounded-xl border border-white/10 shadow-2xl">
-        <div className="flex justify-end bg-black/80 p-1 backdrop-blur-md">
+  useEffect(() => {
+    setMounted(true);
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [isOpen]);
+
+  if (!isOpen || !mounted) return null;
+
+  const modalContent = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 lg:p-8">
+      <div
+        className="absolute inset-0 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300"
+        onClick={onClose}
+      />
+      <div className="relative z-[10000] w-full max-w-6xl overflow-hidden rounded-2xl border border-white/10 shadow-[0_0_100px_rgba(0,0,0,0.8)] animate-in zoom-in-95 duration-300">
+        <div className="absolute top-4 right-4 z-[10001]">
           <Button
-            className="pointer-events-auto cursor-pointer rounded-full p-2.5 text-white transition-colors duration-200 hover:bg-white/20"
+            className="h-12 w-12 rounded-full bg-black/50 text-white backdrop-blur-md transition-all hover:bg-white/20 hover:scale-110 active:scale-95"
             onClick={onClose}
             aria-label="Close video player"
-            title="Close video"
           >
-            <X size={24} />
+            <X className="h-6 w-6" />
           </Button>
         </div>
 
-        <div className="relative bg-black/80 backdrop-blur-md">
+        <div className="aspect-video w-full bg-black">
           <VideoPlayer
             src={src}
             poster={poster}
@@ -73,4 +88,6 @@ export const VideoPlayerModal: FC<EnhancedProps> = ({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };

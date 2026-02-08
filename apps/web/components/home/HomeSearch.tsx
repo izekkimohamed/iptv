@@ -9,25 +9,30 @@ interface HomeSearchProps {
 
 function HomeSearch({ searchQuery, setSearchQuery }: HomeSearchProps) {
   return (
-    <div className="flex-shrink-0 border-b border-white/5 py-6">
-      <div className="mx-auto max-w-2xl px-4">
+    <div className="flex-shrink-0 py-3">
+      <div className="mx-auto max-w-2xl px-6">
         <div className="group relative">
-          <div className="/50 absolute inset-0 animate-pulse rounded-full opacity-60 blur transition duration-500 group-hover:opacity-100" />
-          <form className="relative flex items-center gap-4 rounded-full border border-amber-500/20 px-6 py-3 transition-all duration-300 group-hover:border-amber-500/50">
-            <Search className="h-5 w-10 flex-shrink-0 text-amber-400" />
+          <div className="absolute -inset-1 rounded-2xl bg-primary/20 opacity-0 blur-xl transition-all duration-500 group-focus-within:opacity-100 group-hover:opacity-60" />
+          <form
+             onSubmit={(e) => e.preventDefault()}
+             className="relative flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 transition-all duration-300 group-focus-within:border-primary/50 group-focus-within:bg-white/10 hover:border-white/20"
+          >
+            <Search className="h-4 w-4 flex-shrink-0 text-muted-foreground transition-colors group-focus-within:text-primary" />
             <input
               type="text"
               placeholder="Search channels, movies, series..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 bg-transparent text-sm font-medium text-white placeholder-gray-500 outline-none"
+              className="flex-1 bg-transparent text-base font-medium text-foreground placeholder-muted-foreground outline-none"
             />
             {searchQuery && (
               <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => setSearchQuery('')}
-                className="flex-shrink-0 rounded-full border border-white/10 bg-transparent text-gray-400 transition-colors hover:text-amber-400"
+                className="h-8 w-8 shrink-0 rounded-full hover:bg-white/10 hover:text-primary"
               >
-                <X className="h-5 w-10" />
+                <X className="h-4 w-4" />
               </Button>
             )}
           </form>
@@ -38,3 +43,4 @@ function HomeSearch({ searchQuery, setSearchQuery }: HomeSearchProps) {
 }
 
 export default HomeSearch;
+

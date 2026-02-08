@@ -1,13 +1,16 @@
 'use client';
 
+// --- 1. CORE COMPONENTS & HOOKS ---
 import { Film } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 
-import { CastSection } from '@/components/commen/CastSection';
-import { HeaderSection } from '@/components/commen/HeaderSection';
-import { TrailerModal } from '@/components/commen/TrailerModels';
-import { TrailersSection } from '@/components/commen/TrailersSEction';
+
+import { CastSection } from '@/components/common/CastSection';
+import { DetailSkeleton } from '@/components/common/DetailSkeleton';
+import { HeaderSection } from '@/components/common/HeaderSection';
+import { TrailerModal } from '@/components/common/TrailerModels';
+import { TrailersSection } from '@/components/common/TrailersSection';
 import { Button } from '@/components/ui/button';
 import { trpc } from '@/lib/trpc';
 import { VideoPlayerModal } from '@/src/shared/components/common/VideoPlayerModal';
@@ -63,37 +66,24 @@ export default function Page() {
   };
 
   // --- Loading State ---
-  if (isLoading) {
-    return (
-      <div className="flex h-screen w-full flex-col items-center justify-center bg-neutral-950">
-        <div className="relative">
-          <div className="absolute inset-0 animate-ping rounded-full bg-amber-500/20 duration-1000" />
-          <div className="relative flex h-16 w-16 items-center justify-center rounded-full border-2 border-amber-500/30 bg-neutral-900 shadow-[0_0_40px_-10px_rgba(245,158,11,0.5)]">
-            <Film className="h-8 w-8 animate-pulse text-amber-500" />
-          </div>
-        </div>
-        <p className="mt-6 font-mono text-sm tracking-widest text-amber-500/50 uppercase">
-          Loading Metadata...
-        </p>
-      </div>
-    );
-  }
+  if (isLoading) return <DetailSkeleton />;
 
   // --- Error State ---
   if (error || !movieDetails || movieDetails.length === 0) {
     return (
-      <div className="flex h-screen w-full flex-col items-center justify-center bg-neutral-950 p-6 text-center">
-        <Film className="mb-4 h-20 w-20 text-neutral-800" />
-        <h2 className="text-2xl font-bold text-neutral-200">Content Unavailable</h2>
-        <p className="mt-2 text-neutral-500">
-          We couldn&apos;t retrieve the details for this movie.
+      <div className="flex h-screen w-full flex-col items-center justify-center bg-background p-6 text-center">
+        <div className="mb-8 flex h-24 w-24 items-center justify-center rounded-full border-2 border-white/5 bg-white/2">
+          <Film className="h-10 w-10 text-white/20" />
+        </div>
+        <h2 className="text-4xl font-black tracking-tight text-white">Content Unavailable</h2>
+        <p className="mt-4 max-w-sm text-lg font-medium text-white/40 leading-relaxed">
+          We couldn&apos;t retrieve the stream details for this title. It might be temporarily offline or restricted.
         </p>
         <Button
-          variant="outline"
-          className="mt-6 border-white/10 bg-white/5 text-white hover:bg-white/10"
           onClick={() => window.history.back()}
+          className="mt-10 h-14 rounded-2xl bg-white px-8 text-base font-black text-black transition-all hover:scale-105 active:scale-95"
         >
-          Go Back
+          Return to Browse
         </Button>
       </div>
     );
@@ -104,11 +94,11 @@ export default function Page() {
   const hasMultipleSources = movie.dbMovies.length > 1;
 
   return (
-    <div className="relative min-h-full w-full overflow-x-hidden bg-neutral-950 font-sans text-neutral-100 selection:bg-amber-500/30">
+    <div className="relative min-h-full w-full overflow-x-hidden bg-background font-sans text-foreground selection:bg-primary/30">
       {/* --- 1. IMMERSIVE BACKDROP --- */}
-      <div className="absolute inset-0 z-0 h-full w-full">
-        <div className="absolute inset-0 z-10 bg-linear-to-t from-neutral-950 via-neutral-950/60 to-black/20" />
-        <div className="absolute inset-0 z-10 bg-linear-to-r from-neutral-950/90 via-neutral-950/40 to-transparent" />
+      <div className="absolute inset-0 z-0 h-full w-full overflow-hidden overflow-y-auto">
+        <div className="absolute inset-0 z-10 bg-linear-to-t from-background via-background/60 to-transparent" />
+        <div className="absolute inset-0 z-10 bg-linear-to-r from-background/90 via-transparent to-transparent hidden lg:block" />
         <Image
           src={tmdb?.backdrop || tmdb.poster || ''}
           alt="Backdrop"

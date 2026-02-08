@@ -1,14 +1,17 @@
-import { Star } from 'lucide-react';
+import { Search, Star, Tv, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+
+import { Input } from '../ui/input';
 
 import { useAutoScrollToSelected } from '@/hooks/useAutoScrollToSelected';
 import { Channel } from '@/lib/types';
 import { usePlayerStore, usePlaylistStore } from '@repo/store';
 
 import { trpc } from '@/lib/trpc';
+import { cn } from '@/lib/utils';
 import LoadingSpinner from '../ui/LoadingSpinner';
 
 interface ChannelsSidebarProps {
@@ -16,16 +19,17 @@ interface ChannelsSidebarProps {
   isLoading: boolean;
 }
 
-export default function ChannelsSidebar(props: ChannelsSidebarProps) {
-  const { channels, isLoading } = props;
+export default function ChannelsSidebar({ channels, isLoading }: ChannelsSidebarProps) {
   const selectedCategoryId = useSearchParams().get('categoryId');
   const selectedChannelId = useSearchParams().get('channelId');
   const listRef = React.useRef<HTMLDivElement | null>(null);
   const newChannels = useSearchParams().get('new');
   const selectedPlaylist = usePlaylistStore((state) => state.selectedPlaylist);
   const { setSrc, setTitle } = usePlayerStore();
+  const [searchValue, setSearchValue] = useState('');
+  const [filteredChannels, setFilteredChannels] = useState<Channel[]>([]);
 
-  const { data: newChannelsData, isLoading: loadingNewData } = trpc.new.getNewChannels.useQuery(
+    const { data: newChannelsData, isLoading: loadingNewData } = trpc.new.getNewChannels.useQuery(
     {
       playlistId: selectedPlaylist?.id || 0,
     },
@@ -33,6 +37,24 @@ export default function ChannelsSidebar(props: ChannelsSidebarProps) {
       enabled: !!newChannels,
     },
   );
+
+  useEffect(() => {
+    const list = newChannels ? newChannelsData : channels;
+    if (!list) return;
+
+    if (!searchValue) {
+      setFilteredChannels(list as Channel[]);
+      return;
+    }
+
+    setFilteredChannels(
+      (list as Channel[]).filter((c) =>
+        c.name.toLowerCase().includes(searchValue.toLowerCase())
+      )
+    );
+  }, [channels, newChannelsData, newChannels, searchValue]);
+
+
 
   useAutoScrollToSelected({
     containerRef: listRef,
@@ -44,111 +66,135 @@ export default function ChannelsSidebar(props: ChannelsSidebarProps) {
   });
 
   return (
-    <div className="flex h-full w-100 flex-col border-r border-white/10 backdrop-blur-sm">
+    <div className="flex h-full w-96 flex-col border-r border-white/5 bg-background/40 backdrop-blur-xl">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
-        <h2 className="text-lg font-semibold tracking-tight text-white/90">Channels</h2>
-
-        {selectedCategoryId && (
-          <span className="rounded border border-white/10 px-2 py-1 text-xs text-gray-400">
-            {channels?.length || 0}
-          </span>
-        )}
+      <div className="flex flex-col gap-6 p-6">
+        <div className="relative">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search channels..."
+            className="h-11 rounded-xl border border-white/5 bg-white/5 pl-10 pr-10 text-sm font-medium placeholder:text-muted-foreground/50 transition-all focus:bg-white/10 focus:ring-1 focus:ring-primary/40"
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+          />
+          {searchValue && (
+            <button
+              onClick={() => setSearchValue('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 hover:bg-white/10 text-muted-foreground"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Scroll Area */}
-      <div className="flex-1 overflow-y-auto px-2 py-1" ref={listRef}>
+      <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-hide" ref={listRef}>
         {!selectedCategoryId && !newChannels ? (
-          <div className="flex flex-col items-center space-y-3 py-12 text-center text-gray-400">
-            <div className="text-4xl opacity-40">📺</div>
-            <p>Select a category to view channels</p>
+          <div className="flex h-full flex-col items-center justify-center space-y-4 text-center">
+            <div className="relative">
+               <div className="absolute inset-0 blur-2xl bg-primary/20 rounded-full" />
+               <Search className="relative h-12 w-12 text-muted-foreground/40" />
+            </div>
+            <p className="text-sm font-medium text-muted-foreground">Select a category to view channels</p>
           </div>
         ) : isLoading || loadingNewData ? (
-          <LoadingSpinner fullScreen />
-        ) : !channels?.length && !newChannelsData ? (
-          <div className="flex flex-col items-center space-y-3 py-12 text-center text-gray-400">
-            <div className="text-4xl opacity-40">📂</div>
-            <p>No channels in this category</p>
+          <div className="flex h-full items-center justify-center">
+             <LoadingSpinner />
           </div>
-        ) : newChannels && newChannelsData ? (
-          <div className="flex flex-col gap-2.5">
-            {newChannelsData.map((channel, index) => {
-              const isSelected = selectedChannelId === index.toString();
-              return (
+        ) : !channels?.length && !newChannelsData ? (
+          <div className="flex h-full flex-col items-center justify-center space-y-4 text-center">
+             <Tv className="h-12 w-12 text-muted-foreground/40" />
+             <p className="text-sm font-medium text-muted-foreground">No channels in this category</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {filteredChannels.map((channel, index) => {
+              const id = newChannels ? index.toString() : (channel as Channel).id.toString();
+              const isSelected = selectedChannelId === id;
+
+              const Content = (
+                <div className={cn(
+                  "group relative flex items-center gap-4 rounded-xl border border-transparent p-2 transition-all duration-300",
+                  isSelected
+                    ? "bg-primary/10 border-primary/20 text-primary shadow-lg shadow-primary/5"
+                    : "hover:bg-white/5 hover:border-white/5 text-muted-foreground hover:text-foreground"
+                )}>
+                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-white/5 bg-white/5">
+                    <Image
+                      fill
+                      className="object-contain p-2 transition-transform duration-500 group-hover:scale-110"
+                      src={channel.streamIcon || '/icon.png'}
+                      alt={channel.name}
+                      onError={(e) => {
+                        e.currentTarget.src = '/icon.png';
+                      }}
+                    />
+                    {isSelected && (
+                      <div className="absolute inset-0 bg-primary/20 animate-pulse" />
+                    )}
+                  </div>
+
+                  <div className="flex-1 min-w-0 pr-2">
+                    <p className={cn(
+                      "truncate text-sm font-bold transition-colors",
+                      isSelected ? "text-primary" : "text-foreground/80 group-hover:text-foreground"
+                    )}>
+                      {channel.name}
+                    </p>
+                    <div className="mt-1 flex items-center gap-2">
+                       <span className="flex h-1.5 w-1.5 rounded-full bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)]" />
+                       <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Live Now</span>
+                    </div>
+                  </div>
+
+                  {channel.isFavorite && (
+                    <Star className={cn("h-4 w-4 shrink-0 fill-primary text-primary", !isSelected && "opacity-40")} />
+                  )}
+
+                  {isSelected && (
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-1 rounded-l-full bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]" />
+                  )}
+                </div>
+              );
+
+              return newChannels ? (
                 <button
+                  key={index}
                   onClick={() => {
                     setSrc(channel.url);
                     setTitle(channel.name);
                   }}
-                  key={index}
                   data-channel-id={index}
-                  className={`group grid grid-cols-[65px_1fr_auto] items-center gap-3 overflow-hidden rounded-lg border px-0.5 transition-all ${
-                    isSelected
-                      ? 'border-amber-500/40 bg-white/10 text-amber-400 shadow-md shadow-amber-500/10 backdrop-blur-md'
-                      : 'border-white/20 text-white/90 hover:bg-white/10'
-                  } `}
+                  className="w-full text-left outline-none"
                 >
-                  <div className="relative flex h-12.5 w-16.25 items-center justify-center gap-3 overflow-hidden bg-white/10">
-                    <Image
-                      fill
-                      className="object-cover"
-                      src={channel.streamIcon || '/icon.png'}
-                      alt={channel.name}
-                      onError={(e) => {
-                        e.currentTarget.src = '/icon.png';
-                      }}
-                    />
-                  </div>
-                  <span className="line-clamp-2 font-medium text-wrap">{channel.name}</span>
-
-                  {channel.isFavorite && (
-                    <span className="px-2 text-lg text-amber-500">
-                      <Star className="h-4 w-4" fill="currentColor" />
-                    </span>
-                  )}
+                  {Content}
                 </button>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2.5">
-            {channels?.map((channel) => {
-              const isSelected = selectedChannelId === channel.id.toString();
-              return (
+              ) : (
                 <Link
-                  href={`/channels?categoryId=${selectedCategoryId}&channelId=${channel.id}`}
-                  key={channel.id}
-                  data-channel-id={channel.id}
-                  className={`group grid grid-cols-[65px_1fr_auto] items-center gap-3 overflow-hidden rounded-lg border px-0.5 transition-all ${
-                    isSelected
-                      ? 'border-amber-500/40 bg-white/10 text-amber-400 shadow-md shadow-amber-500/10 backdrop-blur-md'
-                      : 'border-white/20 text-white/90 hover:bg-white/10'
-                  } `}
+                  key={(channel as Channel).id}
+                  href={`/channels?categoryId=${selectedCategoryId}&channelId=${(channel as Channel).id}`}
+                  data-channel-id={(channel as Channel).id}
+                  className="w-full outline-none"
                 >
-                  <div className="relative flex h-12.5 w-16.25 items-center justify-center gap-3 overflow-hidden bg-white/10">
-                    <Image
-                      fill
-                      className="object-cover"
-                      src={channel.streamIcon || '/icon.png'}
-                      alt={channel.name}
-                      onError={(e) => {
-                        e.currentTarget.src = '/icon.png';
-                      }}
-                    />
-                  </div>
-                  <span className="line-clamp-2 font-medium text-wrap">{channel.name}</span>
-
-                  {channel.isFavorite && (
-                    <span className="px-2 text-lg text-amber-500">
-                      <Star className="h-4 w-4" fill="currentColor" />
-                    </span>
-                  )}
+                  {Content}
                 </Link>
               );
             })}
           </div>
         )}
       </div>
+
+      {/* Footer Info */}
+      <div className="border-t border-white/5 p-4 bg-white/5">
+        <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+          <span>{searchValue ? 'Matches Found' : 'Total Channels'}</span>
+          <span className="rounded-md bg-white/5 px-2 py-0.5 text-foreground ring-1 ring-white/10">
+            {filteredChannels.length}
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
+

@@ -37,9 +37,9 @@ export function MatchCard({ game, priority = false }: MatchCardProps) {
     <>
       <div
         onClick={() => setIsModalOpen(true)}
-        className={`group relative flex w-[320px] shrink-0 cursor-pointer snap-start flex-col overflow-hidden rounded-2xl border transition-all duration-500 ${
+        className={`group relative flex w-[340px] shrink-0 cursor-pointer snap-start flex-col overflow-hidden rounded-3xl border transition-all duration-500 ${
           showGoalPopup
-            ? 'z-50 scale-[1.02] border-yellow-400 shadow-[0_0_40px_rgba(250,204,21,0.3)]'
+            ? 'z-50 scale-[1.02] border-primary shadow-[0_0_40px_rgba(var(--primary),0.3)]'
             : isLive
               ? 'border-white/20 bg-linear-to-br from-white/10 to-transparent shadow-2xl backdrop-blur-xl'
               : 'border-white/10 bg-white/3'
@@ -54,12 +54,12 @@ export function MatchCard({ game, priority = false }: MatchCardProps) {
           <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center gap-2">
               {isLive ? (
-                <div className="flex items-center gap-2 rounded border border-green-500/30 bg-green-500/20 px-3 py-1">
+                <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/20 px-3 py-1.5 shadow-[0_0_15px_-5px_rgba(var(--primary),0.5)]">
                   <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-green-600"></span>
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"></span>
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-primary"></span>
                   </span>
-                  <span className="text-[11px] font-black text-green-400 uppercase tabular-nums">
+                  <span className="text-[11px] font-black text-primary uppercase tabular-nums tracking-wider">
                     {game.gameTime}' min
                   </span>
                 </div>
@@ -117,10 +117,10 @@ export function MatchCard({ game, priority = false }: MatchCardProps) {
 
         {/* --- VISUAL PROGRESS BAR --- */}
         {!isScheduled && (
-          <div className="relative h-1.5 w-full bg-white/5">
+          <div className="relative h-1.5 w-full bg-white/5 overflow-hidden">
             <div
               className={`h-full transition-all duration-1000 ease-out ${
-                isLive ? 'bg-green-500 shadow-[0_0_10px_#22c55e]' : 'bg-white/10'
+                isLive ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary),0.6)]' : 'bg-white/10'
               }`}
               style={{ width: `${progressPercent}%` }}
             />

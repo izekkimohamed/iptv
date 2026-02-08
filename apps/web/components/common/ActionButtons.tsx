@@ -3,6 +3,7 @@ import { FC } from 'react';
 
 import { ActionButtonsProps } from '@/lib/types';
 
+import { cn } from '@/lib/utils';
 import { Button } from '../ui/button';
 
 interface EpisodeToPlay {
@@ -36,28 +37,31 @@ export const ActionButtons: FC<UpdatedActionButtonsProps> = ({
   };
 
   return (
-    <div className="flex flex-wrap gap-3 pt-4">
+    <div className="flex flex-wrap gap-4 pt-4">
       {(hasSeasons || !hasSeasons) && (
         <Button
-          className="group flex items-center gap-2 rounded-lg bg-linear-to-r from-amber-600 to-amber-700 px-6 py-3 text-base font-semibold text-white shadow-lg transition-all duration-300 hover:from-amber-700 hover:to-amber-800 hover:shadow-amber-600/50"
+          className="group relative h-14 overflow-hidden rounded-2xl bg-primary px-8 text-base font-black tracking-widest text-primary-foreground uppercase shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
           onClick={onPlayMovie}
           aria-label={getPlayButtonLabel()}
         >
-          <Play className="h-5 w-5 fill-white transition-transform group-hover:scale-110" />
-          {getPlayButtonLabel()}
+          <div className="flex items-center gap-3">
+            <Play className="h-5 w-5 fill-current" />
+            <span>{getPlayButtonLabel()}</span>
+          </div>
         </Button>
       )}
       <Button
         disabled={!hasTrailer}
         onClick={onPlayTrailer}
-        className={`flex items-center gap-2 rounded-lg border px-6 py-3 text-base font-semibold transition-all duration-300 ${
+        className={cn(
+          "h-14 rounded-2xl border px-8 text-base font-bold tracking-widest uppercase backdrop-blur-md transition-all active:scale-95",
           !hasTrailer
-            ? 'cursor-not-allowed border-gray-500/20 bg-gray-500/10 text-gray-400 opacity-50'
-            : 'border-red-500/30 bg-red-500/10 text-red-300 hover:border-red-500/50 hover:bg-red-500/20 hover:shadow-lg hover:shadow-red-500/20'
-        }`}
+            ? "cursor-not-allowed border-white/5 bg-white/5 text-white/20"
+            : "border-white/10 bg-white/5 text-white hover:bg-white/10 hover:border-white/20"
+        )}
         aria-label="Watch trailer"
       >
-        <Youtube className="h-5 w-5" />
+        <Youtube className="mr-2 h-5 w-5 text-red-500" />
         Trailer
       </Button>
     </div>

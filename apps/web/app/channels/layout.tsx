@@ -2,7 +2,7 @@
 import { useSearchParams } from 'next/navigation';
 import React from 'react';
 
-import CategoriesSidebar from '@/components/commen/CategoriesSidebar';
+import CategoriesSidebar from '@/components/common/CategoriesSidebar';
 import { trpc } from '@/lib/trpc';
 import { usePlaylistStore } from '@repo/store';
 
@@ -28,7 +28,7 @@ export default function Layout({
     );
 
   return (
-    <div className="flex flex-1 overflow-y-auto">
+    <div className="flex h-full overflow-hidden">
       <CategoriesSidebar
         categories={categories}
         isLoading={isFetchingCategories}

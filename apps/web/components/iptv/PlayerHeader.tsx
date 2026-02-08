@@ -48,7 +48,7 @@ export default function PlayerHeader(props: PlayerHeaderProps) {
                     isFavorite: !selectedChannel.isFavorite,
                   })
                 }
-                className="cursor-pointer rounded-full bg-white/10 p-2 text-amber-400 hover:bg-white/20"
+                className="cursor-pointer rounded-full bg-white/10 p-2 text-primary hover:bg-white/20"
               >
                 <Star
                   className="h-5 w-5"

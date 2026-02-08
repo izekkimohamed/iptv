@@ -2,6 +2,8 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo } from 'react';
 
+import { Tv } from 'lucide-react';
+
 import ChannelInfoPanel from '@/components/channels/ChannelInfoPanel';
 import ChannelsSidebar from '@/components/channels/ChannelsSidebar';
 import PlayerHeader from '@/components/iptv/PlayerHeader';
@@ -9,6 +11,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import VideoPlayer from '@/features/player/components/VideoPlayer';
 import { trpc } from '@/lib/trpc';
 import { usePlayerStore, usePlaylistStore } from '@repo/store';
+
 
 export default function ChannelsPage() {
   const router = useRouter();
@@ -90,12 +93,12 @@ export default function ChannelsPage() {
       <ChannelsSidebar channels={channels} isLoading={isFetchingChannels} />
 
       {/* Player Area */}
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-1 flex-col bg-background/50 backdrop-blur-3xl overflow-hidden">
         {/* Player Header */}
         <PlayerHeader selectedChannel={selectedChannel} />
 
         {/* Player Content */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto scrollbar-hide">
           {hasPlayerContent ? (
             <div className="flex h-full flex-col">
               {/* Video Player Area */}
@@ -131,18 +134,24 @@ export default function ChannelsPage() {
               </div>
             </div>
           ) : (
-            <div className="flex h-full flex-1 items-center justify-center">
-              <div className="text-center">
-                <div className="mb-4 text-6xl opacity-50">🎬</div>
-                <h4 className="mb-2 text-xl font-semibold text-white">Ready to Stream</h4>
-                <p className="max-w-md text-gray-400">
-                  Select a category and channel to start watching your favorite content
-                </p>
+            <div className="flex h-full flex-1 items-center justify-center p-8 text-center">
+              <div className="space-y-6 max-w-sm">
+                <div className="relative mx-auto w-24 h-24 flex items-center justify-center">
+                   <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full animate-pulse" />
+                   <Tv className="relative h-16 w-16 text-muted-foreground/40" />
+                </div>
+                <div>
+                   <h4 className="text-2xl font-black text-foreground mb-3">Ready to Stream</h4>
+                   <p className="text-muted-foreground font-medium">
+                     Select a category and channel from the sidebar to begin your playback experience.
+                   </p>
+                </div>
               </div>
             </div>
           )}
         </div>
       </div>
+
     </>
   );
 }

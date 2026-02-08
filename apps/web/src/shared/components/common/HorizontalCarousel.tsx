@@ -1,3 +1,4 @@
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { ReactNode, useRef } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -29,32 +30,39 @@ export default function HorizontalCarousel({
   };
 
   return (
-    <div className={cn('relative', className)}>
-      {showEdges && (
+    <div className={cn('group/carousel relative', className)}>
+      {/* {showEdges && (
         <>
-          <div className="pointer-events-none absolute top-0 left-0 z-20 h-full w-10 rounded-l-xl bg-gradient-to-r from-black to-transparent" />
-          <div className="pointer-events-none absolute top-0 right-0 z-20 h-full w-10 rounded-r-xl bg-gradient-to-l from-black to-transparent" />
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-16 bg-gradient-to-r from-background to-transparent" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-16 bg-gradient-to-l from-background to-transparent" />
         </>
-      )}
+      )} */}
+
       <Button
+        variant="ghost"
+        size="icon"
         aria-label={ariaLabelLeft}
         onClick={() => handleScroll(-scrollBy)}
-        className="absolute top-1/2 left-2 z-30 -translate-y-1/2 rounded-full border border-white/10 bg-black/40 px-3 py-2 text-white hover:bg-white/20"
+        className="absolute left-0 top-1/2 z-30 h-10 w-10 -translate-y-1/2 rounded-full border border-white/10 bg-black/50 opacity-0 backdrop-blur-md transition-all duration-300 hover:bg-black/50 group-hover/carousel:left-2 group-hover/carousel:opacity-100"
       >
-        ‹
+        <ChevronLeft className="h-6 w-6" />
       </Button>
+
       <Button
+        variant="ghost"
+        size="icon"
         aria-label={ariaLabelRight}
         onClick={() => handleScroll(scrollBy)}
-        className="absolute top-1/2 right-2 z-30 -translate-y-1/2 rounded-full border border-white/10 bg-black/40 px-3 py-2 text-white hover:bg-white/20"
+        className="absolute -right-4 top-1/2 z-30 h-10 w-10 -translate-y-1/2 rounded-full border border-white/10 bg-black/50 opacity-0 backdrop-blur-md transition-all duration-300 hover:bg-black/10 group-hover/carousel:right-2 group-hover/carousel:opacity-100"
       >
-        ›
+        <ChevronRight className="h-6 w-6" />
       </Button>
+
       <div
         ref={scrollerRef}
         className={cn(
-          'flex gap-4 overflow-x-auto rounded-xl border border-slate-700 bg-slate-900/30 p-4',
-          contentClassName,
+          'scrollbar-hide flex gap-6 overflow-x-auto p-2',
+          contentClassName
         )}
       >
         {children}
@@ -62,3 +70,4 @@ export default function HorizontalCarousel({
     </div>
   );
 }
+
