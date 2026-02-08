@@ -106,7 +106,7 @@ export const HeaderSection: FC<HeaderSectionProps> = ({
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-12">
           {/* Left Column: Poster (Desktop) */}
           <div className="my-auto hidden lg:col-span-3 lg:block lg:space-y-6">
-            <div className="group relative aspect-2/3 w-full overflow-hidden rounded-2xl border border-white/10 shadow-[0_0_50px_-10px_rgba(0,0,0,0.8)] transition-all duration-500 hover:border-primary/50 hover:shadow-primary/20">
+            <div className="group relative aspect-2/3 w-full overflow-hidden rounded-sm border border-white/10 shadow-[0_0_50px_-10px_rgba(0,0,0,0.8)] transition-all duration-500 hover:border-primary/50 hover:shadow-primary/20">
               <Image
                 src={poster || 'https://via.placeholder.com/300x450?text=No+Poster'}
                 alt={name}
@@ -121,7 +121,7 @@ export const HeaderSection: FC<HeaderSectionProps> = ({
             {/* Title Block */}
             <div className="mb-6 space-y-4">
               {/* Mobile Poster */}
-              <div className="mb-8 block h-64 w-44 overflow-hidden rounded-xl border border-white/10 shadow-2xl lg:hidden">
+              <div className="mb-8 block h-64 w-44 overflow-hidden rounded-sm border border-white/10 shadow-2xl lg:hidden">
                 <Image
                   src={poster || ''}
                   alt={name}
@@ -143,7 +143,7 @@ export const HeaderSection: FC<HeaderSectionProps> = ({
                   <Badge
                     key={g.id}
                     variant="secondary"
-                    className="rounded-lg border border-white/5 bg-white/5 px-3 py-1 font-bold text-neutral-300 backdrop-blur-md hover:bg-white/10"
+                    className="rounded-sm border border-white/5 bg-white/5 px-3 py-1 font-bold text-neutral-300 backdrop-blur-md hover:bg-white/10"
                   >
                     {g.name}
                   </Badge>
@@ -175,7 +175,7 @@ export const HeaderSection: FC<HeaderSectionProps> = ({
             </div>
 
             {/* Synopsis */}
-            <div className="mb-10 max-w-3xl rounded-2xl border border-white/5 bg-white/2 p-6 backdrop-blur-xl">
+            <div className="mb-10 max-w-3xl rounded-sm border border-white/5 bg-white/2 p-6 backdrop-blur-xl">
               <h3 className="mb-2 text-[10px] font-black tracking-[0.2em] text-white/40 uppercase">
                 Synopsis
               </h3>
@@ -190,7 +190,7 @@ export const HeaderSection: FC<HeaderSectionProps> = ({
                 <>
                   <Button
                     onClick={() => handlePlayMovie(dbMovies[0])}
-                    className="group relative h-16 rounded-2xl bg-primary px-10 text-lg font-black tracking-widest text-primary-foreground uppercase shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
+                    className="group relative h-16 rounded-sm bg-primary px-10 text-lg font-black tracking-widest text-primary-foreground uppercase shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
                   >
                     <div className="flex items-center gap-3">
                       <Play className="h-6 w-6 fill-current" />
@@ -204,7 +204,7 @@ export const HeaderSection: FC<HeaderSectionProps> = ({
                       <DropdownMenuTrigger asChild>
                         <Button
                           variant="outline"
-                          className="h-16 gap-3 rounded-2xl border-white/10 bg-white/5 px-6 text-base font-bold text-white backdrop-blur-md transition-all hover:bg-white/10 active:scale-95"
+                          className="h-16 gap-3 rounded-sm border-white/10 bg-white/5 px-6 text-base font-bold text-white backdrop-blur-md transition-all hover:bg-white/10 active:scale-95"
                         >
                           <Tv className="h-5 w-5 text-white/40" />
                           <div className="flex flex-col items-start leading-tight">
@@ -229,7 +229,7 @@ export const HeaderSection: FC<HeaderSectionProps> = ({
                             key={m.id}
                             onClick={() => handlePlayMovie(m)}
                             className={cn(
-                              'flex cursor-pointer items-center justify-between rounded-lg p-3 mx-1 my-1 transition-colors focus:bg-primary focus:text-primary-foreground',
+                              'flex cursor-pointer items-center justify-between rounded-sm p-3 mx-1 my-1 transition-colors focus:bg-primary focus:text-primary-foreground',
                               m.url === currentMovieSource?.url && 'bg-primary/20 text-primary',
                             )}
                           >
@@ -246,7 +246,7 @@ export const HeaderSection: FC<HeaderSectionProps> = ({
               ) : currentSrc ? (
                 <Button
                   onClick={() => handlePlayMovie()}
-                  className="group relative h-16 rounded-2xl bg-primary px-10 text-lg font-black tracking-widest text-primary-foreground uppercase shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
+                  className="group relative h-16 rounded-sm bg-primary px-10 text-lg font-black tracking-widest text-primary-foreground uppercase shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
                 >
                   <div className="flex items-center gap-3">
                     <Play className="h-6 w-6 fill-current" />
@@ -256,7 +256,7 @@ export const HeaderSection: FC<HeaderSectionProps> = ({
               ) : getPlayButtonLabel != null ? (
                 <Button
                   onClick={() => handlePlayMovie()}
-                  className="group relative h-16 rounded-2xl bg-primary px-10 text-lg font-black tracking-widest text-primary-foreground uppercase shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
+                  className="group relative h-16 rounded-sm bg-primary px-10 text-lg font-black tracking-widest text-primary-foreground uppercase shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
                 >
                   <div className="flex items-center gap-3">
                     <Play className="h-6 w-6 fill-current" />
@@ -264,7 +264,7 @@ export const HeaderSection: FC<HeaderSectionProps> = ({
                   </div>
                 </Button>
               ) : (
-                <div className="flex items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-8 py-4 text-red-500 backdrop-blur-md">
+                <div className="flex items-center gap-3 rounded-sm border border-red-500/20 bg-red-500/10 px-8 py-4 text-red-500 backdrop-blur-md">
                   <div className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
                   <span className="text-sm font-black uppercase tracking-widest">Stream Unavailable</span>
                 </div>

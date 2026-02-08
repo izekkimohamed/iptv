@@ -190,7 +190,7 @@ export function CustomControls({
   }, [isFullscreen, handleMouseMove, scheduleHideControls]);
 
   const buttonBaseClass =
-    'rounded-lg p-2 text-white/90 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed active:scale-95';
+    'rounded-sm p-2 text-white/90 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed active:scale-95';
 
   return (
     <div
@@ -241,7 +241,7 @@ export function CustomControls({
           {/* Timestamp Tooltip */}
           {hoverTime > 0 && (
             <div
-              className="absolute bottom-full mb-3 -translate-x-1/2 rounded-md border border-white/10 bg-black/80 px-2 py-1 text-xs font-bold text-white shadow-sm backdrop-blur-md"
+              className="absolute bottom-full mb-3 -translate-x-1/2 rounded-sm border border-white/10 bg-black/80 px-2 py-1 text-xs font-bold text-white shadow-sm backdrop-blur-md"
               style={{ left: `${safeDuration > 0 ? (hoverTime / safeDuration) * 100 : 0}%` }}
             >
               {formatTime(hoverTime, safeDuration > 3600)}
@@ -358,7 +358,7 @@ export function CustomControls({
             </button>
             {showKeyboardHints && (
               <div
-                className="animate-in slide-in-from-bottom-2 fade-in absolute right-0 bottom-full z-50 mb-4 w-80 rounded-xl border border-white/10 bg-black/95 p-4 shadow-2xl backdrop-blur-md"
+                className="animate-in slide-in-from-bottom-2 fade-in absolute right-0 bottom-full z-50 mb-4 w-80 rounded-sm border border-white/10 bg-black/95 p-4 shadow-2xl backdrop-blur-md"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="mb-3 flex items-center justify-between border-b border-white/10 pb-2">
@@ -411,7 +411,7 @@ export function CustomControls({
 
             {showSettings && (
               <div
-                className="animate-in slide-in-from-bottom-2 fade-in absolute right-0 bottom-full z-50 mb-4 w-64 rounded-xl border border-white/10 bg-black/95 p-4 shadow-2xl backdrop-blur-md"
+                className="animate-in slide-in-from-bottom-2 fade-in absolute right-0 bottom-full z-50 mb-4 w-64 rounded-sm border border-white/10 bg-black/95 p-4 shadow-2xl backdrop-blur-md"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="mb-3 flex items-center justify-between border-b border-white/10 pb-2">

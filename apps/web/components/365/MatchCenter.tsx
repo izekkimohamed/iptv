@@ -65,7 +65,7 @@ export function MatchCenter({ gameId, onClose }: MatchCenterProps) {
           <p className="mb-4 text-sm text-white/60">Failed to load match details</p>
           <button
             onClick={handleClose}
-            className="rounded-xl bg-red-500/20 px-6 py-2 font-bold text-red-400 transition-all hover:bg-red-500/30"
+            className="rounded-sm bg-red-500/20 px-6 py-2 font-bold text-red-400 transition-all hover:bg-red-500/30"
           >
             Close
           </button>

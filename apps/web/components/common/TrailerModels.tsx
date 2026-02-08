@@ -11,7 +11,7 @@ export const TrailerModal: FC<TrailerModalProps> = ({ isOpen, onClose, trailerId
   return (
      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 lg:p-8">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
-      <div className="relative z-50 w-full max-w-5xl overflow-hidden rounded-xl border border-white/10 shadow-2xl">
+      <div className="relative z-50 w-full max-w-5xl overflow-hidden rounded-sm border border-white/10 shadow-2xl">
         <div className="flex justify-end bg-black/80 p-2 backdrop-blur-md">
           <Button
             className="pointer-events-auto cursor-pointer rounded-full p-2.5 text-white transition-colors duration-200 hover:bg-white/20"

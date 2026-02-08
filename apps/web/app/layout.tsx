@@ -57,7 +57,7 @@ export default function RootLayout({
     <html lang="en">
       <Providers>
         <body
-          className={`${outfit.variable} ${inter.variable} ${jetBrainsMono.variable} font-sans antialiased`}
+          className={`${outfit.variable} ${inter.variable} ${jetBrainsMono.variable} font-mono antialiased`}
         >
           <div className="relative flex h-screen w-full overflow-hidden bg-background text-foreground">
             {/* Background Gradient */}

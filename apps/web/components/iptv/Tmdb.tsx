@@ -70,7 +70,7 @@ function Tmdb(props: TmdbProps) {
               key={i}
               target="_blank"
               title={t.name}
-              className="relative aspect-video min-w-[200px] transform overflow-hidden rounded-2xl transition-all duration-300 hover:scale-105"
+              className="relative aspect-video min-w-[200px] transform overflow-hidden rounded-sm transition-all duration-300 hover:scale-105"
             >
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-gray-700 to-gray-900">
                 <div className="relative flex flex-col items-center justify-center gap-1">

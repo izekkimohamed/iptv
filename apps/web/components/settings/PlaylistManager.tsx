@@ -38,7 +38,7 @@ const PlaylistManager = ({
   return (
     <div className="space-y-6">
       {/* Active Node Card */}
-      <div className="group relative overflow-hidden rounded-2xl border border-slate-500/10 bg-linear-to-br from-neutral-100/10 to-neutral-100/5 p-6">
+      <div className="group relative overflow-hidden rounded-sm border border-slate-500/10 bg-linear-to-br from-neutral-100/10 to-neutral-100/5 p-6">
         <div className="absolute top-0 right-0 -mt-4 -mr-4 h-32 w-32 rounded-full bg-primary/10 blur-3xl transition-all group-hover:bg-primary/20" />
 
         <div className="relative z-10 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -60,7 +60,7 @@ const PlaylistManager = ({
               <Button
                 onClick={() => handleUpdate()}
                 variant="outline"
-                className="h-10 rounded-lg border-primary/30 bg-primary/5 text-primary hover:bg-primary hover:text-primary-foreground"
+                className="h-10 rounded-sm border-primary/30 bg-primary/5 text-primary hover:bg-primary hover:text-primary-foreground"
               >
                 <RefreshCw className="mr-2 h-4 w-4" /> Update
               </Button>
@@ -89,7 +89,7 @@ const PlaylistManager = ({
               key={p.id}
               onClick={() => selectPlaylist(p)}
               className={cn(
-                'group relative flex cursor-pointer items-center justify-between rounded-xl border p-4 transition-all duration-300',
+                'group relative flex cursor-pointer items-center justify-between rounded-sm border p-4 transition-all duration-300',
                 isActive
                   ? 'border-slate-500/50 bg-slate-500/5'
                   : 'border-white/5 bg-white/2 hover:border-white/10 hover:bg-white/4',

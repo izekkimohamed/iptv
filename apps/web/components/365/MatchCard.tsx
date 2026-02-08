@@ -54,7 +54,7 @@ export function MatchCard({ game, priority = false }: MatchCardProps) {
           <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center gap-2">
               {isLive ? (
-                <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/20 px-3 py-1.5 shadow-[0_0_15px_-5px_rgba(var(--primary),0.5)]">
+                <div className="flex items-center gap-2 rounded-sm border border-primary/30 bg-primary/20 px-3 py-1.5 shadow-[0_0_15px_-5px_rgba(var(--primary),0.5)]">
                   <span className="relative flex h-2 w-2">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"></span>
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-primary"></span>
@@ -89,7 +89,7 @@ export function MatchCard({ game, priority = false }: MatchCardProps) {
               return (
                 <div key={idx} className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className={`rounded-xl p-1.5 ${isLive ? 'bg-white/10' : 'bg-white/5'}`}>
+                    <div className={`rounded-sm p-1.5 ${isLive ? 'bg-white/10' : 'bg-white/5'}`}>
                       <img
                         src={`https://imagecache.365scores.com/image/upload/f_auto,w_48/competitors/${team.id}`}
                         className="h-7 w-7"

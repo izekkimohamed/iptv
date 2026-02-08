@@ -33,7 +33,7 @@ export default function EmptyState({
         {description && <p className="mx-auto max-w-md text-gray-400">{description}</p>}
         {goBack && (
           <Button
-            className="mt-6 rounded-lg bg-white/10 px-4 py-2 text-white transition-all duration-200 hover:bg-white/20"
+            className="mt-6 rounded-sm bg-white/10 px-4 py-2 text-white transition-all duration-200 hover:bg-white/20"
             onClick={() => window.history.back()}
           >
             <ChevronLeft className="h-5 w-5" />

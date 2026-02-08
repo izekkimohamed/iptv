@@ -15,14 +15,14 @@ export const DetailSkeleton = () => {
 
           {/* Left Column: Poster Skeleton */}
           <div className="my-auto hidden lg:col-span-3 lg:block">
-            <Skeleton className="aspect-2/3 w-full rounded-2xl border border-white/5" />
+            <Skeleton className="aspect-2/3 w-full rounded-sm border border-white/5" />
           </div>
 
           {/* Right Column: Info Skeleton */}
           <div className="flex flex-col justify-end lg:col-span-9 space-y-8">
             <div className="space-y-6">
               {/* Mobile Poster Placeholder */}
-              <Skeleton className="block lg:hidden h-64 w-44 rounded-xl" />
+              <Skeleton className="block lg:hidden h-64 w-44 rounded-sm" />
 
               {/* Badges */}
               <div className="flex gap-3">
@@ -32,7 +32,7 @@ export const DetailSkeleton = () => {
               </div>
 
               {/* Title */}
-              <Skeleton className="h-16 w-3/4 lg:h-24 rounded-2xl" />
+              <Skeleton className="h-16 w-3/4 lg:h-24 rounded-sm" />
 
               {/* Metadata */}
               <div className="flex items-center gap-6">
@@ -43,7 +43,7 @@ export const DetailSkeleton = () => {
             </div>
 
             {/* Synopsis */}
-            <div className="space-y-3 max-w-3xl rounded-2xl border border-white/5 bg-white/2 p-6 backdrop-blur-xl">
+            <div className="space-y-3 max-w-3xl rounded-sm border border-white/5 bg-white/2 p-6 backdrop-blur-xl">
                <Skeleton className="h-3 w-20 rounded-full opacity-20" />
                <Skeleton className="h-5 w-full rounded-full" />
                <Skeleton className="h-5 w-5/6 rounded-full" />
@@ -52,8 +52,8 @@ export const DetailSkeleton = () => {
 
             {/* Actions */}
             <div className="flex gap-4">
-              <Skeleton className="h-16 w-44 rounded-2xl" />
-              <Skeleton className="h-16 w-44 rounded-2xl" />
+              <Skeleton className="h-16 w-44 rounded-sm" />
+              <Skeleton className="h-16 w-44 rounded-sm" />
             </div>
           </div>
         </div>
@@ -84,7 +84,7 @@ export const DetailSkeleton = () => {
              </div>
              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <Skeleton key={i} className="aspect-video w-full rounded-2xl" />
+                  <Skeleton key={i} className="aspect-video w-full rounded-sm" />
                 ))}
              </div>
           </div>

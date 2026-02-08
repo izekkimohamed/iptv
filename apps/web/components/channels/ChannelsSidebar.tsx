@@ -68,19 +68,19 @@ export default function ChannelsSidebar({ channels, isLoading }: ChannelsSidebar
   return (
     <div className="flex h-full w-96 flex-col border-r border-white/5 bg-background/40 backdrop-blur-xl">
       {/* Header */}
-      <div className="flex flex-col gap-6 p-6">
+      <div className="flex flex-col gap-6 py-6 px-2 border-b border-white/10">
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search channels..."
-            className="h-11 rounded-xl border border-white/5 bg-white/5 pl-10 pr-10 text-sm font-medium placeholder:text-muted-foreground/50 transition-all focus:bg-white/10 focus:ring-1 focus:ring-primary/40"
+            className="h-11 rounded-sm border border-white/5 bg-white/5 pl-10 pr-10 text-sm font-medium placeholder:text-muted-foreground/50 transition-all focus:bg-white/10 focus:ring-1 focus:ring-primary/40"
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
           />
           {searchValue && (
             <button
               onClick={() => setSearchValue('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 hover:bg-white/10 text-muted-foreground"
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-sm p-1 hover:bg-white/10 text-muted-foreground"
             >
               <X className="h-3 w-3" />
             </button>
@@ -89,7 +89,7 @@ export default function ChannelsSidebar({ channels, isLoading }: ChannelsSidebar
       </div>
 
       {/* Scroll Area */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-hide" ref={listRef}>
+      <div className="flex-1 overflow-y-auto p-2 scrollbar-hide" ref={listRef}>
         {!selectedCategoryId && !newChannels ? (
           <div className="flex h-full flex-col items-center justify-center space-y-4 text-center">
             <div className="relative">
@@ -108,44 +108,39 @@ export default function ChannelsSidebar({ channels, isLoading }: ChannelsSidebar
              <p className="text-sm font-medium text-muted-foreground">No channels in this category</p>
           </div>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1">
             {filteredChannels.map((channel, index) => {
               const id = newChannels ? index.toString() : (channel as Channel).id.toString();
               const isSelected = selectedChannelId === id;
 
               const Content = (
                 <div className={cn(
-                  "group relative flex items-center gap-4 rounded-xl border border-transparent p-2 transition-all duration-300",
+                  "group relative flex items-center rounded-sm overflow-hidden gap-2 border border-transparent p-2 transition-all duration-300",
                   isSelected
                     ? "bg-primary/10 border-primary/20 text-primary shadow-lg shadow-primary/5"
-                    : "hover:bg-white/5 hover:border-white/5 text-muted-foreground hover:text-foreground"
+                    : "bg-white/5 border-white/5 text-muted-foreground text-foreground"
                 )}>
-                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-white/5 bg-white/5">
+                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-sm border border-white/5 bg-white/5">
                     <Image
                       fill
                       className="object-contain p-2 transition-transform duration-500 group-hover:scale-110"
                       src={channel.streamIcon || '/icon.png'}
                       alt={channel.name}
-                      onError={(e) => {
-                        e.currentTarget.src = '/icon.png';
-                      }}
+                      onError={(e) => { e.currentTarget.src = '/icon.png' }}
                     />
                     {isSelected && (
                       <div className="absolute inset-0 bg-primary/20 animate-pulse" />
                     )}
                   </div>
 
-                  <div className="flex-1 min-w-0 pr-2">
+                  <div className="flex-1 min-w-0 pr-1">
                     <p className={cn(
-                      "truncate text-sm font-bold transition-colors",
+                      "truncate transition-colors",
                       isSelected ? "text-primary" : "text-foreground/80 group-hover:text-foreground"
                     )}>
                       {channel.name}
                     </p>
-                    <div className="mt-1 flex items-center gap-2">
-                       <span className="flex h-1.5 w-1.5 rounded-full bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)]" />
-                       <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Live Now</span>
-                    </div>
+
                   </div>
 
                   {channel.isFavorite && (
@@ -153,7 +148,7 @@ export default function ChannelsSidebar({ channels, isLoading }: ChannelsSidebar
                   )}
 
                   {isSelected && (
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-1 rounded-l-full bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]" />
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 h-full w-1 bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]" />
                   )}
                 </div>
               );
@@ -186,10 +181,10 @@ export default function ChannelsSidebar({ channels, isLoading }: ChannelsSidebar
       </div>
 
       {/* Footer Info */}
-      <div className="border-t border-white/5 p-4 bg-white/5">
+      <div className="border border-white/5 p-4 bg-white/5">
         <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
           <span>{searchValue ? 'Matches Found' : 'Total Channels'}</span>
-          <span className="rounded-md bg-white/5 px-2 py-0.5 text-foreground ring-1 ring-white/10">
+          <span className="rounded-sm bg-white/5 px-2 py-0.5 text-foreground ring-1 ring-white/10">
             {filteredChannels.length}
           </span>
         </div>

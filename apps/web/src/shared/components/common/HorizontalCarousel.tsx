@@ -31,12 +31,12 @@ export default function HorizontalCarousel({
 
   return (
     <div className={cn('group/carousel relative', className)}>
-      {/* {showEdges && (
+      {showEdges && (
         <>
-          <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-16 bg-gradient-to-r from-background to-transparent" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-16 bg-gradient-to-l from-background to-transparent" />
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-32 bg-gradient-to-r from-background via-background/50 to-transparent" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-32 bg-gradient-to-l from-background via-background/50 to-transparent" />
         </>
-      )} */}
+      )}
 
       <Button
         variant="ghost"
@@ -70,4 +70,3 @@ export default function HorizontalCarousel({
     </div>
   );
 }
-

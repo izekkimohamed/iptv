@@ -30,9 +30,9 @@ export function CompetitionSection({
           <div className="flex items-center gap-3">
             {/* Competition Logo */}
             <div className="relative">
-              <div className="absolute -inset-2 rounded-2xl bg-linear-to-br from-white/10 to-transparent opacity-0 blur-xl transition-all duration-300 group-hover:opacity-100" />
+              <div className="absolute -inset-2 rounded-sm bg-linear-to-br from-white/10 to-transparent opacity-0 blur-xl transition-all duration-300 group-hover:opacity-100" />
               {!imageError ? (
-                <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-white/10 to-white/5 p-2 shadow-lg backdrop-blur-sm">
+                <div className="relative flex h-10 w-10 items-center justify-center rounded-sm bg-linear-to-br from-white/10 to-white/5 p-2 shadow-lg backdrop-blur-sm">
                   <img
                     src={`https://imagecache.365scores.com/image/upload/f_auto,w_48/competitions/${competitionId}`}
                     alt={competitionName}
@@ -41,7 +41,7 @@ export function CompetitionSection({
                   />
                 </div>
               ) : (
-                <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-linear-to-br from-white/10 to-white/5 shadow-lg backdrop-blur-sm">
+                <div className="relative flex h-10 w-10 items-center justify-center rounded-sm bg-linear-to-br from-white/10 to-white/5 shadow-lg backdrop-blur-sm">
                   <Trophy className="h-5 w-5 text-white/40" />
                 </div>
               )}
@@ -72,7 +72,7 @@ export function CompetitionSection({
           {/* View All Button */}
           <button
             onClick={() => setIsModalOpen(true)}
-            className="group/btn flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10 active:scale-95"
+            className="group/btn flex items-center gap-2 rounded-sm border border-white/10 bg-white/5 px-4 py-2 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10 active:scale-95"
           >
             <span className="text-xs font-bold text-white/60 group-hover/btn:text-white">
               View All
@@ -106,7 +106,7 @@ export function CompetitionSection({
             <div className="flex items-center justify-between border-b border-white/10 p-6">
               <div className="flex items-center gap-4">
                 {!imageError ? (
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-white/10 to-white/5 p-2">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-sm bg-linear-to-br from-white/10 to-white/5 p-2">
                     <img
                       src={`https://imagecache.365scores.com/image/upload/f_auto,w_48/competitions/${competitionId}`}
                       alt={competitionName}
@@ -115,7 +115,7 @@ export function CompetitionSection({
                     />
                   </div>
                 ) : (
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-white/10 to-white/5">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-sm bg-linear-to-br from-white/10 to-white/5">
                     <Trophy className="h-6 w-6 text-white/40" />
                   </div>
                 )}

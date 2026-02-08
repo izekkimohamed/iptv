@@ -138,7 +138,7 @@ export const EpisodesSection = forwardRef<EpisodesSectionHandle, EpisodesSection
               <button
                 key={season}
                 onClick={() => setSelectedSeason(season)}
-                className={`rounded-2xl border px-6 py-3 text-xs font-black tracking-widest uppercase transition-all duration-300 ${
+                className={`rounded-sm border px-6 py-3 text-xs font-black tracking-widest uppercase transition-all duration-300 ${
                   isSelected
                     ? 'border-white bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.2)]'
                     : 'border-white/10 bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'

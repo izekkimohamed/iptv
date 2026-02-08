@@ -6,8 +6,8 @@ interface PlayerStoreType {
   isMuted: boolean;
   fullScreen: boolean;
   src: string;
-  poster?: string;
-  title?: string;
+  poster: string;
+  title: string;
   preferredRate: number;
   preferredAspectRatio: "16:9" | "4:3" | "1:1";
   setVolume: (volume: number) => void;

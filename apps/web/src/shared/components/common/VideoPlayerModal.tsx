@@ -56,7 +56,7 @@ export const VideoPlayerModal: FC<EnhancedProps> = ({
         className="absolute inset-0 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300"
         onClick={onClose}
       />
-      <div className="relative z-[10000] w-full max-w-6xl overflow-hidden rounded-2xl border border-white/10 shadow-[0_0_100px_rgba(0,0,0,0.8)] animate-in zoom-in-95 duration-300">
+      <div className="relative z-[10000] w-full max-w-6xl overflow-hidden rounded-sm border border-white/10 shadow-[0_0_100px_rgba(0,0,0,0.8)] animate-in zoom-in-95 duration-300">
         <div className="absolute top-4 right-4 z-[10001]">
           <Button
             className="h-12 w-12 rounded-full bg-black/50 text-white backdrop-blur-md transition-all hover:bg-white/20 hover:scale-110 active:scale-95"

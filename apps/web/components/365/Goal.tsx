@@ -71,7 +71,7 @@ export function GoalPopup({ game, onDismiss }: GoalPopupProps) {
         </div>
 
         {/* Score Display */}
-        <div className="flex w-full max-w-sm items-center justify-between gap-6 rounded-2xl border border-primary/30 bg-linear-to-br from-primary/10 to-transparent p-6 backdrop-blur-sm">
+        <div className="flex w-full max-w-sm items-center justify-between gap-6 rounded-sm border border-primary/30 bg-linear-to-br from-primary/10 to-transparent p-6 backdrop-blur-sm">
           {/* Home Team */}
           <div className="flex flex-col items-center gap-3">
             <div className="relative">

@@ -348,7 +348,7 @@ export function VideoPlayer({
     }
 
     return (
-      <div className="flex h-full w-full flex-col items-center justify-center rounded-lg border border-white/10 bg-card/50 p-8 backdrop-blur-xl">
+      <div className="flex h-full w-full flex-col items-center justify-center rounded-sm border-white/10 bg-card/50 p-8 backdrop-blur-xl">
         <AlertTriangle className="mb-4 h-16 w-16 text-destructive" />
         <h2 className="mb-2 text-xl font-bold text-white">{errorMessage}</h2>
         <p className="mb-6 max-w-lg text-center text-gray-400">{detailedMessage}</p>

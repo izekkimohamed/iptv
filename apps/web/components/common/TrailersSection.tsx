@@ -23,7 +23,7 @@ export const TrailersSection: FC<TrailersSectionProps> = ({ videos, onTrailerCli
           <div
             key={video.id}
             onClick={() => onTrailerClick(video.key)}
-            className="group relative cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-white/5 transition-all duration-500 hover:scale-[1.02] hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10"
+            className="group relative cursor-pointer overflow-hidden rounded-sm border border-white/10 bg-white/5 transition-all duration-500 hover:scale-[1.02] hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10"
           >
             {/* Thumbnail */}
             <div className="relative aspect-video w-full overflow-hidden">

@@ -44,7 +44,7 @@ export const EpisodeCard: FC<EpisodeCardProps> = ({
   return (
     <div
       onClick={() => onSelect(episode)}
-      className="group relative cursor-pointer overflow-hidden rounded-xl bg-white/[0.03] transition-all duration-300 hover:bg-white/[0.06] active:scale-[0.98]"
+      className="group relative cursor-pointer overflow-hidden rounded-sm bg-white/[0.03] transition-all duration-300 hover:bg-white/[0.06] active:scale-[0.98]"
       role="button"
       tabIndex={0}
     >
@@ -73,11 +73,11 @@ export const EpisodeCard: FC<EpisodeCardProps> = ({
 
         {/* Floating Badges */}
         <div className="absolute top-2 left-2 flex gap-2">
-            <div className="rounded-md bg-black/60 px-2 py-1 text-[10px] font-bold text-white/90 backdrop-blur-md">
+            <div className="rounded-sm bg-black/60 px-2 py-1 text-[10px] font-bold text-white/90 backdrop-blur-md">
                 E{episode.episode_num}
             </div>
             {isWatched && (
-                <div className="flex items-center gap-1 rounded-md bg-emerald-500/80 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-md">
+                <div className="flex items-center gap-1 rounded-sm bg-emerald-500/80 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-md">
                     <CheckCircle2 className="h-3 w-3" />
                     <span>DONE</span>
                 </div>

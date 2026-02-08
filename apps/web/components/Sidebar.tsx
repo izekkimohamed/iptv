@@ -84,25 +84,31 @@ export default function Sidebar() {
       )}
 
       {/* Logo Section */}
-      <div className="flex h-20 w-full items-center justify-center px-4 lg:justify-start">
-        <Link href="/" className="flex items-center gap-3">
-          <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-primary/20 p-1">
+      <div className="relative flex h-24 w-full items-center justify-center px-4 transition-all duration-300 lg:justify-start">
+        {/* Mesh Gradient background for logo area */}
+        <div className="absolute inset-0 z-0 opacity-20 bg-[radial-gradient(at_top_left,rgba(var(--primary),0.4),transparent_50%),radial-gradient(at_bottom_right,rgba(var(--primary),0.2),transparent_50%)] lg:block hidden" />
+
+        <Link href="/" className="relative z-10 flex items-center gap-3">
+          <div className="group relative h-12 w-12 shrink-0 overflow-hidden rounded-sm bg-primary/20 p-1.5 transition-all duration-500 hover:shadow-[0_0_20px_rgba(var(--primary),0.3)]">
              <Image
               src="/icon.png"
               alt="StreamMax"
-              width={40}
-              height={40}
-              className="h-full w-full object-contain"
+              width={48}
+              height={48}
+              className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-110"
             />
           </div>
-          <span className="hidden text-xl font-bold tracking-tight text-foreground lg:block">
-            Stream<span className="text-primary">Max</span>
-          </span>
+          <div className="flex flex-col lg:flex hidden">
+            <span className="text-xl font-black tracking-tighter text-foreground">
+              STREAM<span className="text-primary">MAX</span>
+            </span>
+            <span className="text-[10px] font-bold tracking-[0.3em] text-muted-foreground/60 uppercase">Premium IPTV</span>
+          </div>
         </Link>
       </div>
 
       {/* Navigation Items */}
-      <nav className="flex-1 space-y-1 p-3 overflow-y-auto scrollbar-hide">
+      <nav className="flex-1 space-y-1 p-2 overflow-y-auto scrollbar-hide">
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
           return (
@@ -110,27 +116,30 @@ export default function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                'group relative flex items-center gap-3 rounded-xl px-3 py-3 transition-all duration-200 ease-out',
+                'group relative flex items-center gap-3 rounded-sm px-4 py-3.5 transition-all duration-300 ease-out overflow-hidden',
                 isActive
-                  ? 'bg-primary/10 text-primary shadow-[inset_0_0_20px_rgba(var(--primary),0.05)]'
+                  ? 'bg-primary/10 text-primary shadow-[inset_0_0_20px_rgba(var(--primary),0.05)] before:absolute before:inset-0 before:rounded-sm before:bg-gradient-to-r before:from-primary/5 before:to-transparent'
                   : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
               )}
             >
               <item.icon
                 className={cn(
-                  'h-6 w-6 transition-transform duration-200 group-hover:scale-110',
-                  isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
+                  'h-5 w-5 transition-all duration-300 group-hover:scale-110',
+                  isActive ? 'text-primary drop-shadow-[0_0_8px_rgba(var(--primary),0.5)]' : 'text-muted-foreground group-hover:text-foreground'
                 )}
               />
-              <span className="hidden font-medium lg:block">{item.label}</span>
+              <span className={cn(
+                "hidden font-bold tracking-tight lg:block transition-all duration-300",
+                isActive ? "text-primary ml-1" : "group-hover:ml-1"
+              )}>{item.label}</span>
 
               {/* Active Indicator Dot (Collapsed) */}
               {isActive && (
-                <div className="absolute right-2 h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.5)] lg:hidden" />
+                <div className="absolute right-3 h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_12px_rgba(var(--primary),0.8)] lg:hidden" />
               )}
-              {/* Left Bar Indicator */}
+              {/* Left Glow Indicator */}
               {isActive && (
-                <div className="absolute left-0 h-6 w-1 rounded-r-full bg-primary shadow-[0_0_12px_rgba(var(--primary),0.6)]" />
+                <div className="absolute left-0 h-full w-1.5  bg-primary shadow-[4px_0_15px_rgba(var(--primary),0.6)]" />
               )}
             </Link>
           );
@@ -156,15 +165,15 @@ export default function Sidebar() {
               onValueChange={handlePlaylistSelect}
               value={selectedPlaylist?.id?.toString()}
             >
-              <SelectTrigger className="h-10 w-full border-white/10 bg-white/5 hover:bg-white/10 transition-all rounded-xl">
+              <SelectTrigger className="h-10 w-full border-white/10 bg-white/5 hover:bg-white/10 transition-all rounded-sm">
                 <SelectValue placeholder="Select Playlist" />
               </SelectTrigger>
-              <SelectContent className="border-white/10 bg-card/90 backdrop-blur-xl rounded-xl">
+              <SelectContent className="border-white/10 bg-card/90 backdrop-blur-xl rounded-sm">
                 {storePlaylists.map((playlist) => (
                   <SelectItem
                     key={playlist.id}
                     value={playlist.id.toString()}
-                    className="cursor-pointer focus:bg-primary/20 focus:text-primary rounded-lg"
+                    className="cursor-pointer focus:bg-primary/20 focus:text-primary rounded-sm"
                   >
                     {playlist.username}
                   </SelectItem>

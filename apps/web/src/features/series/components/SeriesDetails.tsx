@@ -103,7 +103,7 @@ export default function SeriesDetails({
         <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-16">
 
           {/* Poster Card */}
-          <div className="relative h-[400px] w-full max-w-[280px] shrink-0 overflow-hidden rounded-2xl border border-white/10 shadow-2xl transition-transform duration-500 hover:scale-[1.02] lg:h-[460px] lg:max-w-[320px]">
+          <div className="relative h-[400px] w-full max-w-[280px] shrink-0 overflow-hidden rounded-sm border border-white/10 shadow-2xl transition-transform duration-500 hover:scale-[1.02] lg:h-[460px] lg:max-w-[320px]">
             <Image
               src={image}
               alt={name}
@@ -152,7 +152,7 @@ export default function SeriesDetails({
             {tmdb?.genres && (
               <div className="flex flex-wrap gap-2 ">
                 {tmdb.genres.map((genre: any) => (
-                  <span key={genre.id} className="rounded-lg border border-white/5 bg-white/5 px-3 py-1.5 text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                  <span key={genre.id} className="rounded-sm border border-white/5 bg-white/5 px-3 py-1.5 text-[10px] font-black text-muted-foreground uppercase tracking-widest">
                     {genre.name}
                   </span>
                 ))}
@@ -167,13 +167,13 @@ export default function SeriesDetails({
             <div className="flex flex-wrap items-center gap-4 pt-4">
                <Button
                 onClick={handlePlayMovie}
-                className="h-16 rounded-2xl px-10 text-lg font-black shadow-2xl shadow-primary/20 transition-all hover:scale-105 active:scale-95"
+                className="h-16 rounded-sm px-10 text-lg font-black shadow-2xl shadow-primary/20 transition-all hover:scale-105 active:scale-95"
                >
                   <Play className="mr-3 h-6 w-6 fill-current" />
                   {episodeToPlay?.isResume ? 'Resume' : 'Start Watching'}
                </Button>
 
-               <Button variant="outline" className="h-16 rounded-2xl border-white/10 bg-white/5 px-8 text-lg font-bold backdrop-blur-md transition-all hover:bg-white/10 active:scale-95">
+               <Button variant="outline" className="h-16 rounded-sm border-white/10 bg-white/5 px-8 text-lg font-bold backdrop-blur-md transition-all hover:bg-white/10 active:scale-95">
                   <Tag className="mr-2 h-5 w-5" />
                   Add to List
                </Button>

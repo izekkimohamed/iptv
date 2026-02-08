@@ -83,7 +83,7 @@ const InstallationOverlay = ({
                   <div
                     key={stage}
                     className={cn(
-                      'flex items-center gap-3 rounded-xl border px-4 py-3 transition-all duration-300',
+                      'flex items-center gap-3 rounded-sm border px-4 py-3 transition-all duration-300',
                       status === 'active'
                         ? 'translate-x-1 border-primary bg-primary/10 shadow-[0_0_15px_-5px_rgba(var(--primary),0.3)]'
                         : status === 'completed'

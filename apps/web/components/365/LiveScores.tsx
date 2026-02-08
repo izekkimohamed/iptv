@@ -68,7 +68,7 @@ export default function LiveScores() {
   if (error)
     return (
       <div className="flex h-full w-full flex-col items-center justify-center space-y-6 p-8">
-        <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-8 text-center backdrop-blur-xl">
+        <div className="rounded-sm border border-red-500/20 bg-red-500/10 p-8 text-center backdrop-blur-xl">
           <WifiOff className="mx-auto mb-4 h-12 w-12 text-red-400" />
           <h3 className="mb-2 text-xl font-black text-red-400">Connection Lost</h3>
           <p className="mb-6 text-sm text-white/60">
@@ -76,7 +76,7 @@ export default function LiveScores() {
           </p>
           <button
             onClick={handleRefresh}
-            className="rounded-xl bg-red-500/20 px-6 py-3 font-bold text-red-400 transition-all hover:bg-red-500/30 active:scale-95"
+            className="rounded-sm bg-red-500/20 px-6 py-3 font-bold text-red-400 transition-all hover:bg-red-500/30 active:scale-95"
           >
             Try Again
           </button>
@@ -105,8 +105,8 @@ export default function LiveScores() {
             >
               <div className="mb-4 h-4 w-32 rounded-full bg-white/10" />
               <div className="space-y-3">
-                <div className="h-20 rounded-2xl bg-white/5" />
-                <div className="h-20 rounded-2xl bg-white/5" />
+                <div className="h-20 rounded-sm bg-white/5" />
+                <div className="h-20 rounded-sm bg-white/5" />
               </div>
             </div>
           ))}
@@ -148,7 +148,7 @@ export default function LiveScores() {
           </p>
           <button
             onClick={() => setCurrentDate(new Date())}
-            className="flex items-center gap-2 rounded-2xl bg-primary px-8 py-4 font-black tracking-widest text-primary-foreground uppercase shadow-lg shadow-primary/20 transition-all hover:scale-105 hover:brightness-110 active:scale-95"
+            className="flex items-center gap-2 rounded-sm bg-primary px-8 py-4 font-black tracking-widest text-primary-foreground uppercase shadow-lg shadow-primary/20 transition-all hover:scale-105 hover:brightness-110 active:scale-95"
           >
             Go to Today
           </button>

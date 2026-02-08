@@ -40,7 +40,7 @@ export const ActionButtons: FC<UpdatedActionButtonsProps> = ({
     <div className="flex flex-wrap gap-4 pt-4">
       {(hasSeasons || !hasSeasons) && (
         <Button
-          className="group relative h-14 overflow-hidden rounded-2xl bg-primary px-8 text-base font-black tracking-widest text-primary-foreground uppercase shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
+          className="group relative h-14 overflow-hidden rounded-sm bg-primary px-8 text-base font-black tracking-widest text-primary-foreground uppercase shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
           onClick={onPlayMovie}
           aria-label={getPlayButtonLabel()}
         >
@@ -54,7 +54,7 @@ export const ActionButtons: FC<UpdatedActionButtonsProps> = ({
         disabled={!hasTrailer}
         onClick={onPlayTrailer}
         className={cn(
-          "h-14 rounded-2xl border px-8 text-base font-bold tracking-widest uppercase backdrop-blur-md transition-all active:scale-95",
+          "h-14 rounded-sm border px-8 text-base font-bold tracking-widest uppercase backdrop-blur-md transition-all active:scale-95",
           !hasTrailer
             ? "cursor-not-allowed border-white/5 bg-white/5 text-white/20"
             : "border-white/10 bg-white/5 text-white hover:bg-white/10 hover:border-white/20"

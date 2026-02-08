@@ -57,7 +57,7 @@ export function DateNavigator({ currentDate, onSelectDate, onRefresh, isLoading 
         <button
           onClick={onRefresh}
           disabled={isLoading}
-          className="group flex items-center gap-2 rounded-xl border border-white/5 bg-white/2 px-4 py-2 transition-all hover:bg-white/10 active:scale-95 disabled:opacity-50"
+          className="group flex items-center gap-2 rounded-sm border border-white/5 bg-white/2 px-4 py-2 transition-all hover:bg-white/10 active:scale-95 disabled:opacity-50"
         >
           <RefreshCw
             className={`h-4 w-4 text-white/60 transition-colors group-hover:text-white ${
@@ -96,7 +96,7 @@ export function DateNavigator({ currentDate, onSelectDate, onRefresh, isLoading 
                 key={date.toISOString()}
                 ref={active ? activeRef : null}
                 onClick={() => onSelectDate(date)}
-                className={`relative flex min-w-[70px] flex-col items-center justify-center rounded-2xl border p-3 transition-all duration-300 ${
+                className={`relative flex min-w-[70px] flex-col items-center justify-center rounded-sm border p-3 transition-all duration-300 ${
                   active
                     ? 'border-primary bg-primary/20 shadow-[0_0_20px_rgba(var(--primary),0.3)]'
                     : 'border-white/5 bg-white/2 hover:border-white/10 hover:bg-white/5'

@@ -145,7 +145,7 @@ export function EventTimeline({ match }: EventTimelineProps) {
                   }`}
                 >
                   <div
-                    className={`group relative flex items-center gap-3 rounded-2xl border-white/10 px-5 py-3 backdrop-blur-sm`}
+                    className={`group relative flex items-center gap-3 rounded-sm border-white/10 px-5 py-3 backdrop-blur-sm`}
                   >
                     {isHome ? (
                       <>

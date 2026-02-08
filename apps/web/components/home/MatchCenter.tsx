@@ -91,7 +91,7 @@ export default function MatchCenter({ gameId, onClose }: { gameId: number; onClo
                             {event.gameTimeDisplay}
                           </div>
                           <div
-                            className={`flex-1 rounded-2xl border border-white/5 p-3 ${isHome ? 'bg-white/5' : 'bg-green-500/5'}`}
+                            className={`flex-1 rounded-sm border border-white/5 p-3 ${isHome ? 'bg-white/5' : 'bg-green-500/5'}`}
                           >
                             <div
                               className={`text-xs font-bold ${isHome ? 'text-white' : 'text-green-400'}`}
@@ -126,7 +126,7 @@ export default function MatchCenter({ gameId, onClose }: { gameId: number; onClo
                         {comp.lineups?.members?.slice(0, 3).map((member, mIdx) => (
                           <div
                             key={mIdx}
-                            className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.03] p-3"
+                            className="flex items-center justify-between rounded-sm border border-white/5 bg-white/[0.03] p-3"
                           >
                             <span className="text-xs font-medium text-white/80">
                               {member.statusText}

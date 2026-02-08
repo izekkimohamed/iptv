@@ -1,6 +1,6 @@
 'use client';
 
-import { LayoutGrid, Play, Rows3, Sparkles, Star } from 'lucide-react';
+import { Home, LayoutGrid, Play, Rows3, Search, Sparkles, Star, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
@@ -99,25 +99,28 @@ function SearchList({ searchQuery }: SearchListProps) {
         {/* Search Header */}
         <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-primary">
-              <Sparkles className="h-5 w-5 fill-primary" />
-              <span className="text-xs font-bold uppercase tracking-widest text-primary">Discovery</span>
+            <div className="flex items-center gap-3 text-primary">
+              <Sparkles className="h-6 w-6 fill-primary glow-primary" />
+              <span className="text-[10px] font-black uppercase tracking-[0.4em]">Instant Discovery</span>
             </div>
-            <h2 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
-              Results for <span className="text-primary italic">"{searchQuery}"</span>
+            <h2 className="text-4xl font-black tracking-tighter text-foreground sm:text-6xl">
+              Found <span className="text-primary italic">"{searchQuery}"</span>
             </h2>
-            <p className="text-sm font-medium text-muted-foreground">
-              Total <span className="text-foreground">{counts.all}</span> matches found
-            </p>
+            <div className="flex items-center gap-2">
+              <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+                Found {counts.all} matching titles across your library
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 rounded-2xl border border-white/5 bg-white/5 p-1.5 backdrop-blur-xl">
+          <div className="flex items-center gap-2 rounded-sm border border-white/5 bg-white/5 p-1.5 backdrop-blur-xl">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setViewMode('carousel')}
               className={cn(
-                'rounded-xl px-4 transition-all duration-300',
+                'rounded-sm px-4 transition-all duration-300',
                 viewMode === 'carousel' ? 'bg-primary text-primary-foreground shadow-lg' : 'hover:bg-white/5'
               )}
             >
@@ -129,7 +132,7 @@ function SearchList({ searchQuery }: SearchListProps) {
               size="sm"
               onClick={() => setViewMode('grid')}
               className={cn(
-                'rounded-xl px-4 transition-all duration-300',
+                'rounded-sm px-4 transition-all duration-300',
                 viewMode === 'grid' ? 'bg-primary text-primary-foreground shadow-lg' : 'hover:bg-white/5'
               )}
             >
@@ -146,7 +149,7 @@ function SearchList({ searchQuery }: SearchListProps) {
               key={filter.id}
               onClick={() => setActiveFilter(filter.id as FilterType)}
               className={cn(
-                'flex items-center gap-2.5 rounded-2xl border px-5 py-2.5 text-sm font-bold transition-all duration-300',
+                'flex items-center gap-2.5 rounded-sm border px-5 py-2.5 text-sm font-bold transition-all duration-300',
                 activeFilter === filter.id
                   ? 'border-primary/50 bg-primary/20 text-primary shadow-[0_0_20px_rgba(var(--primary),0.1)]'
                   : 'border-white/5 bg-white/5 text-muted-foreground hover:border-white/10 hover:bg-white/10 hover:text-foreground'
@@ -169,28 +172,42 @@ function SearchList({ searchQuery }: SearchListProps) {
             <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {Array.from({ length: 12 }).map((_, i) => (
                 <div key={i} className="space-y-4 animate-pulse">
-                  <div className="aspect-[2/3] rounded-2xl bg-white/5" />
-                  <div className="h-4 w-3/4 rounded-lg bg-white/5" />
+                  <div className="aspect-[2/3] rounded-sm bg-white/5" />
+                  <div className="h-4 w-3/4 rounded-sm bg-white/5" />
                 </div>
               ))}
             </div>
           )}
 
           {!isGlobalSearchLoading && !hasResults && (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="relative mb-8">
-                 <div className="absolute inset-0 blur-3xl bg-primary/20 rounded-full" />
-                 <div className="relative flex h-32 w-32 items-center justify-center rounded-full bg-white/5 border border-white/5 backdrop-blur-xl">
-                    <Sparkles className="h-16 w-16 text-primary/40" />
+            <div className="relative flex flex-col items-center justify-center py-24 text-center">
+              {/* Background Glow */}
+              <div className="absolute inset-0 z-0 flex items-center justify-center">
+                <div className="h-[400px] w-[400px] rounded-full bg-primary/10 blur-[100px] animate-pulse" />
+              </div>
+
+              <div className="relative z-10 mb-10">
+                 <div className="relative flex h-40 w-40 items-center justify-center rounded-[2.5rem] bg-white/5 border border-white/10 backdrop-blur-3xl transition-transform duration-500 hover:scale-105">
+                    <div className="absolute inset-0 rounded-[2.5rem] bg-linear-to-tr from-primary/20 to-transparent opacity-50" />
+                    <Search className="h-20 w-20 text-primary/30" />
+                 </div>
+                 <div className="absolute -bottom-2 -right-2 flex h-12 w-12 items-center justify-center rounded-sm bg-primary text-primary-foreground shadow-2xl">
+                    <X className="h-6 w-6" />
                  </div>
               </div>
-              <h3 className="text-3xl font-bold text-foreground mb-3">No Results Found</h3>
-              <p className="max-w-md text-muted-foreground mb-8">
-                We couldn't find any media matching your request. Try refining your search or explore other categories.
+
+              <h3 className="relative z-10 text-4xl font-black tracking-tighter text-foreground mb-4">
+                No <span className="text-primary">Matches</span> Found
+              </h3>
+              <p className="relative z-10 max-w-sm text-sm font-medium leading-relaxed text-muted-foreground/60 mb-10">
+                We couldn't find anything matching "<span className="text-foreground">{searchQuery}</span>".
+                Double check your spelling or try searching for a different category.
               </p>
+
               <Link href="/">
-                 <Button className="rounded-2xl px-8 h-12 text-base font-bold shadow-lg shadow-primary/20">
-                    Back to Dashboard
+                 <Button className="relative z-10 group h-14 rounded-sm px-10 text-base font-black uppercase tracking-widest shadow-2xl shadow-primary/20 transition-all hover:scale-105 hover:shadow-primary/40">
+                    <Home className="mr-3 h-5 w-5 transition-transform group-hover:-translate-y-0.5" />
+                    Return Home
                  </Button>
               </Link>
             </div>
@@ -218,7 +235,7 @@ function SearchList({ searchQuery }: SearchListProps) {
                         href={type === 'channels' ? `/channels?categoryId=${item.categoryId}&channelId=${item.id}` : type === 'movies' ? `/movies?categoryId=${item.categoryId}&movieId=${item.streamId}` : `/series?categoryId=${item.categoryId}&serieId=${item.seriesId}`}
                         className="group relative"
                       >
-                         <div className="relative aspect-[2/3] overflow-hidden rounded-2xl border border-white/5 bg-white/5 transition-all duration-500 group-hover:border-primary/50 group-hover:shadow-[0_0_30px_rgba(var(--primary),0.1)]">
+                         <div className="relative aspect-[2/3] overflow-hidden rounded-sm border border-white/5 bg-white/5 transition-all duration-500 group-hover:border-primary/50 group-hover:shadow-[0_0_30px_rgba(var(--primary),0.1)]">
                             <Image
                               className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                               fill
@@ -229,7 +246,7 @@ function SearchList({ searchQuery }: SearchListProps) {
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-100 transition-opacity" />
 
                             {item.rating && (
-                              <div className="absolute top-3 left-3 flex items-center gap-1 rounded-lg bg-black/40 px-2 py-1 text-[10px] font-black text-amber-400 backdrop-blur-md border border-white/5">
+                              <div className="absolute top-3 left-3 flex items-center gap-1 rounded-sm bg-black/40 px-2 py-1 text-[10px] font-black text-amber-400 backdrop-blur-md border border-white/5">
                                  <Star className="h-3 w-3 fill-current" />
                                  {parseFloat(item.rating).toFixed(1)}
                               </div>
@@ -257,7 +274,7 @@ function SearchList({ searchQuery }: SearchListProps) {
                         href={type === 'channels' ? `/channels?categoryId=${item.categoryId}&channelId=${item.id}` : type === 'movies' ? `/movies?categoryId=${item.categoryId}&movieId=${item.streamId}` : `/series?categoryId=${item.categoryId}&serieId=${item.seriesId}`}
                         className="group relative w-48 shrink-0 lg:w-56"
                       >
-                         <div className="relative aspect-[2/3] overflow-hidden rounded-2xl border border-white/5 bg-white/5 transition-all duration-500 group-hover:border-primary/50 group-hover:shadow-[0_0_30px_rgba(var(--primary),0.1)]">
+                         <div className="relative aspect-[2/3] overflow-hidden rounded-sm border border-white/5 bg-white/5 transition-all duration-500 group-hover:border-primary/50 group-hover:shadow-[0_0_30px_rgba(var(--primary),0.1)]">
                             <Image
                               className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                               fill

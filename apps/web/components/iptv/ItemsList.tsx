@@ -42,7 +42,7 @@ function ItemsList(props: ItemsListProps) {
     <div
       key={streamId}
       onClick={onMovieClick}
-      className="group relative aspect-[2/3] w-full cursor-pointer overflow-hidden rounded-2xl border border-white/5 bg-white/5 transition-all duration-500 hover:border-primary/50 hover:shadow-[0_0_40px_rgba(var(--primary),0.2)]"
+      className="group relative aspect-[2/3] w-full cursor-pointer overflow-hidden rounded-sm border border-white/5 bg-white/5 transition-all duration-500 hover:border-primary/50 hover:shadow-[0_0_40px_rgba(var(--primary),0.2)]"
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
@@ -97,7 +97,7 @@ function ItemsList(props: ItemsListProps) {
         </h3>
 
         <div className="mt-2.5 flex items-center justify-between">
-          <div className="flex items-center gap-1.5 rounded-lg bg-black/40 px-2 py-1 text-[10px] font-black text-amber-400 backdrop-blur-md border border-white/5 shadow-lg">
+          <div className="flex items-center gap-1.5 rounded-sm bg-black/40 px-2 py-1 text-[10px] font-black text-amber-400 backdrop-blur-md border border-white/5 shadow-lg">
              <Star className="h-3 w-3 fill-current" />
              {ratingValue}
           </div>

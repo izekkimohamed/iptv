@@ -81,7 +81,7 @@ export default function Page() {
         </p>
         <Button
           onClick={() => window.history.back()}
-          className="mt-10 h-14 rounded-2xl bg-white px-8 text-base font-black text-black transition-all hover:scale-105 active:scale-95"
+          className="mt-10 h-14 rounded-sm bg-white px-8 text-base font-black text-black transition-all hover:scale-105 active:scale-95"
         >
           Return to Browse
         </Button>
