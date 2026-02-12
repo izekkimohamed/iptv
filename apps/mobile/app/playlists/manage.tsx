@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { usePlaylistStore } from "@repo/store";
+import { usePlaylistStore } from "@/store";
 import { usePlayerTheme } from "@/theme/playerTheme";
 import { FlashList } from "@shopify/flash-list";
 import { useRouter } from "expo-router";
@@ -40,7 +40,7 @@ export default function PlaylistsSelectScreen() {
           },
           style: "destructive",
         },
-      ]
+      ],
     );
   };
 

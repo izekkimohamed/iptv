@@ -1,9 +1,10 @@
 import { ChannelRow } from "@/components/ChannelRow";
 import Header from "@/components/Header";
 import { trpc } from "@/lib/trpc";
-import { usePlaylistStore } from "@repo/store";
+import { usePlaylistStore } from "@/store";
 import { usePlayerTheme } from "@/theme/playerTheme";
 import { FlashList, FlashListRef } from "@shopify/flash-list";
+import * as Haptics from "expo-haptics";
 import { Search, Tv, X } from "lucide-react-native";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -45,7 +46,7 @@ export default function ChannelsScreen() {
         playlistId: selectPlaylist?.id ?? 0,
         categoryId: selectedCatId ?? 0,
       },
-      { enabled: !!selectedCatId }
+      { enabled: !!selectedCatId },
     );
 
   useEffect(() => {
@@ -57,7 +58,7 @@ export default function ChannelsScreen() {
   const filteredCategories = useMemo(() => {
     if (!categories) return [];
     return categories.filter((cat) =>
-      cat.categoryName.toLowerCase().includes(searchQuery.toLowerCase())
+      cat.categoryName.toLowerCase().includes(searchQuery.toLowerCase()),
     );
   }, [categories, searchQuery]);
 
@@ -169,7 +170,7 @@ export default function ChannelsScreen() {
 }
 
 // Sub-component for the Pill to handle its own animation state
-const CategoryPill = ({ item, isActive, onPress }: any) => {
+const CategoryPill = ({ item, isActive, onPress, count }: any) => {
   const theme = usePlayerTheme();
   const scale = useSharedValue(1);
 
@@ -177,14 +178,14 @@ const CategoryPill = ({ item, isActive, onPress }: any) => {
     transform: [{ scale: scale.value }],
   }));
 
-  const handlePressIn = () => (scale.value = withSpring(0.95));
-  const handlePressOut = () => (scale.value = withSpring(1));
-
   return (
     <Pressable
-      onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onPress();
+      }}
+      onPressIn={() => (scale.value = withSpring(0.95))}
+      onPressOut={() => (scale.value = withSpring(1))}
     >
       <Animated.View
         style={[
@@ -193,9 +194,6 @@ const CategoryPill = ({ item, isActive, onPress }: any) => {
           {
             backgroundColor: isActive ? theme.primary : theme.surfaceSecondary,
             borderColor: isActive ? theme.primary : theme.border,
-            elevation: isActive ? 4 : 0,
-            shadowColor: theme.primary,
-            shadowOpacity: isActive ? 0.3 : 0,
           },
         ]}
       >
@@ -210,6 +208,28 @@ const CategoryPill = ({ item, isActive, onPress }: any) => {
         >
           {item.categoryName}
         </Text>
+
+        {/* Add count badge */}
+        {count && (
+          <View
+            style={[
+              styles.countBadge,
+              {
+                backgroundColor:
+                  isActive ? "rgba(0,0,0,0.2)" : theme.glassLight,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.countText,
+                { color: isActive ? "#000" : theme.textMuted },
+              ]}
+            >
+              {count}
+            </Text>
+          </View>
+        )}
       </Animated.View>
     </Pressable>
   );
@@ -350,4 +370,17 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   emptyText: { fontSize: 14, fontWeight: "500" },
+  countBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginLeft: 6,
+    minWidth: 20,
+    alignItems: "center",
+  },
+  countText: {
+    fontSize: 10,
+    fontWeight: "800",
+    fontVariant: ["tabular-nums"],
+  },
 });

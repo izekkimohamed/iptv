@@ -1,6 +1,6 @@
 import { trpc } from "@/lib/trpc";
+import { usePlaylistStore } from "@/store";
 import { usePlayerTheme } from "@/theme/playerTheme";
-import { usePlaylistStore } from "@repo/store";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
@@ -31,7 +31,7 @@ export const ChannelRow = ({ channel }: ChannelRowProps) => {
   useEffect(() => {
     const timer = setInterval(
       () => setCurrentTime(Math.floor(Date.now() / 1000)),
-      30000
+      30000,
     );
     return () => clearInterval(timer);
   }, []);
@@ -43,7 +43,7 @@ export const ChannelRow = ({ channel }: ChannelRowProps) => {
       username: playlist?.username ?? "",
       password: playlist?.password ?? "",
     },
-    { enabled: !!channel.streamId, staleTime: 1000 * 60 * 5 }
+    { enabled: !!channel.streamId, staleTime: 1000 * 60 * 5 },
   );
 
   const { mutate: toggleFavorite } = trpc.channels.toggleFavorite.useMutation({
@@ -55,7 +55,7 @@ export const ChannelRow = ({ channel }: ChannelRowProps) => {
     const current = epgData.find(
       (p: any) =>
         currentTime >= Number(p.start_timestamp) &&
-        currentTime <= Number(p.stop_timestamp)
+        currentTime <= Number(p.stop_timestamp),
     );
     if (!current) return null;
 
@@ -63,7 +63,7 @@ export const ChannelRow = ({ channel }: ChannelRowProps) => {
     const stop = Number(current.stop_timestamp);
     const progress = Math.min(
       100,
-      Math.max(0, ((currentTime - start) / (stop - start)) * 100)
+      Math.max(0, ((currentTime - start) / (stop - start)) * 100),
     );
 
     const formatTime = (ts: number) =>

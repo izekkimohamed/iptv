@@ -1,6 +1,6 @@
 import { trpc } from "@/lib/trpc";
+import { usePlaylistStore } from "@/store";
 import { usePlayerTheme } from "@/theme/playerTheme";
-import { usePlaylistStore } from "@repo/store";
 import { cleanName } from "@repo/utils";
 import { FlashList } from "@shopify/flash-list";
 import { Image } from "expo-image";
@@ -41,7 +41,7 @@ export default function SeriesScreen() {
   const { data: series, isLoading: loadingSeries } =
     trpc.series.getseries.useQuery(
       { playlistId: selectPlaylist?.id ?? 0, categoryId: selectedCatId ?? 0 },
-      { enabled: !!selectedCatId }
+      { enabled: !!selectedCatId },
     );
 
   useEffect(() => {

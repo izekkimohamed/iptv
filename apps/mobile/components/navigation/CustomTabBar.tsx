@@ -1,4 +1,5 @@
 import { usePlayerTheme } from "@/theme/playerTheme";
+import * as Haptics from "expo-haptics";
 import { Film, Home, PlaySquare, Tv, Volleyball } from "lucide-react-native";
 import React, { useEffect } from "react";
 import {
@@ -9,6 +10,7 @@ import {
   View,
 } from "react-native";
 import Animated, {
+  FadeIn,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
@@ -54,8 +56,8 @@ export function CustomTabBar({ state, navigation }: any) {
         style={[
           styles.barWrapper,
           {
-            backgroundColor: `${theme.bg}F2`,
-            borderColor: `${theme.border}33`,
+            backgroundColor: "rgba(10, 10, 15, 0.94)", // Slightly more transparent for glass effect
+            borderColor: `${theme.primary}20`,
           },
         ]}
       >
@@ -81,6 +83,7 @@ export function CustomTabBar({ state, navigation }: any) {
                 target: route.key,
               });
               if (!isFocused && !event.defaultPrevented) {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 navigation.navigate(route.name);
               }
             };
@@ -112,7 +115,11 @@ const TabItem = ({ routeName, isFocused, onPress, theme }: any) => {
     transform: [{ scale: iconScale.value }],
     opacity: withTiming(isFocused ? 1 : 0.6, { duration: 150 }),
   }));
-
+  const pressAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: withSpring(isFocused ? 0.95 : 1, { stiffness: 400 }) },
+    ],
+  }));
   const getIcon = () => {
     const iconColor = isFocused ? "#FFF" : theme.textMuted;
     const props = { size: 22, color: iconColor, strokeWidth: 2.2 };
@@ -132,14 +139,40 @@ const TabItem = ({ routeName, isFocused, onPress, theme }: any) => {
         return <Home {...props} />;
     }
   };
+  const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onPress();
+  };
 
   return (
-    <Pressable onPress={onPress} style={styles.tabItem}>
-      <Animated.View style={animatedIconStyle}>{getIcon()}</Animated.View>
+    <Pressable onPress={handlePress} style={styles.tabItem}>
+      {/* Add subtle scale animation on press */}
+      <Animated.View style={[animatedIconStyle, pressAnimatedStyle]}>
+        {getIcon()}
+      </Animated.View>
+
+      {/* Add label underneath icon when focused */}
+      {isFocused && (
+        <Animated.Text
+          entering={FadeIn.delay(100)} // Delay label fade-in for better timing with icon animation
+          style={[styles.tabLabel, { color: theme.textPrimary }]}
+        >
+          {getLabel(routeName)}
+        </Animated.Text>
+      )}
     </Pressable>
   );
 };
-
+const getLabel = (route: string) => {
+  const labels: Record<string, string> = {
+    index: "Home",
+    movies: "Movies",
+    series: "Series",
+    channels: "Live TV",
+    "365": "Sports",
+  };
+  return labels[route] || route;
+};
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
@@ -183,5 +216,11 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     zIndex: 1,
+  },
+  tabLabel: {
+    fontSize: 9,
+    fontWeight: "700",
+    marginTop: 2,
+    letterSpacing: 0.3,
   },
 });

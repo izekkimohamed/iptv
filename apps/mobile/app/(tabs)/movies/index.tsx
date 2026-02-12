@@ -1,12 +1,12 @@
 import { trpc } from "@/lib/trpc";
+import { usePlaylistStore } from "@/store";
 import { usePlayerTheme } from "@/theme/playerTheme";
-import { usePlaylistStore } from "@repo/store";
 import { cleanName } from "@repo/utils";
 import { FlashList } from "@shopify/flash-list";
 import { Image } from "expo-image"; // Better performance than react-native Image
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { Film } from "lucide-react-native";
+import { Film, Star } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -16,7 +16,13 @@ import {
   Text,
   View,
 } from "react-native";
-import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
@@ -31,7 +37,7 @@ export default function MovieExplorer() {
   const selectPlaylist = usePlaylistStore((state) => state.selectedPlaylist);
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
-    null
+    null,
   );
 
   // 1. Fetch Categories
@@ -54,61 +60,85 @@ export default function MovieExplorer() {
         playlistId: selectPlaylist?.id ?? 0,
         categoryId: selectedCategoryId ?? 0,
       },
-      { enabled: !!selectedCategoryId }
+      { enabled: !!selectedCategoryId },
     );
 
-  const renderMovie = ({ item, index }: { item: any; index: number }) => (
-    <Animated.View
-      entering={FadeInDown.delay((index % 10) * 50).springify()}
-      style={styles.movieItemWrapper}
-    >
-      <Pressable
-        style={({ pressed }) => [
-          styles.movieCard,
-          pressed && { opacity: 0.7, transform: [{ scale: 0.96 }] },
-        ]}
-        onPress={() =>
-          router.push({
-            pathname: "/movies/[id]",
-            params: {
-              id: item.streamId,
-              url: item.url,
-              title: item.name,
-              overview: item.overview || "",
-            },
-          })
-        }
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+  const renderMovie = ({ item, index }: { item: any; index: number }) => {
+    return (
+      <Animated.View
+        entering={FadeInDown.delay((index % 10) * 50).springify()}
+        style={styles.movieItemWrapper}
       >
-        <View
-          style={[
-            styles.posterContainer,
-            { backgroundColor: theme.surfaceSecondary },
-          ]}
+        <Pressable
+          onPressIn={() => (scale.value = withSpring(0.95))}
+          onPressOut={() => (scale.value = withSpring(1))}
+          onPress={() =>
+            router.push({
+              pathname: "/movies/[id]",
+              params: { id: item.streamId, url: item.url },
+            })
+          }
         >
-          <Image
-            source={{ uri: item.streamIcon }}
-            style={[styles.poster, { borderColor: theme.border }]}
-            contentFit='cover'
-            transition={500}
-            // Add a placeholder to avoid empty spaces while loading
-            placeholder='L6PZfSi_.AyE_3t7t7R**0o#DgR4'
-            placeholderContentFit='cover'
-          />
-          {/* Subtle gradient at bottom of poster for depth */}
-          <LinearGradient
-            colors={["transparent", "rgba(0,0,0,0.3)"]}
-            style={styles.posterGradient}
-          />
-        </View>
-        <Text
-          style={[styles.movieTitle, { color: theme.textSecondary }]}
-          numberOfLines={1}
-        >
-          {cleanName(item.name)}
-        </Text>
-      </Pressable>
-    </Animated.View>
-  );
+          <Animated.View style={animatedStyle}>
+            <View
+              style={[
+                styles.posterContainer,
+                { backgroundColor: theme.surfaceSecondary },
+              ]}
+            >
+              <Image
+                source={{ uri: item.streamIcon }}
+                style={[styles.poster, { borderColor: theme.border }]}
+                contentFit='cover'
+                transition={500}
+                placeholder='L6PZfSi_.AyE_3t7t7R**0o#DgR4'
+              />
+
+              {/* Add rating badge */}
+              {item.rating && (
+                <View style={styles.ratingBadge}>
+                  <LinearGradient
+                    colors={["rgba(0,0,0,0.8)", "rgba(0,0,0,0.6)"]}
+                    style={styles.ratingGradient}
+                  >
+                    <Star size={10} color='#FCD34D' fill='#FCD34D' />
+                    <Text style={styles.ratingText}>
+                      {parseFloat(item.rating).toFixed(1)}
+                    </Text>
+                  </LinearGradient>
+                </View>
+              )}
+
+              {/* Add "NEW" badge for recent content */}
+              {isRecent(item.added) && (
+                <View
+                  style={[styles.newBadge, { backgroundColor: theme.primary }]}
+                >
+                  <Text style={styles.newBadgeText}>NEW</Text>
+                </View>
+              )}
+
+              <LinearGradient
+                colors={["transparent", "rgba(0,0,0,0.4)"]}
+                style={styles.posterGradient}
+              />
+            </View>
+            <Text
+              style={[styles.movieTitle, { color: theme.textSecondary }]}
+              numberOfLines={1}
+            >
+              {cleanName(item.name)}
+            </Text>
+          </Animated.View>
+        </Pressable>
+      </Animated.View>
+    );
+  };
 
   // --- Loading State ---
   if (loadingCats)
@@ -202,6 +232,14 @@ export default function MovieExplorer() {
     </>
   );
 }
+
+const isRecent = (dateAdded: string) => {
+  if (!dateAdded) return false;
+  const added = new Date(dateAdded);
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  return added > weekAgo;
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -324,5 +362,38 @@ const styles = StyleSheet.create({
   },
   emptySub: {
     fontSize: 14,
+  },
+  ratingBadge: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    borderRadius: 6,
+    overflow: "hidden",
+  },
+  ratingGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  },
+  ratingText: {
+    color: "white",
+    fontSize: 10,
+    fontWeight: "800",
+  },
+  newBadge: {
+    position: "absolute",
+    top: 6,
+    left: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  newBadgeText: {
+    color: "#000",
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 0.5,
   },
 });

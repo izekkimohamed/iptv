@@ -1,6 +1,6 @@
 import { trpc } from "@/lib/trpc";
+import { usePlaylistStore } from "@/store";
 import { usePlayerTheme } from "@/theme/playerTheme";
-import { usePlaylistStore } from "@repo/store";
 import { cleanName } from "@repo/utils";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -309,7 +309,7 @@ function EpisodeItem({ episode, seasonNumber, seriesCover, theme }: any) {
     selectPlaylist?.username ?? "",
     selectPlaylist?.password ?? "",
     episode.stream_id,
-    episode.container_extension
+    episode.container_extension,
   );
 
   return (

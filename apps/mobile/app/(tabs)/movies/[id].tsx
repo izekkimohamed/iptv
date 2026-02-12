@@ -1,6 +1,6 @@
 import { trpc } from "@/lib/trpc";
+import { usePlaylistStore } from "@/store";
 import { usePlayerTheme } from "@/theme/playerTheme";
-import { usePlaylistStore } from "@repo/store";
 import { cleanName } from "@repo/utils";
 import { FlashList } from "@shopify/flash-list";
 import { Image } from "expo-image";
@@ -49,20 +49,20 @@ export const useStreamingUrls = (
   username: string,
   password: string,
   stream_id: string,
-  container_extension?: string
+  container_extension?: string,
 ) => {
   const srcUrl = useMemo<string>(
     () =>
       `${baseUrl}/movie/${username}/${password}/${stream_id}.${
         container_extension || "mp4"
       }`,
-    [baseUrl, username, password, stream_id, container_extension]
+    [baseUrl, username, password, stream_id, container_extension],
   );
 
   const getEpisodeSrcUrl = useCallback<(episode: any) => string>(
     (episode: any) =>
       `${baseUrl}/series/${username}/${password}/${episode.id}.${episode.container_extension}`,
-    [baseUrl, password, username]
+    [baseUrl, password, username],
   );
 
   return { srcUrl, getEpisodeSrcUrl };

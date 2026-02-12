@@ -1,5 +1,6 @@
-import { usePlaylistStore } from "@repo/store";
+import { usePlaylistStore } from "@/store";
 import { usePlayerTheme } from "@/theme/playerTheme";
+import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { Search, User } from "lucide-react-native";
 import React, { useState } from "react";
@@ -20,7 +21,11 @@ const Header = () => {
         <View
           style={[
             styles.searchContainer,
-            { backgroundColor: theme.surfaceSecondary },
+            {
+              backgroundColor: theme.surfaceSecondary,
+              borderColor: theme.borderMuted,
+              borderWidth: 1,
+            },
           ]}
         >
           <Search size={18} color={theme.textMuted} />
@@ -35,7 +40,10 @@ const Header = () => {
           />
         </View>
         <Pressable
-          onPress={() => router.push("/playlists/manage")}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push("/playlists/manage");
+          }}
           style={[
             styles.profileButton,
             {

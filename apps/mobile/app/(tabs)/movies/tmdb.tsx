@@ -1,6 +1,6 @@
 import { trpc } from "@/lib/trpc";
+import { usePlaylistStore } from "@/store";
 import { usePlayerTheme } from "@/theme/playerTheme";
-import { usePlaylistStore } from "@repo/store";
 import { FlashList } from "@shopify/flash-list";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -60,7 +60,7 @@ export default function MovieDetailsScreen() {
       tmdbId: Number(movieId),
       playlistId: Number(playlistId),
     },
-    { enabled: !!movieId && !!playlistId }
+    { enabled: !!movieId && !!playlistId },
   );
 
   const movie = data?.[0];

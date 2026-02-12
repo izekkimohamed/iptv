@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { usePlaylistStore } from "@repo/store";
+import { usePlaylistStore } from "@/store";
 import { usePlayerTheme } from "@/theme/playerTheme";
 import { useRouter } from "expo-router";
 import {
@@ -99,14 +99,14 @@ export default function PlaylistSetupScreen() {
   });
 
   const [currentStage, setCurrentStage] = useState<CreationStage>(
-    CreationStage.CHANNELS_CATEGORIES
+    CreationStage.CHANNELS_CATEGORIES,
   );
   const [totalProgress, setTotalProgress] = useState(0);
 
   // --- Logic Helpers ---
   const updateStageState = (
     stage: CreationStage,
-    updates: Partial<CreationState>
+    updates: Partial<CreationState>,
   ) => {
     setCreationStates((prev) => ({
       ...prev,
@@ -127,7 +127,7 @@ export default function PlaylistSetupScreen() {
       };
       const stages = Object.values(CreationStage).slice(0, -1);
       const completedCount = stages.filter(
-        (s) => updated[s].isCompleted
+        (s) => updated[s].isCompleted,
       ).length;
       setTotalProgress((completedCount / stages.length) * 100);
       return updated;

@@ -2,10 +2,9 @@ import { FlashList } from "@shopify/flash-list";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { Database, Info, Play, Tv } from "lucide-react-native";
+import { Database, Info, Play, Star, Tv } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   Dimensions,
   FlatList,
   Pressable,
@@ -29,9 +28,11 @@ import MatchDetailsModal from "@/components/365/Details";
 import { formatDateForAPI, Game } from "@/components/365/LiveScores";
 import MatchCard from "@/components/365/MatchCard";
 import Header from "@/components/Header";
+
+import { SkeletonCard } from "@/components/ui/Skeleton";
 import { trpc } from "@/lib/trpc";
+import { usePlaylistStore } from "@/store";
 import { usePlayerTheme } from "@/theme/playerTheme";
-import { usePlaylistStore } from "@repo/store";
 
 const { width } = Dimensions.get("window");
 const FEATURED_WIDTH = width * 0.85;
@@ -43,20 +44,20 @@ const LiveIndicator = ({ color }: { color: string }) => {
     opacity: withRepeat(
       withSequence(
         withTiming(0.4, { duration: 800 }),
-        withTiming(1, { duration: 800 })
+        withTiming(1, { duration: 800 }),
       ),
       -1,
-      true
+      true,
     ),
     transform: [
       {
         scale: withRepeat(
           withSequence(
             withTiming(1, { duration: 800 }),
-            withTiming(1.2, { duration: 800 })
+            withTiming(1.2, { duration: 800 }),
           ),
           -1,
-          true
+          true,
         ),
       },
     ],
@@ -94,7 +95,7 @@ export default function HomeScreen() {
     trpc.playlists.getPlaylists.useQuery();
   const { data: favoriteChannels } = trpc.channels.getChannels.useQuery(
     { favorites: true, playlistId: selectedPlaylist?.id || 0 },
-    { enabled: !!selectedPlaylist }
+    { enabled: !!selectedPlaylist },
   );
 
   const apiUrl = `${process.env.EXPO_PUBLIC_API_URL}/live-matches?date=${formatDateForAPI(currentDate)}`;
@@ -105,12 +106,12 @@ export default function HomeScreen() {
       refreshInterval: (data) =>
         data?.some((g) => g.statusGroup === 3) ? 20000 : 60000,
       keepPreviousData: true,
-    }
+    },
   );
 
   const liveMatches = useMemo(
     () => games.filter((g) => g.statusGroup === 3),
-    [games]
+    [games],
   );
 
   useEffect(() => {
@@ -216,7 +217,10 @@ export default function HomeScreen() {
   );
 
   const renderChannel = ({ item }: { item: any }) => (
-    <Animated.View entering={FadeInDown} style={styles.channelContainer}>
+    <Animated.View
+      entering={FadeInDown}
+      style={{ width: 120, marginRight: 12, alignItems: "center" }}
+    >
       <Pressable
         onPress={() =>
           router.push({
@@ -225,25 +229,37 @@ export default function HomeScreen() {
           })
         }
         style={({ pressed }) => [
-          styles.channelPressable,
+          styles.channelCardEnhanced,
           {
-            backgroundColor: theme.surfaceSecondary,
-            borderColor: theme.border,
+            backgroundColor: "rgba(255,255,255,0.05)",
+            borderColor: pressed ? theme.primary : "rgba(255,255,255,0.05)",
           },
-          pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] },
+          pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] },
         ]}
       >
+        <View style={styles.liveBadge}>
+          <View style={styles.liveDot} />
+          <Text style={styles.liveBadgeText}>LIVE</Text>
+        </View>
         {item.streamIcon ?
           <Image
             source={{ uri: item.streamIcon }}
-            style={styles.channelLogo}
-            contentFit='fill'
+            style={{ width: "100%", height: "100%", padding: 20 }}
+            contentFit='contain'
           />
-        : <Tv size={28} color={theme.textMuted} />}
+        : <View
+            style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+          >
+            <Tv size={32} color={theme.textPrimary} />
+          </View>
+        }
       </Pressable>
       <Text
         numberOfLines={1}
-        style={[styles.channelTitle, { color: theme.textPrimary }]}
+        style={[
+          styles.channelTitle,
+          { color: theme.textPrimary, marginTop: 4, fontWeight: "600" },
+        ]}
       >
         {item.name}
       </Text>
@@ -277,6 +293,17 @@ export default function HomeScreen() {
     );
   }
 
+  const HomeSkeleton = () => (
+    <View style={{ padding: 20 }}>
+      <SkeletonCard width={FEATURED_WIDTH} height={340} borderRadius={24} />
+      <View style={{ flexDirection: "row", gap: 12, marginTop: 20 }}>
+        <SkeletonCard width={85} height={85} borderRadius={22} />
+        <SkeletonCard width={85} height={85} borderRadius={22} />
+        <SkeletonCard width={85} height={85} borderRadius={22} />
+      </View>
+    </View>
+  );
+
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.bg }]}
@@ -294,7 +321,7 @@ export default function HomeScreen() {
         }
       >
         {isLoading ?
-          <ActivityIndicator style={{ marginTop: 100 }} color={theme.primary} />
+          <HomeSkeleton />
         : <>
             {/* Hero Carousel */}
             <View style={styles.featuredSection}>
@@ -312,24 +339,52 @@ export default function HomeScreen() {
             {/* Favorite Channels */}
             {favoriteChannels && favoriteChannels.length > 0 && (
               <View style={styles.section}>
-                <View style={styles.sectionTitleRow}>
-                  <Text
-                    style={[styles.sectionHeader, { color: theme.textPrimary }]}
-                  >
-                    Favorites
-                  </Text>
-                  <Pressable onPress={() => router.push("/(tabs)/channels")}>
-                    <Text
-                      style={{
-                        color: theme.primary,
-                        fontSize: 13,
-                        fontWeight: "600",
-                      }}
-                    >
-                      See All
-                    </Text>
-                  </Pressable>
-                </View>
+                <Pressable onPress={() => router.push("/(tabs)/channels")}>
+                  <View style={styles.sectionHeaderContainer}>
+                    <View style={styles.sectionHeaderLeft}>
+                      <View style={styles.sectionKickerRow}>
+                        <View
+                          style={[
+                            styles.kickerIconBox,
+                            { backgroundColor: "rgba(255,255,255,0.1)" },
+                          ]}
+                        >
+                          <Star
+                            size={12}
+                            color={theme.primary}
+                            fill={theme.primary}
+                          />
+                        </View>
+                        <Text
+                          style={[styles.kickerText, { color: theme.primary }]}
+                        >
+                          YOUR SELECTION
+                        </Text>
+                      </View>
+                      <Text
+                        style={[
+                          styles.sectionTitleLarge,
+                          { color: theme.textPrimary },
+                        ]}
+                      >
+                        Favorite{" "}
+                        <Text
+                          style={{ color: theme.primary, fontStyle: "italic" }}
+                        >
+                          Channels
+                        </Text>
+                      </Text>
+                    </View>
+                    <View style={styles.sectionHeaderRight}>
+                      <Text
+                        style={[styles.countText, { color: theme.textPrimary }]}
+                      >
+                        {favoriteChannels.length}
+                      </Text>
+                      <Text style={styles.countLabel}>Total Channels</Text>
+                    </View>
+                  </View>
+                </Pressable>
                 <FlatList
                   horizontal
                   data={favoriteChannels}
@@ -344,8 +399,8 @@ export default function HomeScreen() {
             {liveMatches.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.liveTitleRow}>
-                  <LiveIndicator color={theme.accentError} />
-                  <Text style={[styles.liveText, { color: theme.accentError }]}>
+                  <LiveIndicator color={theme.primary} />
+                  <Text style={[styles.liveText, { color: theme.primary }]}>
                     LIVE SCORES
                   </Text>
                 </View>
@@ -373,16 +428,8 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, paddingBottom: 60 },
   section: { marginVertical: 12 },
-  sectionTitleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    marginBottom: 12,
-  },
-  sectionHeader: { fontSize: 20, fontWeight: "800", letterSpacing: -0.5 },
   horizontalList: { paddingHorizontal: 20, paddingBottom: 10 },
 
   // Featured Hero
@@ -440,18 +487,6 @@ const styles = StyleSheet.create({
   },
 
   // Channels
-  channelContainer: { width: 85, marginRight: 12, alignItems: "center" },
-  channelPressable: {
-    width: 85,
-    height: 85,
-    borderRadius: 22,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 8,
-    borderWidth: 1,
-    overflow: "hidden",
-  },
-  channelLogo: { width: "100%", height: "100%" },
   channelTitle: {
     fontSize: 11,
     fontWeight: "700",
@@ -498,4 +533,99 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   actionButtonText: { fontWeight: "800", fontSize: 16 },
+
+  // New Header Styles
+  sectionHeaderContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    paddingHorizontal: 20,
+    marginBottom: 20,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.05)",
+  },
+  sectionHeaderLeft: {
+    gap: 6,
+  },
+  sectionKickerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  kickerIconBox: {
+    width: 24,
+    height: 24,
+    borderRadius: 4,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  kickerText: {
+    fontSize: 10,
+    fontWeight: "900",
+    textTransform: "uppercase",
+    letterSpacing: 2,
+  },
+  sectionTitleLarge: {
+    fontSize: 28,
+    fontWeight: "900",
+    letterSpacing: -1,
+    lineHeight: 32,
+  },
+  sectionHeaderRight: {
+    alignItems: "flex-end",
+    gap: 2,
+  },
+  countText: {
+    fontSize: 20,
+    fontWeight: "900",
+    fontVariant: ["tabular-nums"],
+  },
+  countLabel: {
+    fontSize: 9,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    color: "rgba(255,255,255,0.4)",
+  },
+
+  // Enhanced Channel Card
+  channelCardEnhanced: {
+    width: 120,
+    height: 120,
+    borderRadius: 4,
+    borderWidth: 1,
+    overflow: "hidden",
+    marginBottom: 8,
+  },
+  liveBadge: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#ef4444",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 2,
+    zIndex: 10,
+    shadowColor: "#ef4444",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  liveBadgeText: {
+    color: "white",
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 1,
+  },
+  liveDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "white",
+  },
 });

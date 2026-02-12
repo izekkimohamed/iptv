@@ -65,6 +65,7 @@ export const VideoProgress = ({
 }: VideoProgressProps) => {
   const theme = usePlayerTheme();
   const [isSeeking, setIsSeeking] = useState(false);
+  const [previewTime, setPreviewTime] = useState<number | null>(null);
 
   const progressData = useSharedValue(0);
   const min = useSharedValue(0);
@@ -72,6 +73,7 @@ export const VideoProgress = ({
 
   const handleSeek = (value: number) => {
     setIsSeeking(false);
+    setPreviewTime(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onSeek?.(value * duration);
   };
@@ -99,30 +101,31 @@ export const VideoProgress = ({
             minimumValue={min}
             maximumValue={max}
             progress={progressData}
+            onValueChange={(value) => {
+              setPreviewTime(value * duration);
+            }}
             onSlidingStart={() => {
               setIsSeeking(true);
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             }}
             onSlidingComplete={handleSeek}
-            renderThumb={() => (
-              <View style={styles.thumbContainer}>
+            // Add preview bubble
+            renderBubble={() =>
+              previewTime !== null && (
                 <View
                   style={[
-                    styles.thumbGlow,
-                    { backgroundColor: theme.primaryGlow },
+                    styles.previewBubble,
+                    { backgroundColor: theme.glassStrong },
                   ]}
-                />
-                <View
-                  style={[
-                    styles.customThumb,
-                    {
-                      backgroundColor: theme.primary,
-                      shadowColor: theme.glow,
-                    },
-                  ]}
-                />
-              </View>
-            )}
+                >
+                  <Text
+                    style={[styles.previewText, { color: theme.textPrimary }]}
+                  >
+                    {formatTime(previewTime)}
+                  </Text>
+                </View>
+              )
+            }
             containerStyle={styles.sliderTrackContainer}
             theme={{
               minimumTrackTintColor: theme.primary,
@@ -372,5 +375,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backdropFilter: "blur(10px)",
+  },
+  previewBubble: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginBottom: 8,
+  },
+  previewText: {
+    fontSize: 11,
+    fontWeight: "700",
+    fontVariant: ["tabular-nums"],
   },
 });

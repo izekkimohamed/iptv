@@ -1,6 +1,6 @@
 import { trpc } from "@/lib/trpc";
+import { usePlaylistStore } from "@/store";
 import { usePlayerTheme } from "@/theme/playerTheme";
-import { usePlaylistStore } from "@repo/store";
 import { cleanName } from "@repo/utils";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
