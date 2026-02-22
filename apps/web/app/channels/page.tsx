@@ -1,6 +1,6 @@
 'use client';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo } from 'react';
+import { Suspense, useEffect, useMemo } from 'react';
 
 import { Tv } from 'lucide-react';
 
@@ -11,6 +11,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import VideoPlayer from '@/features/player/components/VideoPlayer';
 import { trpc } from '@/lib/trpc';
 import { usePlayerStore, usePlaylistStore } from '@repo/store';
+import ChannelsContentSkeleton from './Skeleton';
 
 export default function ChannelsPage() {
   const router = useRouter();
@@ -18,7 +19,7 @@ export default function ChannelsPage() {
   const searchParams = useSearchParams();
   const selectedCategoryId = searchParams.get('categoryId');
   const selectedChannelId = searchParams.get('channelId');
-  const { setSrc, setPoster, setTitle, src, poster, title } = usePlayerStore();
+  const { setMedia, src, poster, title } = usePlayerStore();
 
   // Data queries
   const { selectedPlaylist: playlist } = usePlaylistStore();
@@ -65,11 +66,13 @@ export default function ChannelsPage() {
   // Update player when selectedChannel changes
   useEffect(() => {
     if (selectedChannel) {
-      setSrc(selectedChannel.url);
-      setPoster(selectedChannel.streamIcon || '');
-      setTitle(selectedChannel.name);
+      setMedia({
+        src: selectedChannel.url,
+        poster: selectedChannel.streamIcon || '',
+        title: selectedChannel.name,
+      });
     }
-  }, [selectedChannel, setSrc, setPoster, setTitle]);
+  }, [selectedChannel, setMedia]);
 
   // Check if player has content (either from store or selected channel)
   const hasPlayerContent = !!src || !!selectedChannel;
@@ -88,7 +91,9 @@ export default function ChannelsPage() {
   }
 
   return (
-    <>
+
+    <Suspense fallback={<ChannelsContentSkeleton />}>
+
       <ChannelsSidebar channels={channels} isLoading={isFetchingChannels} />
 
       {/* Player Area */}
@@ -107,9 +112,9 @@ export default function ChannelsPage() {
                   src={src}
                   poster={poster}
                   title={title}
-                  movieId={null}
-                  serieId={null}
-                  categoryId={null}
+                  movieId={undefined}
+                  serieId={undefined}
+                  categoryId={undefined}
                   totalEpisodes={0}
                   hasNext={hasNext}
                   hasPrev={hasPrev}
@@ -151,6 +156,7 @@ export default function ChannelsPage() {
           )}
         </div>
       </div>
-    </>
+    </Suspense>
+
   );
 }

@@ -1,11 +1,9 @@
 import { usePlayerStore } from '@repo/store';
-import {
-  AlertCircle,
-  Play
-} from 'lucide-react';
-import React, { memo, useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 
 import { ControlsContainer } from './ControlsContainer';
+import { PlayerErrorState } from './PlayerErrorState';
+import { PlayerPausedOverlay, PlayerSpinner } from './PlayerOverlays';
 
 import { useControlsVisibility } from '../hooks/useControlsVisibility';
 import { useGestureHandlers } from '../hooks/useGestureHandlers';
@@ -26,25 +24,6 @@ function formatTime(seconds: number): string {
   if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   return `${m}:${String(s).padStart(2, '0')}`;
 }
-
-
-
-// ─── Spinner ──────────────────────────────────────────────────────────────────
-
-const Spinner = memo(function Spinner() {
-  return (
-    <div
-      style={{
-        width: 48,
-        height: 48,
-        border: '4px solid rgba(255,255,255,0.15)',
-        borderTop: '4px solid #fff',
-        borderRadius: '50%',
-        animation: 'vp-spin 0.8s linear infinite',
-      }}
-    />
-  );
-});
 
 
 
@@ -311,44 +290,7 @@ export default function VideoPlayer({
   const displayVolume = isMuted ? 0 : volume;
 
   if (playbackError) {
-    let title_ = 'Playback error';
-    let detail = playbackError.message;
-
-    if (playbackError.code === 2) {
-      title_ = 'Network Error';
-      detail = 'Could not load the media. Please check your connection.';
-    } else if (playbackError.message?.includes('405')) {
-      title_ = 'Access Denied (405)';
-      detail = 'The server rejected this stream. The link may be invalid or expired.';
-    }
-
-    return (
-      <div
-        style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          height: '100%', width: '100%', background: 'rgba(0,0,0,0.85)', borderRadius: 12,
-          padding: 32, gap: 16, color: '#fff', fontFamily: 'system-ui, sans-serif',
-        }}
-      >
-        <AlertCircle size={48} />
-        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>{title_}</h2>
-        <p style={{ margin: 0, color: 'rgba(255,255,255,0.6)', textAlign: 'center', maxWidth: 400 }}>
-          {detail}
-        </p>
-        <button
-          onClick={() => setPlaybackError(null)}
-          style={{
-            marginTop: 8, padding: '10px 28px', borderRadius: 99,
-            border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)',
-            color: '#fff', cursor: 'pointer', fontSize: 14, transition: 'background 0.15s',
-          }}
-          onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.2)')}
-          onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.1)')}
-        >
-          Try Again
-        </button>
-      </div>
-    );
+    return <PlayerErrorState playbackError={playbackError} setPlaybackError={setPlaybackError} />;
   }
 
   return (
@@ -375,19 +317,8 @@ export default function VideoPlayer({
           onDoubleClick={handleDoubleClick}
         />
 
-        {isLoading && !paused && (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-            <Spinner />
-          </div>
-        )}
-
-        {paused && !isLoading && (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%, rgba(0,0,0,0.7) 100%)', pointerEvents: 'none' }}>
-            <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', border: '2px solid rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
-              <Play size={28} />
-            </div>
-          </div>
-        )}
+        {isLoading && !paused && <PlayerSpinner />}
+        {paused && !isLoading && <PlayerPausedOverlay />}
 
           <ControlsContainer
             showControls={showControls}

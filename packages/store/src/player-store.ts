@@ -19,6 +19,7 @@ interface PlayerStoreType {
   setPreferredRate: (rate: number) => void;
   setPreferredAspectRatio: (ratio: "16:9" | "4:3" | "1:1") => void;
   clearPlayer: () => void;
+  setMedia: (media: { src: string; poster: string; title: string }) => void;
 }
 
 export const usePlayerStore = create<PlayerStoreType>()(
@@ -65,6 +66,9 @@ export const usePlayerStore = create<PlayerStoreType>()(
           preferredAspectRatio: ratio,
         }),
       clearPlayer: () => set({ src: "", poster: undefined, title: undefined }),
+      setMedia: (media: { src: string; poster: string; title: string }) => {
+  set({ src: media.src, poster: media.poster, title: media.title });
+},
     }),
     {
       name: "player-storage",
