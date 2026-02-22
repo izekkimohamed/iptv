@@ -1,6 +1,5 @@
 import { usePlayerTheme } from "@/theme/playerTheme";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import type { VideoContentFit, VideoPlayer } from "expo-video";
 import { StyleSheet, Text, View } from "react-native";
 import {
@@ -57,17 +56,7 @@ export const VideoControls = ({
   const progress = currentTime / safeDuration;
 
   return (
-    <LinearGradient
-      colors={[
-        "rgba(10, 10, 15, 0.85)",
-        "rgba(10, 10, 15, 0.4)",
-        "transparent",
-        "rgba(10, 10, 15, 0.4)",
-        "rgba(10, 10, 15, 0.9)",
-      ]}
-      locations={[0, 0.12, 0.5, 0.88, 1]}
-      style={styles.fullOverlay}
-    >
+    <View style={styles.fullOverlay}>
       {/* --- Top Bar --- */}
       <View style={styles.header}>
         <View
@@ -185,7 +174,7 @@ export const VideoControls = ({
           onToggleResizeMode={onToggleResizeMode}
         />
       </View>
-    </LinearGradient>
+    </View>
   );
 };
 

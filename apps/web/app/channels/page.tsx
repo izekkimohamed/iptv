@@ -12,7 +12,6 @@ import VideoPlayer from '@/features/player/components/VideoPlayer';
 import { trpc } from '@/lib/trpc';
 import { usePlayerStore, usePlaylistStore } from '@repo/store';
 
-
 export default function ChannelsPage() {
   const router = useRouter();
 
@@ -93,16 +92,16 @@ export default function ChannelsPage() {
       <ChannelsSidebar channels={channels} isLoading={isFetchingChannels} />
 
       {/* Player Area */}
-      <div className="flex flex-1 flex-col bg-background/50 backdrop-blur-3xl overflow-hidden">
+      <div className="bg-background/50 flex flex-1 flex-col overflow-hidden backdrop-blur-3xl">
         {/* Player Header */}
         <PlayerHeader selectedChannel={selectedChannel} />
 
         {/* Player Content */}
-        <div className="flex-1 overflow-y-auto scrollbar-hide">
+        <div className="scrollbar-hide flex-1 overflow-y-auto">
           {hasPlayerContent ? (
             <div className="flex h-full flex-col">
               {/* Video Player Area */}
-              <div className="h-1/2">
+              <div className="max-h-1/2">
                 <VideoPlayer
                   autoPlay
                   src={src}
@@ -135,23 +134,23 @@ export default function ChannelsPage() {
             </div>
           ) : (
             <div className="flex h-full flex-1 items-center justify-center p-8 text-center">
-              <div className="space-y-6 max-w-sm">
-                <div className="relative mx-auto w-24 h-24 flex items-center justify-center">
-                   <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full animate-pulse" />
-                   <Tv className="relative h-16 w-16 text-muted-foreground/40" />
+              <div className="max-w-sm space-y-6">
+                <div className="relative mx-auto flex h-24 w-24 items-center justify-center">
+                  <div className="bg-primary/20 absolute inset-0 animate-pulse rounded-full blur-3xl" />
+                  <Tv className="text-muted-foreground/40 relative h-16 w-16" />
                 </div>
                 <div>
-                   <h4 className="text-2xl font-black text-foreground mb-3">Ready to Stream</h4>
-                   <p className="text-muted-foreground font-medium">
-                     Select a category and channel from the sidebar to begin your playback experience.
-                   </p>
+                  <h4 className="text-foreground mb-3 text-2xl font-black">Ready to Stream</h4>
+                  <p className="text-muted-foreground font-medium">
+                    Select a category and channel from the sidebar to begin your playback
+                    experience.
+                  </p>
                 </div>
               </div>
             </div>
           )}
         </div>
       </div>
-
     </>
   );
 }

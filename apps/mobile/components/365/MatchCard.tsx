@@ -1,7 +1,6 @@
 import { usePlayerTheme } from "@/theme/playerTheme";
-import { Image } from "expo-image";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,

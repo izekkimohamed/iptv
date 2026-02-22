@@ -7,6 +7,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
+  "start:fullscreen": "bun run start & sleep 3 && brave --kiosk http://localhost:3000",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",

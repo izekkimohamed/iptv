@@ -2,11 +2,10 @@ import { trpc } from "@/lib/trpc";
 import { usePlaylistStore } from "@/store";
 import { usePlayerTheme } from "@/theme/playerTheme";
 import * as Haptics from "expo-haptics";
-import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { Heart, Tv } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,

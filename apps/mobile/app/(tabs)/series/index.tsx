@@ -3,14 +3,13 @@ import { usePlaylistStore } from "@/store";
 import { usePlayerTheme } from "@/theme/playerTheme";
 import { cleanName } from "@repo/utils";
 import { FlashList } from "@shopify/flash-list";
-import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { Tv } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
+  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -81,10 +80,14 @@ export default function SeriesScreen() {
             placeholderContentFit='cover'
           />
           {/* Subtle gradient for depth */}
-          <LinearGradient
-            colors={["transparent", "rgba(0,0,0,0.4)"]}
-            style={styles.posterGradient}
-          />
+          <View style={StyleSheet.absoluteFill}>
+            <View
+              style={[
+                styles.posterGradient,
+                { backgroundColor: "rgba(0,0,0,0.4)" },
+              ]}
+            />
+          </View>
         </View>
         <Text
           style={[styles.seriesTitle, { color: theme.textSecondary }]}

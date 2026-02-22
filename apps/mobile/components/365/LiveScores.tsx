@@ -1,6 +1,5 @@
 import { usePlayerTheme } from "@/theme/playerTheme";
 import { FlashList } from "@shopify/flash-list";
-import { Image } from "expo-image";
 import {
   Calendar,
   ChevronLeft,
@@ -10,6 +9,7 @@ import {
 import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -83,7 +83,7 @@ export default function LiveScoresScreen() {
 
   const liveMatches = useMemo(
     () => games.filter((g) => g.statusGroup === 3),
-    [games]
+    [games],
   );
 
   const groupedGames = useMemo(() => {
@@ -95,7 +95,7 @@ export default function LiveScoresScreen() {
         acc[key].push(game);
         return acc;
       },
-      {} as Record<string, Game[]>
+      {} as Record<string, Game[]>,
     );
   }, [games]);
 

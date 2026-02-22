@@ -3,8 +3,7 @@ import { usePlaylistStore } from "@/store";
 import { usePlayerTheme } from "@/theme/playerTheme";
 import { cleanName } from "@repo/utils";
 import { FlashList } from "@shopify/flash-list";
-import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
+
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   Calendar,
@@ -20,6 +19,7 @@ import React, { useCallback, useMemo } from "react";
 import {
   ActivityIndicator,
   Dimensions,
+  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -184,16 +184,12 @@ export default function MovieDetailsScreen() {
       >
         {/* --- Parallax Backdrop --- */}
         <View style={styles.backdropContainer}>
-          <Image
-            source={{ uri: backdropUrl }}
-            style={styles.backdrop}
-            contentFit='cover'
-            transition={500}
-          />
-          <LinearGradient
-            colors={["transparent", `${theme.bg}00`, `${theme.bg}E6`, theme.bg]}
-            locations={[0, 0.4, 0.85, 1]}
-            style={styles.backdropGradient}
+          <Image source={{ uri: backdropUrl }} style={styles.backdrop} />
+          <View
+            style={[
+              styles.backdropGradient,
+              { backgroundColor: theme.bg, opacity: 0.6 },
+            ]}
           />
         </View>
 
@@ -211,8 +207,6 @@ export default function MovieDetailsScreen() {
               <Image
                 source={{ uri: posterUrl }}
                 style={[styles.poster, { borderColor: theme.border }]}
-                contentFit='cover'
-                transition={300}
               />
               {rating > 0 && (
                 <View style={styles.ratingBadge}>
@@ -300,12 +294,7 @@ export default function MovieDetailsScreen() {
               })
             }
           >
-            <LinearGradient
-              colors={[theme.primary, theme.primaryDark]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.playGradient}
-            />
+            <View style={styles.playGradient} />
             <Play
               size={24}
               fill={theme.textSecondary}

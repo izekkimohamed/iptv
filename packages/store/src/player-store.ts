@@ -6,12 +6,12 @@ interface PlayerStoreType {
   isMuted: boolean;
   fullScreen: boolean;
   src: string;
-  poster: string;
-  title: string;
+  poster?: string;
+  title?: string;
   preferredRate: number;
   preferredAspectRatio: "16:9" | "4:3" | "1:1";
   setVolume: (volume: number) => void;
-  setMutated: (isMuted: boolean) => void;
+  setMuted: (isMuted: boolean) => void;
   toggleFullScreen: (fullScreen: boolean) => void;
   setSrc: (src: string) => void;
   setPoster: (poster?: string) => void;
@@ -36,7 +36,7 @@ export const usePlayerStore = create<PlayerStoreType>()(
         set({
           volume: Math.max(0, Math.min(1, Number(volume.toFixed(2)))),
         }),
-      setMutated: (isMuted) =>
+      setMuted: (isMuted) =>
         set({
           isMuted,
         }),
@@ -64,10 +64,10 @@ export const usePlayerStore = create<PlayerStoreType>()(
         set({
           preferredAspectRatio: ratio,
         }),
-      clearPlayer: () => set({ src: "", poster: "", title: "" }),
+      clearPlayer: () => set({ src: "", poster: undefined, title: undefined }),
     }),
     {
       name: "player-storage",
-    }
-  )
+    },
+  ),
 );

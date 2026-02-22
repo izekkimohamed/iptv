@@ -2,7 +2,6 @@ import { trpc } from "@/lib/trpc";
 import { usePlaylistStore } from "@/store";
 import { usePlayerTheme } from "@/theme/playerTheme";
 import { cleanName } from "@repo/utils";
-import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   ChevronLeft,
@@ -15,6 +14,7 @@ import {
 import React from "react";
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   SectionList,
   StyleSheet,
@@ -125,12 +125,7 @@ export default function SearchScreen() {
               },
             ]}
           >
-            <Image
-              source={{ uri: imageUrl }}
-              style={styles.thumbnail}
-              contentFit={isChannel ? "contain" : "cover"}
-              transition={300}
-            />
+            <Image source={{ uri: imageUrl }} style={styles.thumbnail} />
           </View>
 
           {/* Text Info */}

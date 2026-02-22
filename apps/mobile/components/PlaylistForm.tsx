@@ -1,7 +1,6 @@
 import { trpc } from "@/lib/trpc";
 import { usePlayerTheme } from "@/theme/playerTheme";
 import { usePlaylistForm } from "@repo/hooks";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import {
   AlertCircle,
@@ -279,12 +278,7 @@ export default function PlaylistLoginForm() {
               (!isFormValid || isPending) && { opacity: 0.5 },
             ]}
           >
-            <LinearGradient
-              colors={[theme.primary, theme.primaryDark]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.gradientBtn}
-            >
+            <View style={styles.gradientBtn}>
               {isPending ?
                 <View style={styles.row}>
                   <Loader2 size={20} color='white' style={styles.spin} />
@@ -295,7 +289,7 @@ export default function PlaylistLoginForm() {
                   <Text style={styles.btnText}>Connect Playlist</Text>
                 </View>
               }
-            </LinearGradient>
+            </View>
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>

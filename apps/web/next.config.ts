@@ -14,9 +14,6 @@ const nextConfig: NextConfig = {
   output: 'export',
   assetPrefix: isProd ? undefined : `http://${internalHost}:3000`,
 
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     ignoreBuildErrors: true,
   },

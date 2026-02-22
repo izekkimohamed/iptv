@@ -3,19 +3,18 @@ import { usePlaylistStore } from "@/store";
 import { usePlayerTheme } from "@/theme/playerTheme";
 import { cleanName } from "@repo/utils";
 import { FlashList } from "@shopify/flash-list";
-import { Image } from "expo-image"; // Better performance than react-native Image
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { Film, Star } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
+  Image,
   Pressable,
   StyleSheet,
   Text,
   View,
-} from "react-native";
+} from "react-native"; // Better performance than react-native Image
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -94,23 +93,22 @@ export default function MovieExplorer() {
               <Image
                 source={{ uri: item.streamIcon }}
                 style={[styles.poster, { borderColor: theme.border }]}
-                contentFit='cover'
-                transition={500}
-                placeholder='L6PZfSi_.AyE_3t7t7R**0o#DgR4'
               />
 
               {/* Add rating badge */}
               {item.rating && (
                 <View style={styles.ratingBadge}>
-                  <LinearGradient
-                    colors={["rgba(0,0,0,0.8)", "rgba(0,0,0,0.6)"]}
-                    style={styles.ratingGradient}
+                  <View
+                    style={[
+                      styles.ratingGradient,
+                      { backgroundColor: theme.primary },
+                    ]}
                   >
                     <Star size={10} color='#FCD34D' fill='#FCD34D' />
                     <Text style={styles.ratingText}>
                       {parseFloat(item.rating).toFixed(1)}
                     </Text>
-                  </LinearGradient>
+                  </View>
                 </View>
               )}
 
@@ -123,10 +121,7 @@ export default function MovieExplorer() {
                 </View>
               )}
 
-              <LinearGradient
-                colors={["transparent", "rgba(0,0,0,0.4)"]}
-                style={styles.posterGradient}
-              />
+              <View style={styles.posterGradient} />
             </View>
             <Text
               style={[styles.movieTitle, { color: theme.textSecondary }]}

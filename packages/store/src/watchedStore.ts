@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 export interface WatchedMoviesItem {
   id: number;
@@ -16,8 +16,11 @@ export interface WatchedMoviesItem {
 interface WatchedMoviesStore {
   movies: WatchedMoviesItem[];
 
-  saveProgress: (item: Omit<WatchedMoviesItem, 'updatedAt'>) => void;
-  getProgress: (id: number, playlistId: number) => WatchedMoviesItem | undefined;
+  saveProgress: (item: Omit<WatchedMoviesItem, "updatedAt">) => void;
+  getProgress: (
+    id: number,
+    playlistId: number,
+  ) => WatchedMoviesItem | undefined;
   clearHistory: () => void;
   removeItem: (id: number, playlistId: number) => void;
 }
@@ -55,7 +58,9 @@ export const useWatchedMoviesStore = create<WatchedMoviesStore>()(
         get().movies.find((i) => i.id === id && i.playlistId === playlistId),
       removeItem: (id, playlistId) => {
         set({
-          movies: get().movies.filter((item) => item.id !== id || item.playlistId !== playlistId),
+          movies: get().movies.filter(
+            (item) => item.id !== id || item.playlistId !== playlistId,
+          ),
         });
       },
 
@@ -63,7 +68,7 @@ export const useWatchedMoviesStore = create<WatchedMoviesStore>()(
     }),
 
     {
-      name: 'watchedMovies-store',
+      name: "watchedMovies-store",
     },
   ),
 );
@@ -91,7 +96,7 @@ interface WatchedSeriesStore {
 
   // Save or update episode progress for a series
   saveProgress: (
-    seriesInfo: Omit<WatchedSeriesItem, 'episodes'>,
+    seriesInfo: Omit<WatchedSeriesItem, "episodes">,
     episodeDetails: EpisodeProgress,
   ) => void;
 
@@ -154,7 +159,9 @@ export const useWatchedSeriesStore = create<WatchedSeriesStore>()(
             };
 
             return {
-              series: state.series.map((s, idx) => (idx === seriesIndex ? updatedSeries : s)),
+              series: state.series.map((s, idx) =>
+                idx === seriesIndex ? updatedSeries : s,
+              ),
             };
           } else {
             // Series doesn't exist - create new one
@@ -177,7 +184,10 @@ export const useWatchedSeriesStore = create<WatchedSeriesStore>()(
 
         if (!seriesItem || seriesItem.totalEpisodes === 0) return 0;
 
-        return Math.min(seriesItem.episodes.length / seriesItem.totalEpisodes, 1);
+        return Math.min(
+          seriesItem.episodes.length / seriesItem.totalEpisodes,
+          1,
+        );
       },
 
       getEpisodeProgress: (seriesId, episodeNumber, seasonId) => {
@@ -203,7 +213,7 @@ export const useWatchedSeriesStore = create<WatchedSeriesStore>()(
       },
     }),
     {
-      name: 'watchedSeries-store',
+      name: "watchedSeries-store",
     },
   ),
 );

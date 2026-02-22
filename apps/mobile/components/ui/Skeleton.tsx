@@ -1,6 +1,5 @@
 // components/SkeletonCard.tsx
 import { usePlayerTheme } from "@/theme/playerTheme";
-import { LinearGradient } from "expo-linear-gradient";
 import { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, {
@@ -35,11 +34,12 @@ export const SkeletonCard = ({ width, height, borderRadius = 12 }: any) => {
       ]}
     >
       <Animated.View style={[StyleSheet.absoluteFill, animatedStyle]}>
-        <LinearGradient
-          colors={["transparent", "rgba(255,255,255,0.05)", "transparent"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={StyleSheet.absoluteFill}
+        <View
+          style={{
+            width: 200,
+            height: "100%",
+            backgroundColor: theme.glassHighlight,
+          }}
         />
       </Animated.View>
     </View>

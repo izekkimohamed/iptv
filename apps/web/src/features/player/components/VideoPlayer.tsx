@@ -1,26 +1,54 @@
-'use client';
-
-import '@vidstack/react/player/styles/default/layouts/video.css';
-import '@vidstack/react/player/styles/default/theme.css';
-
-import { MediaPlayer, MediaProvider } from '@vidstack/react';
-import { AlertTriangle, Pause, Play } from 'lucide-react';
-import { usePathname } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
-
-import { Button } from '@/components/ui/button';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { usePlayer } from '@/features/player/hooks/player';
-import { cn } from '@/lib/utils';
+import { usePlayerStore } from '@repo/store';
 import {
-  usePlayerStore,
-  usePlaylistStore,
-  useWatchedMoviesStore,
-  useWatchedSeriesStore,
-} from '@repo/store';
+  AlertCircle,
+  Play
+} from 'lucide-react';
+import React, { memo, useCallback, useEffect, useRef } from 'react';
 
-import { getVideoType } from '@repo/utils';
-import { CustomControls } from './CustomControls';
+import { ControlsContainer } from './ControlsContainer';
+
+import { useControlsVisibility } from '../hooks/useControlsVisibility';
+import { useGestureHandlers } from '../hooks/useGestureHandlers';
+import { useHls } from '../hooks/useHls';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import { useProgressTracking } from '../hooks/useProgressTracking';
+import { useVideoControls } from '../hooks/useVideoControls';
+import { useVideoEvents } from '../hooks/useVideoEvents';
+import { AspectRatio, useVideoState } from '../hooks/useVideoState';
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatTime(seconds: number): string {
+  if (!isFinite(seconds) || isNaN(seconds)) return '0:00';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+
+
+// ─── Spinner ──────────────────────────────────────────────────────────────────
+
+const Spinner = memo(function Spinner() {
+  return (
+    <div
+      style={{
+        width: 48,
+        height: 48,
+        border: '4px solid rgba(255,255,255,0.15)',
+        borderTop: '4px solid #fff',
+        borderRadius: '50%',
+        animation: 'vp-spin 0.8s linear infinite',
+      }}
+    />
+  );
+});
+
+
+
+// ─── VideoPlayerProps ─────────────────────────────────────────────────────────
 
 interface VideoPlayerProps {
   src: string;
@@ -31,460 +59,374 @@ interface VideoPlayerProps {
   loop?: boolean;
   className?: string;
   episodeNumber?: number;
-  totalEpisodes: number;
+  totalEpisodes?: number;
   seasonId?: number;
-  movieId: string | null;
-  serieId: string | null;
-  categoryId: string | null;
+  movieId?: string;
+  serieId?: string;
+  categoryId?: string;
   onEnded?: () => void;
   onTimeUpdate?: (time: number) => void;
   playNext?: () => void;
   playPrev?: () => void;
   hasNext?: boolean;
   hasPrev?: boolean;
+  preferredRate?: number;
+  preferredAspectRatio?: AspectRatio;
+  onRateChange?: (rate: number) => void;
+  onAspectRatioChange?: (ratio: AspectRatio) => void;
 }
 
-export type AspectRatio = '16:9' | '4:3' | '1:1';
-const ASPECT_RATIOS: AspectRatio[] = ['16:9', '4:3', '1:1'];
+// ─── Main Component ───────────────────────────────────────────────────────────
 
-type PlayerError = {
-  message: string;
-  code: number;
-  error?: Error;
-} | null;
-
-export function VideoPlayer({
-  autoPlay = true,
-  loop = false,
-  onEnded,
-  onTimeUpdate,
+export default function VideoPlayer({
   src,
   poster,
   title,
+  autoPlay = false,
+  muted = false,
+  loop = false,
+  className,
   episodeNumber,
   totalEpisodes,
   seasonId,
   movieId,
   serieId,
   categoryId,
+  onEnded,
+  onTimeUpdate,
   playNext,
   playPrev,
   hasNext,
   hasPrev,
+  preferredRate = 1,
+  preferredAspectRatio = '16:9',
+  onRateChange,
+  onAspectRatioChange,
 }: VideoPlayerProps) {
-  const mediaType = usePathname();
-  const player = usePlayer();
-  const { selectedPlaylist } = usePlaylistStore();
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const progressRef = useRef<HTMLDivElement | null>(null);
+  const volumeBarRef = useRef<HTMLDivElement>(null!);
+
+  const storedVolume = usePlayerStore((s) => s.volume);
+  const storedMuted = usePlayerStore((s) => s.isMuted);
+  const storeSetVolume = usePlayerStore((s) => s.setVolume);
+  const storeSetMuted = usePlayerStore((s) => s.setMuted);
+
   const {
-    volume,
-    isMuted,
-    setMutated,
-    setVolume,
-    fullScreen,
-    toggleFullScreen,
-    preferredRate,
-    preferredAspectRatio,
-    setPreferredRate,
-    setPreferredAspectRatio,
-  } = usePlayerStore();
-  const { movies, saveProgress, removeItem } = useWatchedMoviesStore();
-  const { saveProgress: saveProgressSeries, getEpisodeProgress } = useWatchedSeriesStore();
+    paused, setPaused,
+    currentTime, setCurrentTime,
+    duration, setDuration,
+    bufferedEnd, setBufferedEnd,
+    volume, setVolumeState,
+    isMuted, setIsMuted,
+    isLoading, setIsLoading,
+    isFullscreen, setIsFullscreen,
+    showVolume, setShowVolume,
+    showSettings, setShowSettings,
+    playbackRate, setPlaybackRateState,
+    aspectRatio, setAspectRatioState,
+    playbackError, setPlaybackError,
+  } = useVideoState(autoPlay, storedMuted, preferredRate, preferredAspectRatio);
 
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>(preferredAspectRatio);
-  const [playbackError, setPlaybackError] = useState<PlayerError>(null);
+  const { showControls, setShowControls, resetHideTimer } = useControlsVisibility(paused);
 
-  const saveProgressRef = useRef<() => void>(() => {});
-
-  const videoType = getVideoType(src);
-
-  const saveMovieProgress = useCallback(() => {
-    if (!player.playerRef.current) return;
-
-    const currentTime = player.playerRef.current.currentTime;
-    const duration = player.playerRef.current.duration;
-    const movieItem = movies.find((item) => item.id.toString() === movieId);
-
-    if (duration > 0 && currentTime >= duration - 5 && movieItem) {
-      removeItem(movieItem.id, selectedPlaylist?.id || 0);
-      return;
-    }
-
-    if (duration <= 0 || currentTime <= 0) return;
-
-    saveProgress({
-      id: parseInt(movieId || '0'),
-      categoryId: parseInt(categoryId || '0'),
-      position: Math.max(0, currentTime - 10),
-      duration,
-      poster,
-      title,
-      src,
-      playlistId: selectedPlaylist?.id || 0,
-    });
-  }, [
-    movieId,
-    categoryId,
-    poster,
-    title,
-    src,
-    selectedPlaylist?.id,
+  const {
+    saveEpisodeProgress,
+    saveMovieProgress,
+    getEpisodeProgress,
     movies,
-    saveProgress,
-    removeItem,
-  ]);
-
-  const saveEpisodeProgress = useCallback(() => {
-    if (!player.playerRef.current) return;
-
-    const currentTime = player.playerRef.current.currentTime;
-    const duration = player.playerRef.current.duration;
-    const episodeNum = episodeNumber || 0;
-    const seriesIdNum = parseInt(serieId || '0');
-
-    if (duration <= 0 || currentTime <= 0 || !seriesIdNum) return;
-
-    saveProgressSeries(
-      {
-        id: seriesIdNum,
-        categoryId: parseInt(categoryId || '0'),
-        poster,
-        title,
-        totalEpisodes,
-        playlistId: selectedPlaylist?.id || 0,
-      },
-      {
-        episodeNumber: episodeNum,
-        seasonId: seasonId || 0,
-        position: Math.max(0, currentTime - 10),
-        duration,
-        src,
-      },
-    );
-  }, [
-    episodeNumber,
-    seasonId,
+    saveProgressNow,
+  } = useProgressTracking({
+    videoRef,
+    isPlaying: !paused,
+    src,
+    movieId,
     serieId,
     categoryId,
     poster,
     title,
+    episodeNumber,
+    seasonId,
     totalEpisodes,
-    selectedPlaylist?.id,
-    saveProgressSeries,
-    src,
-  ]);
+  });
 
-  useEffect(() => {
-    if (mediaType === '/movies' || mediaType === '/movies/movie') {
-      saveProgressRef.current = saveMovieProgress;
-    } else if (mediaType === '/series' || mediaType === '/series/serie') {
-      saveProgressRef.current = saveEpisodeProgress;
-    }
-  }, [mediaType, saveMovieProgress, saveEpisodeProgress]);
+  const handleHlsError = useCallback((message: string, code: number) => {
+    setPlaybackError({ message, code });
+  }, [setPlaybackError]);
+
+  useHls(videoRef, src, autoPlay, handleHlsError);
+
+  useVideoEvents({
+    videoRef,
+    setPaused,
+    setCurrentTime,
+    setBufferedEnd,
+    setDuration,
+    setVolumeState,
+    setIsMuted,
+    setIsLoading,
+    setPlaybackError,
+    onEnded,
+    saveProgressNow,
+  });
+
+  const {
+    togglePlay, seek, forward, backward, toggleMute, setVolume,
+    toggleFullscreen, changeRate, cycleAspectRatio
+  } = useVideoControls({
+    videoRef, containerRef, setPaused, setIsMuted, setVolumeState,
+    setPlaybackRateState, setAspectRatioState, storeSetVolume, storeSetMuted,
+    onRateChange, onAspectRatioChange
+  });
 
   const handlePlayNext = useCallback(() => {
     if (!hasNext || !playNext) return;
     saveEpisodeProgress();
-    // Store current fullscreen state before navigating
-    const wasFullscreen = player.isFullscreen;
+    const wasFullscreen = isFullscreen;
     playNext();
-    // Re-enter fullscreen after navigation
-    setTimeout(() => {
-      if (wasFullscreen && player.playerRef.current) {
-        player.playerRef.current.enterFullscreen();
-      }
-    }, 100);
-  }, [hasNext, playNext, saveEpisodeProgress, player]);
+    if (wasFullscreen) {
+      setTimeout(() => {
+        containerRef.current?.requestFullscreen().catch(() => {});
+      }, 100);
+    }
+  }, [hasNext, playNext, saveEpisodeProgress, isFullscreen]);
 
   const handlePlayPrev = useCallback(() => {
     if (!hasPrev || !playPrev) return;
     saveEpisodeProgress();
-    // Store current fullscreen state before navigating
-    const wasFullscreen = player.isFullscreen;
+    const wasFullscreen = isFullscreen;
     playPrev();
-    // Re-enter fullscreen after navigation
-    setTimeout(() => {
-      if (wasFullscreen && player.playerRef.current) {
-        player.playerRef.current.enterFullscreen();
-      }
-    }, 100);
-  }, [hasPrev, playPrev, saveEpisodeProgress, player]);
+    if (wasFullscreen) {
+      setTimeout(() => {
+        containerRef.current?.requestFullscreen().catch(() => {});
+      }, 100);
+    }
+  }, [hasPrev, playPrev, saveEpisodeProgress, isFullscreen]);
+
+  useKeyboardShortcuts({
+    togglePlay, forward, backward, changeRate, toggleFullscreen, toggleMute,
+    handlePlayNext, handlePlayPrev, playbackRate, setVolume, volume, videoRef
+  });
+
+  const { handleSingleClick, handleDoubleClick } = useGestureHandlers({ togglePlay, toggleFullscreen });
 
   useEffect(() => {
     setPlaybackError(null);
+    const video = videoRef.current;
+    if (!video) return;
 
-    if (mediaType === '/movies' || mediaType === '/movies/movie') {
+    if (movieId) {
       const movieItem = movies.find((item) => item.id.toString() === movieId);
-      if (movieItem && player.playerRef.current) {
-        player.playerRef.current.currentTime = movieItem.position;
+      if (movieItem) {
+        const onLoaded = () => { video.currentTime = movieItem.position; };
+        video.addEventListener('loadedmetadata', onLoaded, { once: true });
       }
-    } else if (mediaType === '/series' || mediaType === '/series/serie') {
+    } else if (serieId) {
       const episodeProgress = getEpisodeProgress(
         parseInt(serieId || '0'),
         episodeNumber || 0,
         seasonId || 0,
       );
-
-      if (episodeProgress && player.playerRef.current) {
-        player.playerRef.current.currentTime = episodeProgress.position;
+      if (episodeProgress) {
+        const onLoaded = () => { video.currentTime = episodeProgress.position; };
+        video.addEventListener('loadedmetadata', onLoaded, { once: true });
       }
     }
-  }, [src, movieId, serieId, episodeNumber, seasonId, mediaType, movies, getEpisodeProgress]);
+  }, [src, movieId, serieId, episodeNumber, seasonId, movies, getEpisodeProgress, setPlaybackError]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (player.isPlaying) {
-        saveProgressRef.current();
-      }
-    }, 30000);
-
-    return () => {
-      clearInterval(interval);
-      saveProgressRef.current();
-    };
-  }, []);
+    const v = videoRef.current;
+    setVolumeState(storedVolume ?? 1);
+    setIsMuted(!!storedMuted);
+    if (v) {
+      v.volume = storedVolume ?? 1;
+      v.muted = !!storedMuted;
+    }
+  }, [storedVolume, storedMuted, setVolumeState, setIsMuted]);
 
   useEffect(() => {
-    if (mediaType === '/series' || mediaType === '/series/serie') {
-      const handleEnded = () => {
-        saveEpisodeProgress();
-        onEnded?.();
+    const video = videoRef.current;
+    if (!video) return;
+    video.playbackRate = preferredRate;
+    setPlaybackRateState(preferredRate);
+  }, [preferredRate, setPlaybackRateState]);
+
+  useEffect(() => {
+    onTimeUpdate?.(currentTime);
+  }, [currentTime, onTimeUpdate]);
+
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
+  }, [setIsFullscreen]);
+
+  const handleProgressClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!progressRef.current || !duration) return;
+      const rect = progressRef.current.getBoundingClientRect();
+      const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      seek(pct * duration);
+    },
+    [duration, seek],
+  );
+
+  const handleVolumeClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!volumeBarRef.current) return;
+      const rect = volumeBarRef.current.getBoundingClientRect();
+      const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      setVolume(pct);
+    },
+    [setVolume],
+  );
+
+  const startVolumeDrag = useCallback(
+    (e: React.PointerEvent) => {
+      if (!volumeBarRef.current) return;
+      setShowVolume(true);
+      const el = volumeBarRef.current;
+
+      const setFromEvent = (clientX: number) => {
+        const rect = el.getBoundingClientRect();
+        const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+        setVolume(pct);
       };
 
-      const playerElement = player.playerRef.current;
-      if (playerElement) {
-        playerElement.addEventListener('ended', handleEnded);
-        return () => {
-          playerElement.removeEventListener('ended', handleEnded);
-        };
-      }
-    }
-  }, [mediaType, saveEpisodeProgress, onEnded]);
+      setFromEvent(e.clientX);
+      const onMove = (ev: PointerEvent) => setFromEvent(ev.clientX);
+      const onUp = (ev: PointerEvent) => {
+        setFromEvent(ev.clientX);
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+      };
 
-  useEffect(() => {
-    if (onTimeUpdate) {
-      onTimeUpdate(player.currentTime);
-    }
-  }, [player.currentTime, onTimeUpdate]);
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+    },
+    [setVolume, setShowVolume],
+  );
 
-  // Removed conflicting fullscreen sync effect that caused crashes on exit
-  // We now rely on native Vidstack events and player.toggleFullscreen()
-
-  useEffect(() => {
-    // Apply persisted playback rate on mount
-    player.setPlaybackRate(preferredRate);
-  }, [preferredRate, player]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      if (
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
-        target.isContentEditable
-      ) {
-        return;
-      }
-
-      if (e.key === ' ') {
-        e.preventDefault();
-        player.togglePlay();
-      }
-      if (e.key === 'm' || e.key === 'M') {
-        player.toggleMute();
-      }
-      if (e.key === 'f' || e.key === 'F') {
-        player.toggleFullscreen();
-      }
-      if (e.key === 'p' || e.key === 'P') {
-        player.togglePiP();
-      }
-      if (e.key === '+' || e.key === '=') {
-        player.setPlaybackRate(player.playbackRate + 0.25);
-      }
-      if (e.key === '-' || e.key === '_') {
-        player.setPlaybackRate(player.playbackRate - 0.25);
-      }
-      if (e.key === 'ArrowRight') {
-        player.forward(5);
-      }
-      if (e.key === 'ArrowLeft') {
-        player.backward(5);
-      }
-      if (e.key === 'n' || e.key === 'N') {
-        handlePlayNext();
-      }
-      if (e.key === 'b' || e.key === 'B') {
-        handlePlayPrev();
-      }
-      return;
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [handlePlayNext, handlePlayPrev, player]);
-
-  if (!src) {
-    return null;
-  }
+  const displayVolume = isMuted ? 0 : volume;
 
   if (playbackError) {
-    let errorMessage = 'An unknown playback error occurred.';
-    let detailedMessage = '';
+    let title_ = 'Playback error';
+    let detail = playbackError.message;
 
-    if (playbackError.code === 1 && playbackError.message.includes('405')) {
-      errorMessage = 'Video Source Error: Access Denied (405).';
-      detailedMessage =
-        'The server rejected the request to load the video. This often means the stream link is invalid or expired. Try selecting a different source.';
-    } else if (playbackError.code === 2) {
-      errorMessage = 'Network Error.';
-      detailedMessage =
-        'Could not load the media due to a network issue. Please check your connection.';
-    } else if (playbackError.message) {
-      errorMessage = `Playback Error: ${playbackError.message.split(': ')[0]}`;
-      detailedMessage = 'A problem occurred while decoding or loading the media.';
+    if (playbackError.code === 2) {
+      title_ = 'Network Error';
+      detail = 'Could not load the media. Please check your connection.';
+    } else if (playbackError.message?.includes('405')) {
+      title_ = 'Access Denied (405)';
+      detail = 'The server rejected this stream. The link may be invalid or expired.';
     }
 
     return (
-      <div className="flex h-full w-full flex-col items-center justify-center rounded-sm border-white/10 bg-card/50 p-8 backdrop-blur-xl">
-        <AlertTriangle className="mb-4 h-16 w-16 text-destructive" />
-        <h2 className="mb-2 text-xl font-bold text-white">{errorMessage}</h2>
-        <p className="mb-6 max-w-lg text-center text-gray-400">{detailedMessage}</p>
-        <Button
+      <div
+        style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          height: '100%', width: '100%', background: 'rgba(0,0,0,0.85)', borderRadius: 12,
+          padding: 32, gap: 16, color: '#fff', fontFamily: 'system-ui, sans-serif',
+        }}
+      >
+        <AlertCircle size={48} />
+        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>{title_}</h2>
+        <p style={{ margin: 0, color: 'rgba(255,255,255,0.6)', textAlign: 'center', maxWidth: 400 }}>
+          {detail}
+        </p>
+        <button
           onClick={() => setPlaybackError(null)}
-          className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-6 py-3 text-white transition-all hover:bg-white/20"
+          style={{
+            marginTop: 8, padding: '10px 28px', borderRadius: 99,
+            border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)',
+            color: '#fff', cursor: 'pointer', fontSize: 14, transition: 'background 0.15s',
+          }}
+          onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.2)')}
+          onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.1)')}
         >
-          <Play className="h-4 w-4 fill-current" /> Try Again
-        </Button>
+          Try Again
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="relative h-full w-full">
-      <MediaPlayer
-        key={src}
-        ref={player.playerRef}
-        src={src}
-        poster={poster}
-        volume={volume}
-        onVolumeChange={(details) => {
-          setVolume(details.volume);
-          setMutated(details.muted);
-        }}
-        title={title}
-        autoPlay={autoPlay}
-        muted={isMuted}
-        loop={loop}
-        playsInline={true}
-        onTimeUpdate={player.onTimeUpdate}
-        onDurationChange={player.onDurationChange}
-        onPlay={player.onPlay}
-        onPause={player.onPause}
-        onWaiting={() => player.onLoading(true)}
-        onSeeking={() => player.onLoading(true)}
-        onCanPlay={() => player.onLoading(false)}
-        onEnded={() => {
-          player.onPause();
-          onEnded?.();
-        }}
-        onFullscreenChange={(isFullscreen) => {
-          toggleFullScreen(isFullscreen);
-          player.onFullscreenChange(isFullscreen);
-        }}
-        onProgress={player.onProgress}
-        onRateChange={(playbackRate) => {
-          player.onPlaybackRateChange(playbackRate);
-          setPreferredRate(playbackRate);
-        }}
-        onPictureInPictureChange={(isPiP) => {
-          player.onPiPChange(isPiP);
-        }}
-        onEnd={() => {
-          if (hasNext && playNext) {
-            handlePlayNext();
-          }
-        }}
-        onError={(_, errorDetails) => {
-          setPlaybackError({
-            message: errorDetails.detail.message,
-            code: errorDetails.detail.code || 0,
-            error: errorDetails.detail.error,
-          });
-        }}
-        onDoubleClick={(e) => {
-          e.preventDefault();
-          player.toggleFullscreen();
-        }}
-        onClick={() => player.togglePlay()}
-        className={cn('relative h-full w-full overflow-hidden bg-black')}
-        data-isfullscreen={player.isFullscreen}
+    <>
+      <style>{`@keyframes vp-spin { to { transform: rotate(360deg); } }`}</style>
+      <div
+        ref={containerRef}
+        className={`relative flex aspect-video max-h-full touch-none select-none ${className || ''}`}
+        data-isfullscreen={String(isFullscreen)}
         data-aspect-ratio={aspectRatio}
+        onMouseMove={resetHideTimer}
+        onMouseLeave={() => {
+          if (!paused) setShowControls(false);
+        }}
       >
-        <MediaProvider>
-          <source src={src} type={videoType} />
-        </MediaProvider>
+        <video
+          ref={videoRef}
+          poster={poster}
+          muted={isMuted}
+          loop={loop}
+          playsInline
+          style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain' }}
+          onClick={handleSingleClick}
+          onDoubleClick={handleDoubleClick}
+        />
 
-
-        {player.isLoading && !player.isPaused && !player.isPlaying && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <LoadingSpinner size="large" message="Loading..." />
+        {isLoading && !paused && (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+            <Spinner />
           </div>
         )}
-        {player.playerRef.current?.paused && (
-          <div className="pointer-events-none absolute inset-0 flex w-full items-center justify-center bg-linear-to-t from-black/80 via-transparent to-black/80">
-            <div className="rounded-full bg-primary/20 p-5 backdrop-blur-sm border border-primary/20">
-              <Pause className="h-10 w-10 fill-white text-white" />
+
+        {paused && !isLoading && (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%, rgba(0,0,0,0.7) 100%)', pointerEvents: 'none' }}>
+            <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', border: '2px solid rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+              <Play size={28} />
             </div>
           </div>
         )}
 
-        <div className="absolute bottom-0 w-full" onClick={(e) => e.stopPropagation()}>
-          <CustomControls
-            currentTime={player.currentTime}
-            duration={player.duration || 0}
-            isPlaying={player.isPlaying}
-            isFullscreen={player.isFullscreen}
-            buffered={player.buffered}
-            volume={volume}
-            isMuted={isMuted}
-            playbackRate={player.playbackRate}
-            onPlayPause={player.togglePlay}
-            onSeek={player.seek}
-            onVolumeChange={setVolume}
-            onToggleMute={player.toggleMute}
-            onToggleFullscreen={player.toggleFullscreen}
-            onNext={handlePlayNext}
-            onPrev={handlePlayPrev}
-            hasNext={hasNext}
+          <ControlsContainer
+            showControls={showControls}
+            title={title}
+            episodeNumber={episodeNumber}
+            seasonId={seasonId}
+            totalEpisodes={totalEpisodes}
+            currentTime={currentTime}
+            duration={duration}
+            bufferedEnd={bufferedEnd}
+            paused={paused}
             hasPrev={hasPrev}
-            title={title || ''}
-            onToggleAspectRatio={() => {
-              const currentIndex = ASPECT_RATIOS.indexOf(aspectRatio);
-              const nextIndex = (currentIndex + 1) % ASPECT_RATIOS.length;
-              const next = ASPECT_RATIOS[nextIndex];
-              setAspectRatio(next);
-              setPreferredAspectRatio(next);
-            }}
-            onRateIncrease={() => {
-              const next = player.playbackRate + 0.25;
-              player.setPlaybackRate(next);
-              setPreferredRate(next);
-            }}
-            onRateDecrease={() => {
-              const next = player.playbackRate - 0.25;
-              player.setPlaybackRate(next);
-              setPreferredRate(next);
-            }}
-            onTogglePiP={player.togglePiP}
+            hasNext={hasNext}
+            isMuted={isMuted}
+            volume={volume}
+            displayVolume={displayVolume}
             aspectRatio={aspectRatio}
+            showSettings={showSettings}
+            playbackRate={playbackRate}
+            isFullscreen={isFullscreen}
+            progressRef={progressRef}
+            volumeBarRef={volumeBarRef}
+            handleSingleClick={handleSingleClick}
+            handleDoubleClick={handleDoubleClick}
+            handleProgressClick={handleProgressClick}
+            handlePlayPrev={handlePlayPrev}
+            handlePlayNext={handlePlayNext}
+            togglePlay={togglePlay}
+            backward={backward}
+            forward={forward}
+            toggleMute={toggleMute}
+            handleVolumeClick={handleVolumeClick}
+            startVolumeDrag={startVolumeDrag}
+            cycleAspectRatio={cycleAspectRatio}
+            setShowSettings={setShowSettings}
+            changeRate={changeRate}
+            toggleFullscreen={toggleFullscreen}
           />
-        </div>
-      </MediaPlayer>
-    </div>
+      </div>
+    </>
   );
 }
-
-export default VideoPlayer;

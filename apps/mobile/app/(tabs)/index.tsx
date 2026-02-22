@@ -1,12 +1,11 @@
 import { FlashList } from "@shopify/flash-list";
-import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { Database, Info, Play, Star, Tv } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Dimensions,
   FlatList,
+  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -179,13 +178,8 @@ export default function HomeScreen() {
       <Image
         source={{ uri: item.backdropUrl || item.posterUrl }}
         style={styles.featuredImage}
-        contentFit='cover'
-        transition={500}
       />
-      <LinearGradient
-        colors={["transparent", "rgba(0,0,0,0.4)", "rgba(0,0,0,0.9)"]}
-        style={styles.featuredGradient}
-      />
+      <View style={styles.featuredGradient} />
       <View style={styles.featuredContent}>
         <Text style={styles.featuredTitle} numberOfLines={1}>
           {item.title || item.name}
@@ -245,7 +239,6 @@ export default function HomeScreen() {
           <Image
             source={{ uri: item.streamIcon }}
             style={{ width: "100%", height: "100%", padding: 20 }}
-            contentFit='contain'
           />
         : <View
             style={{ flex: 1, justifyContent: "center", alignItems: "center" }}

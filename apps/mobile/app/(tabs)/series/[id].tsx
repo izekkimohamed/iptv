@@ -2,14 +2,13 @@ import { trpc } from "@/lib/trpc";
 import { usePlaylistStore } from "@/store";
 import { usePlayerTheme } from "@/theme/playerTheme";
 import { cleanName } from "@repo/utils";
-import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronLeft, ChevronRight, Play, Tv } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -147,11 +146,7 @@ export default function SeriesDetailScreen() {
             contentFit='cover'
             transition={500}
           />
-          <LinearGradient
-            colors={["transparent", `${theme.bg}00`, `${theme.bg}E6`, theme.bg]}
-            locations={[0, 0.4, 0.85, 1]}
-            style={styles.backdropGradient}
-          />
+          <View style={styles.backdropGradient} />
         </View>
 
         {/* --- Hero Section --- */}
