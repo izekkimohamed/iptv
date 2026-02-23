@@ -39,8 +39,6 @@ export default function SeriesDetails({
   const { series: watchedSeries } = useWatchedSeriesStore();
   const episodesSectionRef = useRef<any>(null);
 
-  if (!selectedPlaylist) return null;
-
   const { trailer, handleTrailerClick, handleCloseTrailer } = useTrailerPlayback(tmdb?.videos);
 
   const episodeToPlay = useMemo(() => {
@@ -80,6 +78,8 @@ export default function SeriesDetails({
   };
 
   const backdrop = tmdb?.backdrop || image;
+
+  if (!selectedPlaylist) return null;
 
   return (
     <div className="relative min-h-screen w-full bg-background overflow-x-hidden">
