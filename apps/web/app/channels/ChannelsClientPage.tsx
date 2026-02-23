@@ -4,14 +4,14 @@ import { Suspense, useEffect, useMemo } from 'react';
 
 import { Tv } from 'lucide-react';
 
+import VideoPlayer from '@/features/player/components/VideoPlayer';
 import ChannelInfoPanel from '@/shared/components/channels/ChannelInfoPanel';
 import ChannelsSidebar from '@/shared/components/channels/ChannelsSidebar';
 import PlayerHeader from '@/shared/components/iptv/PlayerHeader';
 import EmptyState from '@/shared/components/ui/EmptyState';
-import VideoPlayer from '@/features/player/components/VideoPlayer';
+import LoadingSpinner from '@/shared/components/ui/LoadingSpinner';
 import { trpc } from '@/shared/lib/trpc';
 import { usePlayerStore, usePlaylistStore } from '@repo/store';
-import LoadingSpinner from '@/shared/components/ui/LoadingSpinner';
 
 function ChannelsContentInner() {
   const router = useRouter();
@@ -28,7 +28,7 @@ function ChannelsContentInner() {
       categoryId: parseInt(selectedCategoryId || '0'),
       playlistId: playlist?.id || 0,
     },
-    { enabled: !!selectedCategoryId },
+    { enabled: !!selectedCategoryId && !!playlist },
   );
 
   const selectedIndex = useMemo(() => {

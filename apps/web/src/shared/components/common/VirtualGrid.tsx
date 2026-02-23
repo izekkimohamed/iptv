@@ -1,5 +1,6 @@
 'use client';
 
+import { cn } from '@/shared/lib/utils';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -37,14 +38,10 @@ const VirtualRow = memo(function VirtualRow<T>({
       key={virtualKey}
       data-index={virtualIndex}
       ref={measureElement}
-      className={`grid ${gapClassName}`}
+      className={`grid absolute top-0 left-0 w-full ${gapClassName}`}
       style={{
         display: 'grid',
         gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
         transform: `translateY(${virtualStart}px)`,
         paddingBottom: '12px',
       }}
@@ -132,14 +129,13 @@ export default function VirtualGrid<T>({
   return (
     <div
       ref={parentRef}
-      className={className}
-      style={{ height: '100%', overflowY: 'auto', contain: 'strict' }}
+      className={cn('h-full overflow-y-auto', className)}
+      style={{ contain: 'strict' }}
     >
       <div
+        className="relative w-full"
         style={{
           height: virtualizer.getTotalSize(),
-          position: 'relative',
-          width: '100%',
         }}
       >
         {virtualItems.map((virtualRow) => {

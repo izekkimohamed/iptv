@@ -13,13 +13,13 @@ import LoadingSpinner from '../ui/LoadingSpinner';
 interface CategoriesSidebarProps {
   categories?: Category[];
   isLoading: boolean;
-  selectedCategoryId: string | null;
   categoryType: 'movies' | 'channels' | 'series';
 }
 
-function CategoriesSidebarContent({ categories, isLoading, selectedCategoryId, categoryType }: CategoriesSidebarProps) {
+function CategoriesSidebarContent({ categories, isLoading, categoryType }: Omit<CategoriesSidebarProps, 'selectedCategoryId'>) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const selectedCategoryId = searchParams.get('categoryId');
   const isNew = searchParams.get('new') === 'true';
   const categoryRef = useRef<HTMLDivElement>(null);
   const [searchValue, setSearchValue] = useState('');
@@ -76,15 +76,15 @@ function CategoriesSidebarContent({ categories, isLoading, selectedCategoryId, c
       <div className="flex-1 overflow-y-auto p-2 scrollbar-hide" ref={categoryRef}>
         {isLoading ? (
           <div className="flex h-40 items-center justify-center">
-             <LoadingSpinner />
+            <LoadingSpinner />
           </div>
         ) : !filteredCategories?.length ? (
           <div className="flex flex-col items-center justify-center space-y-4 py-20 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-sm bg-white/5">
-               <Folder className="h-6 w-6 text-muted-foreground/40" />
+              <Folder className="h-6 w-6 text-muted-foreground/40" />
             </div>
             <p className="text-sm font-medium text-muted-foreground">
-               {searchValue ? 'No results found' : 'No categories available'}
+              {searchValue ? 'No results found' : 'No categories available'}
             </p>
           </div>
         ) : (
@@ -104,7 +104,7 @@ function CategoriesSidebarContent({ categories, isLoading, selectedCategoryId, c
                   "flex h-14 w-14 items-center justify-center rounded-sm transition-colors",
                   isNew ? "bg-primary text-primary-foreground" : "bg-white/5 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
                 )}>
-                   <Flame className="h-8 w-8" />
+                  <Flame className="h-8 w-8" />
                 </div>
                 <span className="text-lg font-bold truncate">New {typeName}</span>
               </div>
@@ -132,7 +132,7 @@ function CategoriesSidebarContent({ categories, isLoading, selectedCategoryId, c
                       "flex h-14 w-14 items-center justify-center rounded-sm transition-colors",
                       isSelected ? "bg-primary/20 text-primary" : "bg-white/5 text-muted-foreground group-hover:bg-white/10"
                     )}>
-                       <Folder className="h-8 w-8" />
+                      <Folder className="h-8 w-8" />
                     </div>
                     <span className="truncate">{category.categoryName}</span>
                   </div>

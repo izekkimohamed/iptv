@@ -1,23 +1,19 @@
 'use client';
-import { useSearchParams } from 'next/navigation';
 import React, { Suspense } from 'react';
 
 import CategoriesSidebar from '@/shared/components/common/CategoriesSidebar';
+import LoadingSpinner from '@/shared/components/ui/LoadingSpinner';
 import { trpc } from '@/shared/lib/trpc';
 import { usePlaylistStore } from '@repo/store';
-import LoadingSpinner from '@/shared/components/ui/LoadingSpinner';
 
 function LayoutContent({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const searchParams = useSearchParams();
-
-  const selectedCategoryId = searchParams.get('categoryId');
-
   const { selectedPlaylist: playlist } = usePlaylistStore();
 
+  // Only pass credentials if we have a playlist - getCategories doesn't need them
   const { data: categories, isLoading: isFetchingCategories } =
     trpc.channels.getCategories.useQuery(
       {
@@ -33,7 +29,6 @@ function LayoutContent({
       <CategoriesSidebar
         categories={categories}
         isLoading={isFetchingCategories}
-        selectedCategoryId={selectedCategoryId!}
         categoryType="channels"
       />
       {children}

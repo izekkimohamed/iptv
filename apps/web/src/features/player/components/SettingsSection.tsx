@@ -1,3 +1,4 @@
+import { cn } from '@/shared/lib/utils';
 import { memo } from 'react';
 
 const SettingsSection = memo(function SettingsSection({
@@ -13,35 +14,20 @@ const SettingsSection = memo(function SettingsSection({
 }) {
   return (
     <div>
-      <div
-        style={{
-          color: 'rgba(255,255,255,0.45)',
-          fontSize: 10,
-          textTransform: 'uppercase',
-          letterSpacing: 1.5,
-          marginBottom: 8,
-          fontFamily: 'monospace',
-        }}
-      >
+      <div className="mb-2 font-mono text-xs font-medium uppercase tracking-widest text-white/45">
         {label}
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+      <div className="flex flex-wrap gap-1.5">
         {options.map((o) => (
           <button
             key={o}
             onClick={() => onSelect(o)}
-            style={{
-              padding: '4px 10px',
-              borderRadius: 4,
-              border: '1px solid',
-              borderColor: selected === o ? '#e50914' : 'rgba(255,255,255,0.15)',
-              background: selected === o ? 'rgba(229,9,20,0.2)' : 'transparent',
-              color: selected === o ? '#fff' : 'rgba(255,255,255,0.6)',
-              fontSize: 12,
-              cursor: 'pointer',
-              fontFamily: 'monospace',
-              transition: 'background 0.15s, border-color 0.15s, color 0.15s',
-            }}
+            className={cn(
+              'rounded px-2.5 py-1 font-mono text-xs transition-all duration-150',
+              selected === o
+                ? 'border border-primary bg-primary/20 text-white'
+                : 'border border-white/15 bg-transparent text-white/60 hover:border-white/25 hover:text-white'
+            )}
           >
             {o}
           </button>

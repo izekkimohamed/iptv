@@ -48,7 +48,7 @@ export default function ChannelsScreen() {
         playlistId: selectPlaylist?.id ?? 0,
         categoryId: selectedCatId ?? 0,
       },
-      { enabled: !!selectedCatId },
+      { enabled: !!selectedCatId && !!selectPlaylist },
     );
 
   useEffect(() => {
@@ -141,7 +141,7 @@ export default function ChannelsScreen() {
             color={theme.primary}
             style={styles.loader}
           />
-        : <FlashList
+          : <FlashList
             ref={categoryListRef}
             horizontal
             data={filteredCategories}
@@ -160,7 +160,7 @@ export default function ChannelsScreen() {
               Loading Streams...
             </Text>
           </View>
-        : <FlashList
+          : <FlashList
             data={channels}
             renderItem={renderChannelItem}
             keyExtractor={(item) => item.streamId.toString()}

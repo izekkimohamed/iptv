@@ -16,7 +16,7 @@ export const CastSection: FC<CastSectionProps> = ({ cast }) => {
 
       <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
         {cast.slice(0, 12).map((actor) => (
-          <div key={actor.id} className="group relative flex flex-col items-center gap-4 text-center">
+          <div key={actor.name} className="group relative flex flex-col items-center gap-4 text-center">
             <div className="relative aspect-square w-full overflow-hidden rounded-full border-2 border-white/5 bg-white/5 transition-all duration-500 group-hover:border-primary/50 group-hover:shadow-[0_0_30px_rgba(var(--primary),0.2)]">
               {actor.profilePath ? (
                 <Image

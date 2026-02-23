@@ -59,13 +59,13 @@ export const categories = pgTable(
     typeIdx: index("type_idx").on(table.type),
     playlistTypeIdx: index("playlist_type_idx").on(
       table.playlistId,
-      table.type
+      table.type,
     ),
     uniqueCategoryPerPlaylist: uniqueIndex("unique_category_per_playlist").on(
       table.categoryId,
-      table.playlistId
+      table.playlistId,
     ),
-  })
+  }),
 );
 
 export const channels = pgTable(
@@ -90,7 +90,7 @@ export const channels = pgTable(
     index("channels_category_idx").on(t.categoryId),
     uniqueIndex("unique_channel").on(t.streamId, t.categoryId, t.playlistId),
     index("favorite_idx").on(t.isFavorite),
-  ]
+  ],
 );
 
 export const movies = pgTable(
@@ -118,9 +118,9 @@ export const movies = pgTable(
     uniqueMovies: uniqueIndex("unique_movies").on(
       table.streamId,
       table.categoryId,
-      table.playlistId
+      table.playlistId,
     ),
-  })
+  }),
 );
 
 export const series = pgTable(
@@ -153,9 +153,9 @@ export const series = pgTable(
     uniqueseries: uniqueIndex("unique_series").on(
       table.seriesId,
       table.categoryId,
-      table.playlistId
+      table.playlistId,
     ),
-  })
+  }),
 );
 
 export const zodPlaylistsSchema = z.object({

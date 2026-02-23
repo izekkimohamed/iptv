@@ -4,8 +4,8 @@ import { Clock, Flame, Play, Star, TrendingUp, Tv, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { trpc } from '@/shared/lib/trpc';
 import HorizontalCarousel from '@/shared/components/common/HorizontalCarousel';
+import { trpc } from '@/shared/lib/trpc';
 import { usePlaylistStore, useWatchedMoviesStore, useWatchedSeriesStore } from '@repo/store';
 
 import { Button } from '../ui/button';
@@ -42,7 +42,7 @@ function HomeLanding() {
                   <span className="text-[10px] font-black uppercase tracking-[0.3em]">Your Selection</span>
                 </div>
                 <h2 className="text-4xl font-black tracking-tighter text-foreground sm:text-5xl">
-                   Favorite <span className="text-primary italic">Channels</span>
+                  Favorite <span className="text-primary italic">Channels</span>
                 </h2>
               </div>
               <div className="flex flex-col items-end gap-1">
@@ -98,7 +98,7 @@ function HomeLanding() {
         {/* Continue Watching Movies Section */}
         {movies.filter((item) => item.playlistId === playlist?.id || 0).length > 0 && (
           <section className="space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-200 fill-mode-both">
-             <div className="flex items-end justify-between border-b border-white/5 pb-6">
+            <div className="flex items-end justify-between border-b border-white/5 pb-6">
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2.5 text-primary">
                   <div className="flex h-8 w-8 items-center justify-center rounded-sm bg-primary/10">
@@ -107,7 +107,7 @@ function HomeLanding() {
                   <span className="text-[10px] font-black uppercase tracking-[0.3em]">Pick up where you left</span>
                 </div>
                 <h2 className="text-4xl font-black tracking-tighter text-foreground sm:text-5xl">
-                   Continue <span className="text-primary italic">Watching</span>
+                  Continue <span className="text-primary italic">Watching</span>
                 </h2>
               </div>
             </div>
@@ -134,29 +134,29 @@ function HomeLanding() {
                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
 
                           <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-                             <div className="flex items-center gap-2 rounded-full bg-black/40 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-md border border-white/10">
-                                {Math.round(progress * 100)}% Complete
-                             </div>
+                            <div className="flex items-center gap-2 rounded-full bg-black/40 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-md border border-white/10">
+                              {Math.round(progress * 100)}% Complete
+                            </div>
                           </div>
 
                           <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                             <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-md border border-white/20">
-                                <Play className="ml-0.5 h-6 w-6 text-white fill-white" />
-                             </div>
+                            <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-md border border-white/20">
+                              <Play className="ml-0.5 h-6 w-6 text-white fill-white" />
+                            </div>
                           </div>
                         </div>
 
                         <div className="p-4">
-                           <p className="truncate text-sm font-bold text-foreground transition-colors group-hover:text-primary">
-                             {item.title}
-                           </p>
-                           {/* Progress Bar */}
-                           <div className="mt-3 relative h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
-                              <div
-                                className="h-full bg-primary rounded-full transition-all duration-1000 group-hover:brightness-125"
-                                style={{ width: `${Math.round(progress * 100)}%` }}
-                              />
-                           </div>
+                          <p className="truncate text-sm font-bold text-foreground transition-colors group-hover:text-primary">
+                            {item.title}
+                          </p>
+                          {/* Progress Bar */}
+                          <div className="mt-3 relative h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+                            <div
+                              className="h-full bg-primary rounded-full transition-all duration-1000 group-hover:brightness-125"
+                              style={{ width: `${Math.round(progress * 100)}%` }}
+                            />
+                          </div>
                         </div>
                       </Link>
 
@@ -219,35 +219,35 @@ function HomeLanding() {
                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
 
                           <div className="absolute top-3 left-3">
-                             <div className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-black text-primary backdrop-blur-md border border-primary/20">
-                                S{lastEp.seasonId} E{lastEp.episodeNumber}
-                             </div>
+                            <div className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-black text-primary backdrop-blur-md border border-primary/20">
+                              S{lastEp.seasonId} E{lastEp.episodeNumber}
+                            </div>
                           </div>
 
                           <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-                             <div className="flex items-center gap-2 rounded-full bg-black/40 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-md border border-white/10">
-                                {Math.round(progress * 100)}% Complete
-                             </div>
+                            <div className="flex items-center gap-2 rounded-full bg-black/40 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-md border border-white/10">
+                              {Math.round(progress * 100)}% Complete
+                            </div>
                           </div>
 
                           <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                             <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-md border border-white/20">
-                                <Play className="ml-0.5 h-6 w-6 text-white fill-white" />
-                             </div>
+                            <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-md border border-white/20">
+                              <Play className="ml-0.5 h-6 w-6 text-white fill-white" />
+                            </div>
                           </div>
                         </div>
 
                         <div className="p-4">
-                           <p className="truncate text-sm font-bold text-foreground transition-colors group-hover:text-primary">
-                             {s.title}
-                           </p>
-                           {/* Progress Bar */}
-                           <div className="mt-3 relative h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
-                              <div
-                                className="h-full bg-primary rounded-full transition-all duration-1000 group-hover:brightness-125"
-                                style={{ width: `${Math.round(progress * 100)}%` }}
-                              />
-                           </div>
+                          <p className="truncate text-sm font-bold text-foreground transition-colors group-hover:text-primary">
+                            {s.title}
+                          </p>
+                          {/* Progress Bar */}
+                          <div className="mt-3 relative h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+                            <div
+                              className="h-full bg-primary rounded-full transition-all duration-1000 group-hover:brightness-125"
+                              style={{ width: `${Math.round(progress * 100)}%` }}
+                            />
+                          </div>
                         </div>
                       </Link>
 
@@ -304,22 +304,22 @@ function HomeLanding() {
 
                     {/* Hover Info */}
                     <div className="absolute inset-0 flex flex-col justify-end p-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                       <div className="mb-2 flex items-center gap-1.5">
-                          <div className="rounded border border-primary/50 bg-primary/20 px-1.5 py-0.5 text-[10px] font-bold text-primary">
-                             {movie.releaseDate?.split('-')[0] || 'N/A'}
-                          </div>
-                       </div>
-                       <p className="line-clamp-2 text-sm font-bold text-white">
-                          {movie.title}
-                       </p>
+                      <div className="mb-2 flex items-center gap-1.5">
+                        <div className="rounded border border-primary/50 bg-primary/20 px-1.5 py-0.5 text-[10px] font-bold text-primary">
+                          {movie.releaseDate?.split('-')[0] || 'N/A'}
+                        </div>
+                      </div>
+                      <p className="line-clamp-2 text-sm font-bold text-white">
+                        {movie.title}
+                      </p>
                     </div>
 
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                       <div className="h-16 w-16 translate-y-4 rounded-full bg-primary opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
-                          <div className="flex h-full w-full items-center justify-center">
-                             <Play className="ml-1 h-8 w-8 fill-primary-foreground text-primary-foreground" />
-                          </div>
-                       </div>
+                      <div className="h-16 w-16 translate-y-4 rounded-full bg-primary opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
+                        <div className="flex h-full w-full items-center justify-center">
+                          <Play className="ml-1 h-8 w-8 fill-primary-foreground text-primary-foreground" />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </Link>
@@ -357,17 +357,17 @@ function HomeLanding() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
 
                     <div className="absolute inset-0 flex flex-col justify-end p-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                       <p className="line-clamp-2 text-sm font-bold text-white">
-                          {s.name}
-                       </p>
+                      <p className="line-clamp-2 text-sm font-bold text-white">
+                        {s.name}
+                      </p>
                     </div>
 
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                       <div className="h-12 w-12 rounded-full bg-primary opacity-0 transition-all duration-300 group-hover:opacity-100">
-                          <div className="flex h-full w-full items-center justify-center">
-                             <Play className="ml-1 h-6 w-6 fill-primary-foreground text-primary-foreground" />
-                          </div>
-                       </div>
+                      <div className="h-12 w-12 rounded-full bg-primary opacity-0 transition-all duration-300 group-hover:opacity-100">
+                        <div className="flex h-full w-full items-center justify-center">
+                          <Play className="ml-1 h-6 w-6 fill-primary-foreground text-primary-foreground" />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

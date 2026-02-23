@@ -105,7 +105,10 @@ export default function HomeScreen() {
   const { data: playlists, refetch: refreshPlaylists } =
     trpc.playlists.getPlaylists.useQuery();
   const { data: favoriteChannels } = trpc.channels.getChannels.useQuery(
-    { favorites: true, playlistId: selectedPlaylist?.id || 0 },
+    {
+      favorites: true,
+      playlistId: selectedPlaylist?.id || 0,
+    },
     { enabled: !!selectedPlaylist },
   );
 
@@ -256,7 +259,7 @@ export default function HomeScreen() {
               source={{ uri: item.streamIcon }}
               style={{ width: "100%", height: "100%", padding: 20 }}
             />
-          : <View
+            : <View
               style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
             >
               <Tv size={32} color={theme.textPrimary} />
@@ -322,7 +325,7 @@ export default function HomeScreen() {
       >
         {isLoading ?
           <HomeSkeleton featuredWidth={FEATURED_WIDTH} />
-        : <>
+          : <>
             {/* Hero Carousel */}
             <View style={styles.featuredSection}>
               <FlashList

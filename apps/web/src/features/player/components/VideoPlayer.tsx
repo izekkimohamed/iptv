@@ -166,7 +166,7 @@ export default function VideoPlayer({
     playNext();
     if (wasFullscreen) {
       setTimeout(() => {
-        containerRef.current?.requestFullscreen().catch(() => {});
+        containerRef.current?.requestFullscreen().catch(() => { });
       }, 100);
     }
   }, [hasNext, playNext, saveEpisodeProgress, isFullscreen]);
@@ -178,7 +178,7 @@ export default function VideoPlayer({
     playPrev();
     if (wasFullscreen) {
       setTimeout(() => {
-        containerRef.current?.requestFullscreen().catch(() => {});
+        containerRef.current?.requestFullscreen().catch(() => { });
       }, 100);
     }
   }, [hasPrev, playPrev, saveEpisodeProgress, isFullscreen]);
@@ -295,7 +295,6 @@ export default function VideoPlayer({
 
   return (
     <>
-      <style>{`@keyframes vp-spin { to { transform: rotate(360deg); } }`}</style>
       <div
         ref={containerRef}
         className={`relative flex aspect-video max-h-full touch-none select-none ${className || ''}`}
@@ -312,7 +311,7 @@ export default function VideoPlayer({
           muted={isMuted}
           loop={loop}
           playsInline
-          style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain' }}
+          className="w-full h-full block object-contain"
           onClick={handleSingleClick}
           onDoubleClick={handleDoubleClick}
         />
@@ -320,43 +319,43 @@ export default function VideoPlayer({
         {isLoading && !paused && <PlayerSpinner />}
         {paused && !isLoading && <PlayerPausedOverlay />}
 
-          <ControlsContainer
-            showControls={showControls}
-            title={title}
-            episodeNumber={episodeNumber}
-            seasonId={seasonId}
-            totalEpisodes={totalEpisodes}
-            currentTime={currentTime}
-            duration={duration}
-            bufferedEnd={bufferedEnd}
-            paused={paused}
-            hasPrev={hasPrev}
-            hasNext={hasNext}
-            isMuted={isMuted}
-            volume={volume}
-            displayVolume={displayVolume}
-            aspectRatio={aspectRatio}
-            showSettings={showSettings}
-            playbackRate={playbackRate}
-            isFullscreen={isFullscreen}
-            progressRef={progressRef}
-            volumeBarRef={volumeBarRef}
-            handleSingleClick={handleSingleClick}
-            handleDoubleClick={handleDoubleClick}
-            handleProgressClick={handleProgressClick}
-            handlePlayPrev={handlePlayPrev}
-            handlePlayNext={handlePlayNext}
-            togglePlay={togglePlay}
-            backward={backward}
-            forward={forward}
-            toggleMute={toggleMute}
-            handleVolumeClick={handleVolumeClick}
-            startVolumeDrag={startVolumeDrag}
-            cycleAspectRatio={cycleAspectRatio}
-            setShowSettings={setShowSettings}
-            changeRate={changeRate}
-            toggleFullscreen={toggleFullscreen}
-          />
+        <ControlsContainer
+          showControls={showControls}
+          title={title}
+          episodeNumber={episodeNumber}
+          seasonId={seasonId}
+          totalEpisodes={totalEpisodes}
+          currentTime={currentTime}
+          duration={duration}
+          bufferedEnd={bufferedEnd}
+          paused={paused}
+          hasPrev={hasPrev}
+          hasNext={hasNext}
+          isMuted={isMuted}
+          volume={volume}
+          displayVolume={displayVolume}
+          aspectRatio={aspectRatio}
+          showSettings={showSettings}
+          playbackRate={playbackRate}
+          isFullscreen={isFullscreen}
+          progressRef={progressRef}
+          volumeBarRef={volumeBarRef}
+          handleSingleClick={handleSingleClick}
+          handleDoubleClick={handleDoubleClick}
+          handleProgressClick={handleProgressClick}
+          handlePlayPrev={handlePlayPrev}
+          handlePlayNext={handlePlayNext}
+          togglePlay={togglePlay}
+          backward={backward}
+          forward={forward}
+          toggleMute={toggleMute}
+          handleVolumeClick={handleVolumeClick}
+          startVolumeDrag={startVolumeDrag}
+          cycleAspectRatio={cycleAspectRatio}
+          setShowSettings={setShowSettings}
+          changeRate={changeRate}
+          toggleFullscreen={toggleFullscreen}
+        />
       </div>
     </>
   );

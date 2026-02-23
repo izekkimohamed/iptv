@@ -4,11 +4,11 @@ import { Suspense, useEffect, useMemo } from 'react';
 
 import { Tv } from 'lucide-react';
 
+import VideoPlayer from '@/features/player/components/VideoPlayer';
 import ChannelInfoPanel from '@/shared/components/channels/ChannelInfoPanel';
 import ChannelsSidebar from '@/shared/components/channels/ChannelsSidebar';
 import PlayerHeader from '@/shared/components/iptv/PlayerHeader';
 import EmptyState from '@/shared/components/ui/EmptyState';
-import VideoPlayer from '@/features/player/components/VideoPlayer';
 import { trpc } from '@/shared/lib/trpc';
 import { usePlayerStore, usePlaylistStore } from '@repo/store';
 import ChannelsContentSkeleton from './Skeleton';
@@ -30,9 +30,32 @@ function ChannelsPageInner() {
       playlistId: playlist?.id || 0,
     },
     {
-      enabled: !!selectedCategoryId,
+      enabled: !!selectedCategoryId && !!playlist,
     },
   );
+
+  const utils = trpc.useUtils();
+  const { mutate: updateCategoryChannels, isPending: isUpdatingCategory } =
+    trpc.channels.updateCategoryChannels.useMutation({
+      onSuccess: () => {
+        // Revalidate the getChannels query for this category
+        utils.channels.getChannels.invalidate({
+          categoryId: parseInt(selectedCategoryId || '0'),
+          playlistId: playlist?.id || 0,
+        });
+      },
+    });
+
+  const handleRefreshCategory = () => {
+    if (!playlist || !selectedCategoryId) return;
+    updateCategoryChannels({
+      playlistId: playlist.id,
+      categoryId: parseInt(selectedCategoryId),
+      url: playlist.baseUrl,
+      username: playlist.username,
+      password: playlist.password,
+    });
+  };
 
   const selectedIndex = useMemo(() => {
     if (!channels || !selectedChannelId) return -1;
@@ -98,8 +121,14 @@ function ChannelsPageInner() {
 
       {/* Player Area */}
       <div className="bg-background/50 flex flex-1 flex-col overflow-hidden backdrop-blur-3xl">
-        {/* Player Header */}
-        <PlayerHeader selectedChannel={selectedChannel} />
+
+
+        <PlayerHeader selectedChannel={selectedChannel}
+          selectedCategoryId={selectedCategoryId ? parseInt(selectedCategoryId) : undefined}
+          handleRefreshCategory={handleRefreshCategory}
+          isUpdatingCategory={isUpdatingCategory}
+        />
+
 
         {/* Player Content */}
         <div className="scrollbar-hide flex-1 overflow-y-auto">

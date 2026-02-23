@@ -18,27 +18,15 @@ export function PlayerErrorState({ playbackError, setPlaybackError }: PlayerErro
   }
 
   return (
-    <div
-      style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        height: '100%', width: '100%', background: 'rgba(0,0,0,0.85)', borderRadius: 12,
-        padding: 32, gap: 16, color: '#fff', fontFamily: 'system-ui, sans-serif',
-      }}
-    >
+    <div className="flex h-full w-full flex-col items-center justify-center gap-4 rounded-xl bg-black/85 p-8 font-system text-white">
       <AlertCircle size={48} />
-      <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>{title_}</h2>
-      <p style={{ margin: 0, color: 'rgba(255,255,255,0.6)', textAlign: 'center', maxWidth: 400 }}>
+      <h2 className="text-xl font-bold">{title_}</h2>
+      <p className="max-w-md text-center text-white/60">
         {detail}
       </p>
       <button
         onClick={() => setPlaybackError(null)}
-        style={{
-          marginTop: 8, padding: '10px 28px', borderRadius: 99,
-          border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)',
-          color: '#fff', cursor: 'pointer', fontSize: 14, transition: 'background 0.15s',
-        }}
-        onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.2)')}
-        onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.1)')}
+        className="mt-2 rounded-full border border-white/20 bg-white/10 px-7 py-2.5 text-sm text-white transition-all duration-150 hover:bg-white/20 active:scale-95"
       >
         Try Again
       </button>
