@@ -13,6 +13,8 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 
+"use no memo";
+
 interface ChannelRowProps {
   channel: any;
 }
@@ -21,7 +23,7 @@ export const ChannelRow = ({ channel }: ChannelRowProps) => {
   const router = useRouter();
   const theme = usePlayerTheme();
   const utils = trpc.useUtils();
-  const [currentTime, setCurrentTime] = useState(Math.floor(Date.now() / 1000));
+  const [currentTime, setCurrentTime] = useState(() => Math.floor(Date.now() / 1000));
 
   // Fix: useSharedValue should only be accessed via useAnimatedStyle
   const heartScale = useSharedValue(1);

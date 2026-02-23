@@ -18,6 +18,8 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+"use no memo";
+
 const { width } = Dimensions.get("window");
 const MARGIN = 20;
 const TAB_BAR_WIDTH = width - MARGIN * 2;

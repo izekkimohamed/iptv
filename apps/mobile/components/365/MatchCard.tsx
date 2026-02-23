@@ -12,6 +12,8 @@ import Animated, {
 import { Game } from "./LiveScores";
 import TeamRow from "./TeamRow";
 
+"use no memo";
+
 const MatchCard = ({
   game,
   onPress,
@@ -33,9 +35,15 @@ const MatchCard = ({
   // Goal Detection Logic
   useEffect(() => {
     if (isLive && currentTotalScore > prevScoreRef.current) {
-      setShowGoalPopup(true);
+      // Defer state update to avoid cascading renders
+      const timeoutId = setTimeout(() => {
+        setShowGoalPopup(true);
+      }, 0);
       const timer = setTimeout(() => setShowGoalPopup(false), 5000);
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timeoutId);
+        clearTimeout(timer);
+      };
     }
     prevScoreRef.current = currentTotalScore;
   }, [currentTotalScore, isLive]);

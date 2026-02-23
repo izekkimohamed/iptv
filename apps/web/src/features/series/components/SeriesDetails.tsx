@@ -93,7 +93,7 @@ export default function SeriesDetails({
           priority
           onError={() => setImgError(true)}
         />
-                <div className="absolute inset-0 bg-background/70 " />
+        <div className="absolute inset-0 bg-background/70 " />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 via-50% to-transparent to-100%" />
         <div className="absolute inset-0 bg-gradient-to-r from-background via-transparent to-transparent from-10% via-50% to-100% hidden lg:block" />
       </div>
@@ -118,65 +118,65 @@ export default function SeriesDetails({
           {/* Info Section */}
           <div className="flex-1 space-y-8 max-w-4xl">
             <div className="space-y-4">
-               <div className="flex flex-wrap items-center gap-4">
+              <div className="flex flex-wrap items-center gap-4">
 
-               <h1 className="text-4xl font-black tracking-tight text-foreground sm:text-5xl lg:text-6xl drop-shadow-2xl">
-                 {name}
-               </h1>
+                <h1 className="text-4xl font-black tracking-tight text-foreground sm:text-5xl lg:text-6xl drop-shadow-2xl">
+                  {name}
+                </h1>
 
 
-            </div>
-               {tmdb?.title && tmdb.title !== name && (
-                 <p className="text-xl font-medium text-primary/80 italic tracking-tight">
-                    {tmdb.title}
-                 </p>
-               )}
-               <div className="flex gap-4">
-                    {tmdb?.releaseDate && (
-                    <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-sm font-bold text-foreground/80 backdrop-blur-md">
-                       <Calendar className="h-4 w-4" />
-                       {new Date(tmdb.releaseDate).getFullYear()}
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-sm font-bold text-foreground/80 backdrop-blur-md">
-                     <Tv className="h-4 w-4" />
-                     {seasons.length} Seasons
-                  </div>
-                  <div className="flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1 text-sm font-black text-primary backdrop-blur-md">
-                     <Star className="h-4 w-4 fill-current" />
-                     {rating ? parseFloat(rating).toFixed(1) : '0.0'} / 10
-                  </div>
-
-               </div>
-                     {/* Additional Metadata */}
-            {tmdb?.genres && (
-              <div className="flex flex-wrap gap-2 ">
-                {tmdb.genres.map((genre: any) => (
-                  <span key={genre.id} className="rounded-sm border border-white/5 bg-white/5 px-3 py-1.5 text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                    {genre.name}
-                  </span>
-                ))}
               </div>
-            )}
-               </div>
+              {tmdb?.title && tmdb.title !== name && (
+                <p className="text-xl font-medium text-primary/80 italic tracking-tight">
+                  {tmdb.title}
+                </p>
+              )}
+              <div className="flex gap-4">
+                {tmdb?.releaseDate && (
+                  <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-sm font-bold text-foreground/80 backdrop-blur-md">
+                    <Calendar className="h-4 w-4" />
+                    {new Date(tmdb.releaseDate).getFullYear()}
+                  </div>
+                )}
+                <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-sm font-bold text-foreground/80 backdrop-blur-md">
+                  <Tv className="h-4 w-4" />
+                  {seasons.length} Seasons
+                </div>
+                <div className="flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1 text-sm font-black text-primary backdrop-blur-md">
+                  <Star className="h-4 w-4 fill-current" />
+                  {rating ? parseFloat(rating).toFixed(1) : '0.0'} / 10
+                </div>
+
+              </div>
+              {/* Additional Metadata */}
+              {tmdb?.genres && (
+                <div className="flex flex-wrap gap-2 ">
+                  {tmdb.genres.map((genre: any) => (
+                    <span key={genre.id} className="rounded-sm border border-white/5 bg-white/5 px-3 py-1.5 text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                      {genre.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <p className="max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl font-medium">
               {description || tmdb?.overview || "No description available for this series."}
             </p>
 
             <div className="flex flex-wrap items-center gap-4 pt-4">
-               <Button
+              <Button
                 onClick={handlePlayMovie}
                 className="h-16 rounded-sm px-10 text-lg font-black shadow-2xl shadow-primary/20 transition-all hover:scale-105 active:scale-95"
-               >
-                  <Play className="mr-3 h-6 w-6 fill-current" />
-                  {episodeToPlay?.isResume ? 'Resume' : 'Start Watching'}
-               </Button>
+              >
+                <Play className="mr-3 h-6 w-6 fill-current" />
+                {episodeToPlay?.isResume ? 'Resume' : 'Start Watching'}
+              </Button>
 
-               <Button variant="outline" className="h-16 rounded-sm border-white/10 bg-white/5 px-8 text-lg font-bold backdrop-blur-md transition-all hover:bg-white/10 active:scale-95">
-                  <Tag className="mr-2 h-5 w-5" />
-                  Add to List
-               </Button>
+              <Button variant="outline" className="h-16 rounded-sm border-white/10 bg-white/5 px-8 text-lg font-bold backdrop-blur-md transition-all hover:bg-white/10 active:scale-95">
+                <Tag className="mr-2 h-5 w-5" />
+                Add to List
+              </Button>
             </div>
 
 
@@ -185,23 +185,23 @@ export default function SeriesDetails({
 
         {/* Sections */}
         <div className="mt-10 space-y-10">
-           {/* Episodes Section - Main Attraction for Series */}
-           <div data-episodes-section>
-             <EpisodesSection
-                ref={episodesSectionRef}
-                seasons={seasons}
-                episodes={episodes}
-                tmdbPoster={tmdb?.poster || undefined}
-                fallbackImage={image}
-                containerExtension={'mp4'}
-                streamId={stream_id}
-                image={image}
-                tmdb={tmdb}
-              />
-           </div>
+          {/* Episodes Section - Main Attraction for Series */}
+          <div data-episodes-section>
+            <EpisodesSection
+              ref={episodesSectionRef}
+              seasons={seasons}
+              episodes={episodes}
+              tmdbPoster={tmdb?.poster || undefined}
+              fallbackImage={image}
+              containerExtension={'mp4'}
+              streamId={stream_id}
+              image={image}
+              tmdb={tmdb}
+            />
+          </div>
 
-           {tmdb?.cast && <CastSection cast={tmdb.cast} />}
-           {tmdb?.videos && <TrailersSection videos={tmdb.videos} onTrailerClick={handleTrailerClick} />}
+          {tmdb?.cast && <CastSection cast={tmdb.cast} />}
+          {tmdb?.videos && <TrailersSection videos={tmdb.videos} onTrailerClick={handleTrailerClick} />}
         </div>
       </div>
       <TrailerModal isOpen={!!trailer} onClose={handleCloseTrailer} trailerId={trailer} />

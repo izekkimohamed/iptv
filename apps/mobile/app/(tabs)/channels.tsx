@@ -6,7 +6,7 @@ import { usePlayerTheme } from "@/theme/playerTheme";
 import { FlashList, FlashListRef } from "@shopify/flash-list";
 import * as Haptics from "expo-haptics";
 import { Search, Tv, X } from "lucide-react-native";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -24,6 +24,8 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+"use no memo";
 
 export default function ChannelsScreen() {
   const theme = usePlayerTheme();
@@ -51,7 +53,11 @@ export default function ChannelsScreen() {
 
   useEffect(() => {
     if (categories?.length && !selectedCatId) {
-      setSelectedCatId(categories[0].categoryId);
+      // Defer state update to avoid cascading renders
+      const timeoutId = setTimeout(() => {
+        setSelectedCatId(categories[0].categoryId);
+      }, 0);
+      return () => clearTimeout(timeoutId);
     }
   }, [categories, selectedCatId]);
 
@@ -70,10 +76,30 @@ export default function ChannelsScreen() {
     });
   };
 
-  const renderChannelItem = ({ item, index }: { item: any; index: number }) => (
-    <Animated.View entering={FadeInDown.delay(Math.min(index * 20, 300))}>
-      <ChannelRow channel={item} />
-    </Animated.View>
+  const renderChannelItem = useCallback(
+    ({ item, index }: { item: any; index: number }) => (
+      <Animated.View entering={FadeInDown.delay(Math.min(index * 20, 300))}>
+        <ChannelRow channel={item} />
+      </Animated.View>
+    ),
+    [],
+  );
+
+  const renderCategoryItem = useCallback(
+    ({ item, index }: { item: any; index: number }) => {
+      const isActive = selectedCatId === item.categoryId;
+      return (
+        <CategoryPill
+          item={item}
+          isActive={isActive}
+          onPress={() => {
+            setSelectedCatId(item.categoryId);
+            scrollToCategory(index);
+          }}
+        />
+      );
+    },
+    [selectedCatId],
   );
 
   return (
@@ -121,19 +147,7 @@ export default function ChannelsScreen() {
             data={filteredCategories}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.catContent}
-            renderItem={({ item, index }) => {
-              const isActive = selectedCatId === item.categoryId;
-              return (
-                <CategoryPill
-                  item={item}
-                  isActive={isActive}
-                  onPress={() => {
-                    setSelectedCatId(item.categoryId);
-                    scrollToCategory(index);
-                  }}
-                />
-              );
-            }}
+            renderItem={renderCategoryItem}
           />
         }
       </View>

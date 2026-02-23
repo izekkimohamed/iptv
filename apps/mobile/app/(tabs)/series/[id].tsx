@@ -30,6 +30,8 @@ import {
 } from "react-native-safe-area-context";
 import { useStreamingUrls } from "../movies/[id]";
 
+"use no memo";
+
 const { width, height } = Dimensions.get("window");
 const POSTER_WIDTH = width * 0.35; // Slightly smaller than movie poster for series list balance
 const POSTER_HEIGHT = POSTER_WIDTH * 1.5;

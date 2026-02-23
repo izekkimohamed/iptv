@@ -9,6 +9,8 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+"use no memo";
+
 export const SkeletonCard = ({ width, height, borderRadius = 12 }: any) => {
   const theme = usePlayerTheme();
   const shimmer = useSharedValue(0);

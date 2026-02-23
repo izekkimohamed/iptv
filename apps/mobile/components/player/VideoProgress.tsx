@@ -8,6 +8,8 @@ import { Slider } from "react-native-awesome-slider";
 import { BorderlessButton } from "react-native-gesture-handler";
 import { useSharedValue } from "react-native-reanimated";
 
+"use no memo";
+
 interface VideoProgressProps {
   progress: number;
   duration: number;

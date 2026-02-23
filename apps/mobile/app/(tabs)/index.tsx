@@ -1,9 +1,8 @@
 import { FlashList } from "@shopify/flash-list";
 import { useRouter } from "expo-router";
 import { Database, Info, Play, Star, Tv } from "lucide-react-native";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Dimensions,
   FlatList,
   Image,
   Pressable,
@@ -11,6 +10,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import Animated, {
@@ -33,9 +33,19 @@ import { trpc } from "@/lib/trpc";
 import { usePlaylistStore } from "@/store";
 import { usePlayerTheme } from "@/theme/playerTheme";
 
-const { width } = Dimensions.get("window");
-const FEATURED_WIDTH = width * 0.85;
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
+// --- Skeleton Component ---
+const HomeSkeleton = ({ featuredWidth }: { featuredWidth: number }) => (
+  <View style={{ padding: 20 }}>
+    <SkeletonCard width={featuredWidth} height={340} borderRadius={24} />
+    <View style={{ flexDirection: "row", gap: 12, marginTop: 20 }}>
+      <SkeletonCard width={85} height={85} borderRadius={22} />
+      <SkeletonCard width={85} height={85} borderRadius={22} />
+      <SkeletonCard width={85} height={85} borderRadius={22} />
+    </View>
+  </View>
+);
 
 // --- Live Pulse Component ---
 const LiveIndicator = ({ color }: { color: string }) => {
@@ -74,6 +84,8 @@ const LiveIndicator = ({ color }: { color: string }) => {
 export default function HomeScreen() {
   const router = useRouter();
   const theme = usePlayerTheme();
+  const { width } = useWindowDimensions();
+  const FEATURED_WIDTH = width * 0.85;
   const currentDate = new Date();
   const [selectedGameId, setSelectedGameId] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -160,103 +172,109 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
-  const renderFeaturedItem = ({ item }: { item: any }) => (
-    <Pressable
-      onPress={() =>
-        router.push({
-          pathname: "/movies/tmdb",
-          params: { movieId: item.id, playlistId: 26 },
-        })
-      }
-      style={[
-        styles.featuredCard,
-        {
-          borderColor: theme.border,
-        },
-      ]}
-    >
-      <Image
-        source={{ uri: item.backdropUrl || item.posterUrl }}
-        style={styles.featuredImage}
-      />
-      <View style={styles.featuredGradient} />
-      <View style={styles.featuredContent}>
-        <Text style={styles.featuredTitle} numberOfLines={1}>
-          {item.title || item.name}
-        </Text>
-        <View style={styles.featuredRow}>
-          <View style={[styles.badge, { backgroundColor: theme.primary }]}>
-            <Text style={styles.badgeText}>Trending</Text>
-          </View>
-          <Text style={styles.featuredSub} numberOfLines={1}>
-            {item.overview || "New Release"}
-          </Text>
-        </View>
-        <View style={styles.buttonRow}>
-          <View style={[styles.playButton, { backgroundColor: "#fff" }]}>
-            <Play size={14} color='#000' fill='#000' />
-            <Text style={styles.playButtonText}>Play</Text>
-          </View>
-          <View
-            style={[
-              styles.infoButton,
-              { backgroundColor: "rgba(255,255,255,0.2)" },
-            ]}
-          >
-            <Info size={14} color='#fff' />
-          </View>
-        </View>
-      </View>
-    </Pressable>
-  );
-
-  const renderChannel = ({ item }: { item: any }) => (
-    <Animated.View
-      entering={FadeInDown}
-      style={{ width: 120, marginRight: 12, alignItems: "center" }}
-    >
+  const renderFeaturedItem = useCallback(
+    ({ item }: { item: any }) => (
       <Pressable
         onPress={() =>
           router.push({
-            pathname: "/player",
-            params: { url: item.url, title: item.name, mediaType: "live" },
+            pathname: "/movies/tmdb",
+            params: { movieId: item.id, playlistId: 26 },
           })
         }
-        style={({ pressed }) => [
-          styles.channelCardEnhanced,
-          {
-            backgroundColor: "rgba(255,255,255,0.05)",
-            borderColor: pressed ? theme.primary : "rgba(255,255,255,0.05)",
-          },
-          pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] },
-        ]}
-      >
-        <View style={styles.liveBadge}>
-          <View style={styles.liveDot} />
-          <Text style={styles.liveBadgeText}>LIVE</Text>
-        </View>
-        {item.streamIcon ?
-          <Image
-            source={{ uri: item.streamIcon }}
-            style={{ width: "100%", height: "100%", padding: 20 }}
-          />
-        : <View
-            style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-          >
-            <Tv size={32} color={theme.textPrimary} />
-          </View>
-        }
-      </Pressable>
-      <Text
-        numberOfLines={1}
         style={[
-          styles.channelTitle,
-          { color: theme.textPrimary, marginTop: 4, fontWeight: "600" },
+          styles.featuredCard,
+          {
+            borderColor: theme.border,
+          },
         ]}
       >
-        {item.name}
-      </Text>
-    </Animated.View>
+        <Image
+          source={{ uri: item.backdropUrl || item.posterUrl }}
+          style={styles.featuredImage}
+        />
+        <View style={styles.featuredGradient} />
+        <View style={styles.featuredContent}>
+          <Text style={styles.featuredTitle} numberOfLines={1}>
+            {item.title || item.name}
+          </Text>
+          <View style={styles.featuredRow}>
+            <View style={[styles.badge, { backgroundColor: theme.primary }]}>
+              <Text style={styles.badgeText}>Trending</Text>
+            </View>
+            <Text style={styles.featuredSub} numberOfLines={1}>
+              {item.overview || "New Release"}
+            </Text>
+          </View>
+          <View style={styles.buttonRow}>
+            <View style={[styles.playButton, { backgroundColor: "#fff" }]}>
+              <Play size={14} color='#000' fill='#000' />
+              <Text style={styles.playButtonText}>Play</Text>
+            </View>
+            <View
+              style={[
+                styles.infoButton,
+                { backgroundColor: "rgba(255,255,255,0.2)" },
+              ]}
+            >
+              <Info size={14} color='#fff' />
+            </View>
+          </View>
+        </View>
+      </Pressable>
+    ),
+    [router, theme.border, theme.primary],
+  );
+
+  const renderChannel = useCallback(
+    ({ item }: { item: any }) => (
+      <Animated.View
+        entering={FadeInDown}
+        style={{ width: 120, marginRight: 12, alignItems: "center" }}
+      >
+        <Pressable
+          onPress={() =>
+            router.push({
+              pathname: "/player",
+              params: { url: item.url, title: item.name, mediaType: "live" },
+            })
+          }
+          style={({ pressed }) => [
+            styles.channelCardEnhanced,
+            {
+              backgroundColor: "rgba(255,255,255,0.05)",
+              borderColor: pressed ? theme.primary : "rgba(255,255,255,0.05)",
+            },
+            pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] },
+          ]}
+        >
+          <View style={styles.liveBadge}>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveBadgeText}>LIVE</Text>
+          </View>
+          {item.streamIcon ?
+            <Image
+              source={{ uri: item.streamIcon }}
+              style={{ width: "100%", height: "100%", padding: 20 }}
+            />
+          : <View
+              style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+            >
+              <Tv size={32} color={theme.textPrimary} />
+            </View>
+          }
+        </Pressable>
+        <Text
+          numberOfLines={1}
+          style={[
+            styles.channelTitle,
+            { color: theme.textPrimary, marginTop: 4, fontWeight: "600" },
+          ]}
+        >
+          {item.name}
+        </Text>
+      </Animated.View>
+    ),
+    [router, theme.primary, theme.textPrimary],
   );
 
   if (!selectedPlaylist) {
@@ -286,17 +304,6 @@ export default function HomeScreen() {
     );
   }
 
-  const HomeSkeleton = () => (
-    <View style={{ padding: 20 }}>
-      <SkeletonCard width={FEATURED_WIDTH} height={340} borderRadius={24} />
-      <View style={{ flexDirection: "row", gap: 12, marginTop: 20 }}>
-        <SkeletonCard width={85} height={85} borderRadius={22} />
-        <SkeletonCard width={85} height={85} borderRadius={22} />
-        <SkeletonCard width={85} height={85} borderRadius={22} />
-      </View>
-    </View>
-  );
-
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.bg }]}
@@ -314,7 +321,7 @@ export default function HomeScreen() {
         }
       >
         {isLoading ?
-          <HomeSkeleton />
+          <HomeSkeleton featuredWidth={FEATURED_WIDTH} />
         : <>
             {/* Hero Carousel */}
             <View style={styles.featuredSection}>

@@ -112,20 +112,9 @@ export const usePlayerGestures = ({
     }
   }, [showControls, setShowControls]);
 
-  const tapGesture = useMemo(() => {
-    return Gesture.Tap()
-      .maxDuration(250)
-      .onStart((e) => {
-        "worklet";
-        // We calculate side immediately on UI thread for instant visual feedback
-        const isRightSide = e.absoluteX > screenWidth.value / 2;
-
-        // Call JS to check timing logic
-        runOnJS(handleTapWrapper)(isRightSide);
-      });
-
-    // Wrapper to handle the JS logic and callbacks
-    function handleTapWrapper(isRightSide: boolean) {
+  // Wrapper to handle the JS logic and callbacks for tap gestures
+  const handleTapWrapper = useCallback(
+    (isRightSide: boolean) => {
       const isDoubleTap = handleTap();
       if (isDoubleTap) {
         if (isRightSide) {
@@ -143,15 +132,28 @@ export const usePlayerGestures = ({
           if (skipBackward) skipBackward();
         }
       }
-    }
-  }, [
-    handleTap,
-    screenWidth,
-    leftDoubleTapAnim,
-    rightDoubleTapAnim,
-    skipForward,
-    skipBackward,
-  ]);
+    },
+    [
+      handleTap,
+      leftDoubleTapAnim,
+      rightDoubleTapAnim,
+      skipForward,
+      skipBackward,
+    ]
+  );
+
+  const tapGesture = useMemo(() => {
+    return Gesture.Tap()
+      .maxDuration(250)
+      .onStart((e) => {
+        "worklet";
+        // We calculate side immediately on UI thread for instant visual feedback
+        const isRightSide = e.absoluteX > screenWidth.value / 2;
+
+        // Call JS to check timing logic
+        runOnJS(handleTapWrapper)(isRightSide);
+      });
+  }, [handleTapWrapper, screenWidth]);
 
   // --- Pan Gesture (Volume / Brightness) ---
   const BRIGHTNESS_ZONE = 0.5;

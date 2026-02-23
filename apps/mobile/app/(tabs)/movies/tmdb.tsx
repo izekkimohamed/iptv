@@ -36,6 +36,9 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
+
+"use no memo";
+
 const { width, height } = Dimensions.get("window");
 const POSTER_WIDTH = width * 0.42; // Much larger poster (42% of screen width)
 const POSTER_HEIGHT = POSTER_WIDTH * 1.5;

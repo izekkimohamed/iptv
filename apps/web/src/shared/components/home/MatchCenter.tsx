@@ -39,6 +39,7 @@ export default function MatchCenter({ gameId, onClose }: { gameId: number; onClo
                 <div className="flex-1 text-center">
                   <img
                     src={`https://imagecache.365scores.com/image/upload/f_auto,w_80/competitors/${game.homeCompetitor.id}`}
+                    alt={game.homeCompetitor.name}
                     className="mx-auto mb-3 h-16 w-16"
                   />
                   <div className="text-sm font-black text-white uppercase">
@@ -58,6 +59,7 @@ export default function MatchCenter({ gameId, onClose }: { gameId: number; onClo
                 <div className="flex-1 text-center">
                   <img
                     src={`https://imagecache.365scores.com/image/upload/f_auto,w_80/competitors/${game.awayCompetitor.id}`}
+                    alt={game.awayCompetitor.name}
                     className="mx-auto mb-3 h-16 w-16"
                   />
                   <div className="text-sm font-black text-white uppercase">

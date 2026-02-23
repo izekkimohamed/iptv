@@ -5,14 +5,14 @@ import { cleanName } from "@repo/utils";
 import { FlashList } from "@shopify/flash-list";
 import { useRouter } from "expo-router";
 import { Film, Star } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Dimensions,
   Image,
   Pressable,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native"; // Better performance than react-native Image
 import Animated, {
@@ -24,13 +24,13 @@ import Animated, {
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const { width } = Dimensions.get("window");
 const COLUMN_COUNT = 3;
 const SPACING = 12;
-// Calculate precise item width for perfect grid
-const ITEM_WIDTH = (width - SPACING * (COLUMN_COUNT + 1)) / COLUMN_COUNT;
 
 export default function MovieExplorer() {
+  const { width } = useWindowDimensions();
+  // Calculate precise item width for perfect grid
+  const ITEM_WIDTH = (width - SPACING * (COLUMN_COUNT + 1)) / COLUMN_COUNT;
   const router = useRouter();
   const theme = usePlayerTheme();
   const selectPlaylist = usePlaylistStore((state) => state.selectedPlaylist);
@@ -48,7 +48,11 @@ export default function MovieExplorer() {
   // Set default category
   useEffect(() => {
     if (categories && categories.length > 0 && !selectedCategoryId) {
-      setSelectedCategoryId(categories[0].categoryId);
+      // Defer state update to avoid cascading renders
+      const timeoutId = setTimeout(() => {
+        setSelectedCategoryId(categories[0].categoryId);
+      }, 0);
+      return () => clearTimeout(timeoutId);
     }
   }, [categories, selectedCategoryId]);
 
@@ -67,73 +71,108 @@ export default function MovieExplorer() {
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
-  const renderMovie = ({ item, index }: { item: any; index: number }) => {
-    return (
-      <Animated.View
-        entering={FadeInDown.delay((index % 10) * 50).springify()}
-        style={styles.movieItemWrapper}
-      >
-        <Pressable
-          onPressIn={() => (scale.value = withSpring(0.95))}
-          onPressOut={() => (scale.value = withSpring(1))}
-          onPress={() =>
-            router.push({
-              pathname: "/movies/[id]",
-              params: { id: item.streamId, url: item.url },
-            })
-          }
+  const renderMovie = useCallback(
+    ({ item, index }: { item: any; index: number }) => {
+      return (
+        <Animated.View
+          entering={FadeInDown.delay((index % 10) * 50).springify()}
+          style={[styles.movieItemWrapper, { width: ITEM_WIDTH }]}
         >
-          <Animated.View style={animatedStyle}>
-            <View
-              style={[
-                styles.posterContainer,
-                { backgroundColor: theme.surfaceSecondary },
-              ]}
-            >
-              <Image
-                source={{ uri: item.streamIcon }}
-                style={[styles.poster, { borderColor: theme.border }]}
-              />
+          <Pressable
+            onPressIn={() => (scale.value = withSpring(0.95))}
+            onPressOut={() => (scale.value = withSpring(1))}
+            onPress={() =>
+              router.push({
+                pathname: "/movies/[id]",
+                params: { id: item.streamId, url: item.url },
+              })
+            }
+          >
+            <Animated.View style={animatedStyle}>
+              <View
+                style={[
+                  styles.posterContainer,
+                  { backgroundColor: theme.surfaceSecondary },
+                ]}
+              >
+                <Image
+                  source={{ uri: item.streamIcon }}
+                  style={[styles.poster, { borderColor: theme.border }]}
+                />
 
-              {/* Add rating badge */}
-              {item.rating && (
-                <View style={styles.ratingBadge}>
-                  <View
-                    style={[
-                      styles.ratingGradient,
-                      { backgroundColor: theme.primary },
-                    ]}
-                  >
-                    <Star size={10} color='#FCD34D' fill='#FCD34D' />
-                    <Text style={styles.ratingText}>
-                      {parseFloat(item.rating).toFixed(1)}
-                    </Text>
+                {/* Add rating badge */}
+                {item.rating && (
+                  <View style={styles.ratingBadge}>
+                    <View
+                      style={[
+                        styles.ratingGradient,
+                        { backgroundColor: theme.primary },
+                      ]}
+                    >
+                      <Star size={10} color='#FCD34D' fill='#FCD34D' />
+                      <Text style={styles.ratingText}>
+                        {parseFloat(item.rating).toFixed(1)}
+                      </Text>
+                    </View>
                   </View>
-                </View>
-              )}
+                )}
 
-              {/* Add "NEW" badge for recent content */}
-              {isRecent(item.added) && (
-                <View
-                  style={[styles.newBadge, { backgroundColor: theme.primary }]}
-                >
-                  <Text style={styles.newBadgeText}>NEW</Text>
-                </View>
-              )}
+                {/* Add "NEW" badge for recent content */}
+                {isRecent(item.added) && (
+                  <View
+                    style={[styles.newBadge, { backgroundColor: theme.primary }]}
+                  >
+                    <Text style={styles.newBadgeText}>NEW</Text>
+                  </View>
+                )}
 
-              <View style={styles.posterGradient} />
-            </View>
-            <Text
-              style={[styles.movieTitle, { color: theme.textSecondary }]}
-              numberOfLines={1}
-            >
-              {cleanName(item.name)}
-            </Text>
-          </Animated.View>
+                <View style={styles.posterGradient} />
+              </View>
+              <Text
+                style={[styles.movieTitle, { color: theme.textSecondary }]}
+                numberOfLines={1}
+              >
+                {cleanName(item.name)}
+              </Text>
+            </Animated.View>
+          </Pressable>
+        </Animated.View>
+      );
+    },
+    [ITEM_WIDTH, animatedStyle, router, scale, theme.border, theme.primary, theme.surfaceSecondary, theme.textSecondary],
+  );
+
+  const renderCategoryItem = useCallback(
+    ({ item }: { item: any }) => {
+      const isSelected = selectedCategoryId === item.categoryId;
+      return (
+        <Pressable
+          onPress={() => setSelectedCategoryId(item.categoryId)}
+          style={[
+            styles.categoryPill,
+            {
+              backgroundColor:
+                isSelected ? theme.primary : theme.surfaceSecondary,
+              borderColor: isSelected ? theme.primary : theme.border,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.categoryText,
+              {
+                color: isSelected ? "#000" : theme.textSecondary,
+                fontWeight: isSelected ? "700" : "500",
+              },
+            ]}
+          >
+            {item.categoryName}
+          </Text>
         </Pressable>
-      </Animated.View>
-    );
-  };
+      );
+    },
+    [selectedCategoryId, theme.primary, theme.surfaceSecondary, theme.border, theme.textSecondary],
+  );
 
   // --- Loading State ---
   if (loadingCats)
@@ -159,34 +198,7 @@ export default function MovieExplorer() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.categoriesContent}
             keyExtractor={(item) => item.categoryId.toString()}
-            renderItem={({ item }) => {
-              const isSelected = selectedCategoryId === item.categoryId;
-              return (
-                <Pressable
-                  onPress={() => setSelectedCategoryId(item.categoryId)}
-                  style={[
-                    styles.categoryPill,
-                    {
-                      backgroundColor:
-                        isSelected ? theme.primary : theme.surfaceSecondary,
-                      borderColor: isSelected ? theme.primary : theme.border,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.categoryText,
-                      {
-                        color: isSelected ? "#000" : theme.textSecondary,
-                        fontWeight: isSelected ? "700" : "500",
-                      },
-                    ]}
-                  >
-                    {item.categoryName}
-                  </Text>
-                </Pressable>
-              );
-            }}
+            renderItem={renderCategoryItem}
           />
         </View>
 
@@ -296,7 +308,6 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   movieItemWrapper: {
-    width: ITEM_WIDTH,
     marginRight: SPACING, // This + contentContainer padding handles the grid logic
     marginBottom: 20,
   },

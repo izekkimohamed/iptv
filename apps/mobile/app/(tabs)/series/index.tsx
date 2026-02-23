@@ -5,25 +5,25 @@ import { cleanName } from "@repo/utils";
 import { FlashList } from "@shopify/flash-list";
 import { useRouter } from "expo-router";
 import { Tv } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Dimensions,
   Image,
   Pressable,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const { width } = Dimensions.get("window");
 const COLUMN_COUNT = 3;
 const SPACING = 12;
-const ITEM_WIDTH = (width - SPACING * (COLUMN_COUNT + 1)) / COLUMN_COUNT;
 
 export default function SeriesScreen() {
+  const { width } = useWindowDimensions();
+  const ITEM_WIDTH = (width - SPACING * (COLUMN_COUNT + 1)) / COLUMN_COUNT;
   const router = useRouter();
   const theme = usePlayerTheme();
   const selectPlaylist = usePlaylistStore((state) => state.selectedPlaylist);
@@ -44,59 +44,100 @@ export default function SeriesScreen() {
     );
 
   useEffect(() => {
-    if (categories?.length && !selectedCatId)
-      setSelectedCatId(categories[0].categoryId);
+    if (categories?.length && !selectedCatId) {
+      // Defer state update to avoid cascading renders
+      const timeoutId = setTimeout(() => {
+        setSelectedCatId(categories[0].categoryId);
+      }, 0);
+      return () => clearTimeout(timeoutId);
+    }
   }, [categories, selectedCatId]);
 
-  const renderSeriesItem = ({ item, index }: { item: any; index: number }) => (
-    <Animated.View
-      entering={FadeInDown.delay((index % 9) * 50).springify()}
-      style={styles.gridItemWrapper}
-    >
-      <Pressable
-        style={({ pressed }) => [
-          styles.seriesCard,
-          pressed && { opacity: 0.7, transform: [{ scale: 0.96 }] },
-        ]}
-        onPress={() =>
-          router.push({
-            pathname: "/series/[id]",
-            params: { id: item.seriesId },
-          })
-        }
+  const renderSeriesItem = useCallback(
+    ({ item, index }: { item: any; index: number }) => (
+      <Animated.View
+        entering={FadeInDown.delay((index % 9) * 50).springify()}
+        style={[styles.gridItemWrapper, { width: ITEM_WIDTH }]}
       >
-        <View
-          style={[
-            styles.posterContainer,
-            { backgroundColor: theme.surfaceSecondary },
+        <Pressable
+          style={({ pressed }) => [
+            styles.seriesCard,
+            pressed && { opacity: 0.7, transform: [{ scale: 0.96 }] },
           ]}
+          onPress={() =>
+            router.push({
+              pathname: "/series/[id]",
+              params: { id: item.seriesId },
+            })
+          }
         >
-          <Image
-            source={{ uri: item.cover || "" }}
-            style={[styles.poster, { borderColor: theme.border }]}
-            contentFit='cover'
-            transition={500}
-            placeholder='L6PZfSi_.AyE_3t7t7R**0o#DgR4'
-            placeholderContentFit='cover'
-          />
-          {/* Subtle gradient for depth */}
-          <View style={StyleSheet.absoluteFill}>
-            <View
-              style={[
-                styles.posterGradient,
-                { backgroundColor: "rgba(0,0,0,0.4)" },
-              ]}
+          <View
+            style={[
+              styles.posterContainer,
+              { backgroundColor: theme.surfaceSecondary },
+            ]}
+          >
+            <Image
+              source={{ uri: item.cover || "" }}
+              style={[styles.poster, { borderColor: theme.border }]}
+              contentFit='cover'
+              transition={500}
+              placeholder='L6PZfSi_.AyE_3t7t7R**0o#DgR4'
+              placeholderContentFit='cover'
             />
+            {/* Subtle gradient for depth */}
+            <View style={StyleSheet.absoluteFill}>
+              <View
+                style={[
+                  styles.posterGradient,
+                  { backgroundColor: "rgba(0,0,0,0.4)" },
+                ]}
+              />
+            </View>
           </View>
-        </View>
-        <Text
-          style={[styles.seriesTitle, { color: theme.textSecondary }]}
-          numberOfLines={1}
+          <Text
+            style={[styles.seriesTitle, { color: theme.textSecondary }]}
+            numberOfLines={1}
+          >
+            {cleanName(item.name)}
+          </Text>
+        </Pressable>
+      </Animated.View>
+    ),
+    [ITEM_WIDTH, router, theme.surfaceSecondary, theme.border, theme.textSecondary],
+  );
+
+  const renderCategoryItem = useCallback(
+    ({ item }: { item: any }) => {
+      const isSelected = selectedCatId === item.categoryId;
+      return (
+        <Pressable
+          style={[
+            styles.catChip,
+            {
+              backgroundColor:
+                isSelected ? theme.primary : theme.surfaceSecondary,
+              borderColor: isSelected ? theme.primary : theme.border,
+            },
+          ]}
+          onPress={() => setSelectedCatId(item.categoryId)}
         >
-          {cleanName(item.name)}
-        </Text>
-      </Pressable>
-    </Animated.View>
+          <Text
+            style={[
+              styles.catChipText,
+              {
+                color: isSelected ? "#000" : theme.textSecondary,
+                fontWeight: isSelected ? "700" : "500",
+              },
+            ]}
+            numberOfLines={1}
+          >
+            {item.categoryName}
+          </Text>
+        </Pressable>
+      );
+    },
+    [selectedCatId, theme.primary, theme.surfaceSecondary, theme.border, theme.textSecondary],
   );
 
   if (loadingCats) {
@@ -122,35 +163,7 @@ export default function SeriesScreen() {
           keyExtractor={(item) => item.id.toString()}
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoriesContent}
-          renderItem={({ item }) => {
-            const isSelected = selectedCatId === item.categoryId;
-            return (
-              <Pressable
-                style={[
-                  styles.catChip,
-                  {
-                    backgroundColor:
-                      isSelected ? theme.primary : theme.surfaceSecondary,
-                    borderColor: isSelected ? theme.primary : theme.border,
-                  },
-                ]}
-                onPress={() => setSelectedCatId(item.categoryId)}
-              >
-                <Text
-                  style={[
-                    styles.catChipText,
-                    {
-                      color: isSelected ? "#000" : theme.textSecondary,
-                      fontWeight: isSelected ? "700" : "500",
-                    },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {item.categoryName}
-                </Text>
-              </Pressable>
-            );
-          }}
+          renderItem={renderCategoryItem}
         />
       </View>
 
@@ -251,7 +264,6 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   gridItemWrapper: {
-    width: ITEM_WIDTH,
     marginRight: SPACING,
     marginBottom: 20,
   },
