@@ -1,6 +1,33 @@
 import { Game } from '@/trpc/types';
 import { Trophy, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import Image from 'next/image';
+import { useSyncExternalStore } from 'react';
+
+// SSR-safe visibility store
+const createVisibilityStore = () => {
+  let isVisible = false;
+  const listeners = new Set<() => void>();
+
+  const setVisible = (value: boolean) => {
+    isVisible = value;
+    listeners.forEach((listener) => listener());
+  };
+
+  return {
+    subscribe: (listener: () => void) => {
+      listeners.add(listener);
+      // Delay visibility to next tick for animation
+      if (!isVisible && typeof window !== 'undefined') {
+        setTimeout(() => setVisible(true), 50);
+      }
+      return () => listeners.delete(listener);
+    },
+    getSnapshot: () => isVisible,
+    getServerSnapshot: () => false,
+  };
+};
+
+const visibilityStore = createVisibilityStore();
 
 interface GoalPopupProps {
   game: Game;
@@ -8,17 +35,15 @@ interface GoalPopupProps {
 }
 
 export function GoalPopup({ game, onDismiss }: GoalPopupProps) {
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    // Trigger animation after mount
-    setTimeout(() => setIsVisible(true), 50);
-  }, []);
+  const isVisible = useSyncExternalStore(
+    visibilityStore.subscribe,
+    visibilityStore.getSnapshot,
+    visibilityStore.getServerSnapshot,
+  );
 
   const handleDismiss = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsVisible(false);
-    setTimeout(onDismiss, 300);
+    onDismiss();
   };
 
   return (
@@ -27,6 +52,15 @@ export function GoalPopup({ game, onDismiss }: GoalPopupProps) {
         isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
       }`}
       onClick={handleDismiss}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleDismiss(e as unknown as React.MouseEvent);
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label="Dismiss goal popup"
     >
       {/* Animated Background Effects */}
       <div className="absolute inset-0 overflow-hidden">
@@ -76,9 +110,11 @@ export function GoalPopup({ game, onDismiss }: GoalPopupProps) {
           <div className="flex flex-col items-center gap-3">
             <div className="relative">
               <div className="absolute -inset-2 animate-pulse rounded-full bg-primary/20 blur-md" />
-              <img
+              <Image
                 src={`https://imagecache.365scores.com/image/upload/f_auto,w_64/competitors/${game.homeCompetitor.id}`}
-                className="relative h-14 w-14 transition-transform hover:scale-110"
+                width={56}
+                height={56}
+                className="relative h-14 w-14 object-contain transition-transform hover:scale-110"
                 alt={game.homeCompetitor.name}
               />
             </div>
@@ -108,9 +144,11 @@ export function GoalPopup({ game, onDismiss }: GoalPopupProps) {
           <div className="flex flex-col items-center gap-3">
             <div className="relative">
               <div className="absolute -inset-2 animate-pulse rounded-full bg-primary/20 blur-md" />
-              <img
+              <Image
                 src={`https://imagecache.365scores.com/image/upload/f_auto,w_64/competitors/${game.awayCompetitor.id}`}
-                className="relative h-14 w-14 transition-transform hover:scale-110"
+                width={56}
+                height={56}
+                className="relative h-14 w-14 object-contain transition-transform hover:scale-110"
                 alt={game.awayCompetitor.name}
               />
             </div>
@@ -123,17 +161,6 @@ export function GoalPopup({ game, onDismiss }: GoalPopupProps) {
           Tap anywhere to dismiss
         </p>
       </div>
-
-      <style jsx>{`
-        @keyframes shimmer {
-          0% {
-            background-position: -200% 0;
-          }
-          100% {
-            background-position: 200% 0;
-          }
-        }
-      `}</style>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { Game } from '@/trpc/types';
+import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { GoalPopup } from './Goal';
 import { MatchCenter } from './MatchCenter';
@@ -8,10 +9,18 @@ interface MatchCardProps {
   priority?: boolean;
 }
 
+interface MatchCardState {
+  showGoalPopup: boolean;
+  isModalOpen: boolean;
+  isHovered: boolean;
+}
+
 export function MatchCard({ game, priority = false }: MatchCardProps) {
-  const [showGoalPopup, setShowGoalPopup] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
+  const [state, setState] = useState<MatchCardState>({
+    showGoalPopup: false,
+    isModalOpen: false,
+    isHovered: false,
+  });
 
   const isLive = game.statusGroup === 3;
   const isFinished = game.statusGroup === 4;
@@ -22,8 +31,8 @@ export function MatchCard({ game, priority = false }: MatchCardProps) {
 
   useEffect(() => {
     if (isLive && currentTotalScore > prevScoreRef.current) {
-      setShowGoalPopup(true);
-      const timer = setTimeout(() => setShowGoalPopup(false), 8000);
+      setState((prev) => ({ ...prev, showGoalPopup: true }));
+      const timer = setTimeout(() => setState((prev) => ({ ...prev, showGoalPopup: false })), 8000);
       return () => clearTimeout(timer);
     }
     prevScoreRef.current = currentTotalScore;
@@ -33,10 +42,24 @@ export function MatchCard({ game, priority = false }: MatchCardProps) {
   const homeWinning = game.homeCompetitor.score > game.awayCompetitor.score;
   const awayWinning = game.awayCompetitor.score > game.homeCompetitor.score;
 
+  const { showGoalPopup, isModalOpen } = state;
+
+  const handleOpenModal = () => setState((prev) => ({ ...prev, isModalOpen: true }));
+  const handleCloseModal = () => setState((prev) => ({ ...prev, isModalOpen: false }));
+  const handleDismissGoal = () => setState((prev) => ({ ...prev, showGoalPopup: false }));
+
   return (
     <>
       <div
-        onClick={() => setIsModalOpen(true)}
+        onClick={handleOpenModal}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleOpenModal();
+          }
+        }}
+        role="button"
+        tabIndex={0}
         className={`group relative flex w-[340px] shrink-0 cursor-pointer snap-start flex-col overflow-hidden rounded-3xl border transition-all duration-500 ${
           showGoalPopup
             ? 'z-50 scale-[1.02] border-primary shadow-[0_0_40px_rgba(var(--primary),0.3)]'
@@ -46,7 +69,7 @@ export function MatchCard({ game, priority = false }: MatchCardProps) {
         }`}
       >
         {/* --- GOAL POPUP OVERLAY --- */}
-        {showGoalPopup && <GoalPopup game={game} onDismiss={() => setShowGoalPopup(false)} />}
+        {showGoalPopup && <GoalPopup game={game} onDismiss={handleDismissGoal} />}
 
         {/* Main Content */}
         <div className="flex-1 p-6">
@@ -87,12 +110,14 @@ export function MatchCard({ game, priority = false }: MatchCardProps) {
                 isFinished &&
                 team.score > (idx === 0 ? game.awayCompetitor.score : game.homeCompetitor.score);
               return (
-                <div key={idx} className="flex items-center justify-between">
+                <div key={team.id} className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className={`rounded-sm p-1.5 ${isLive ? 'bg-white/10' : 'bg-white/5'}`}>
-                      <img
+                      <Image
                         src={`https://imagecache.365scores.com/image/upload/f_auto,w_48/competitors/${team.id}`}
-                        className="h-7 w-7"
+                        width={28}
+                        height={28}
+                        className="h-7 w-7 object-contain"
                         alt=""
                       />
                     </div>
@@ -127,7 +152,7 @@ export function MatchCard({ game, priority = false }: MatchCardProps) {
           </div>
         )}
       </div>
-      {isModalOpen && <MatchCenter gameId={game.id} onClose={() => setIsModalOpen(false)} />}
+      {isModalOpen && <MatchCenter gameId={game.id} onClose={handleCloseModal} />}
     </>
   );
 }

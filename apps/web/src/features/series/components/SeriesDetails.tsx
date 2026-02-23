@@ -3,7 +3,7 @@
 import { Calendar, Play, Star, Tag, Tv } from 'lucide-react';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
-import { useMemo, useRef, useState } from 'react';
+import { Suspense, useMemo, useRef, useState } from 'react';
 
 import { CastSection } from '@/shared/components/common/CastSection';
 import { EpisodesSection } from '@/shared/components/common/EpisodesSection';
@@ -19,7 +19,7 @@ type SeriesDetailsProps = Omit<ItemsDetailsProps, 'container_extension'> & {
   episodes: NonNullable<ItemsDetailsProps['episodes']>;
 };
 
-export default function SeriesDetails({
+function SeriesDetailsContent({
   description,
   image,
   name,
@@ -89,6 +89,7 @@ export default function SeriesDetails({
           src={backdrop}
           alt={name}
           fill
+          sizes="100vw"
           className="object-cover opacity-50 blur-[1px]"
           priority
           onError={() => setImgError(true)}
@@ -109,7 +110,7 @@ export default function SeriesDetails({
               alt={name}
               fill
               className="object-cover"
-              sizes="(max-width: 1024px) 320px, 360px"
+              sizes="(max-width: 1024px) 280px, 320px"
               onError={(e) => { e.currentTarget.src = '/icon.png'; }}
             />
             <div className="absolute inset-0 ring-1 ring-inset ring-white/10" />
@@ -207,6 +208,14 @@ export default function SeriesDetails({
       <TrailerModal isOpen={!!trailer} onClose={handleCloseTrailer} trailerId={trailer} />
 
     </div>
+  );
+}
+
+export default function SeriesDetails(props: SeriesDetailsProps) {
+  return (
+    <Suspense fallback={<div className="flex h-screen w-full items-center justify-center"><div className="h-10 w-10 animate-spin rounded-full border-4 border-white/10 border-t-green-500" /></div>}>
+      <SeriesDetailsContent {...props} />
+    </Suspense>
   );
 }
 

@@ -111,6 +111,7 @@ export const HeaderSection: FC<HeaderSectionProps> = ({
                 src={poster || 'https://via.placeholder.com/300x450?text=No+Poster'}
                 alt={name}
                 fill
+                sizes="(max-width: 1024px) 100vw, 25vw"
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
               />
             </div>

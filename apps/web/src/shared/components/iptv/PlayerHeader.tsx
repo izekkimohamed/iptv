@@ -33,6 +33,7 @@ export default function PlayerHeader(props: PlayerHeaderProps) {
        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-sm  border-white/5 bg-white/5">
           <Image
             fill
+            sizes="56px"
             className="object-contain p-2 transition-transform duration-500 group-hover:scale-110"
             src={displayIcon}
             alt={displayTitle}

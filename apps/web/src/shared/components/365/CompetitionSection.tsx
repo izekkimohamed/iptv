@@ -1,5 +1,6 @@
 import { Game } from '@/trpc/types';
 import { ChevronRight, Trophy, X } from 'lucide-react';
+import Image from 'next/image';
 import { useState } from 'react';
 import { MatchCard } from './MatchCard';
 
@@ -33,9 +34,11 @@ export function CompetitionSection({
               <div className="absolute -inset-2 rounded-sm bg-linear-to-br from-white/10 to-transparent opacity-0 blur-xl transition-all duration-300 group-hover:opacity-100" />
               {!imageError ? (
                 <div className="relative flex h-10 w-10 items-center justify-center rounded-sm bg-linear-to-br from-white/10 to-white/5 p-2 shadow-lg backdrop-blur-sm">
-                  <img
+                  <Image
                     src={`https://imagecache.365scores.com/image/upload/f_auto,w_48/competitions/${competitionId}`}
                     alt={competitionName}
+                    width={40}
+                    height={40}
                     className="relative h-full w-full object-contain transition-transform duration-300 group-hover:scale-110"
                     onError={() => setImageError(true)}
                   />
@@ -98,6 +101,15 @@ export function CompetitionSection({
           <div
             className="animate-in fade-in absolute inset-0 bg-black/15 backdrop-blur-xl duration-300"
             onClick={() => setIsModalOpen(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setIsModalOpen(false);
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            aria-label="Close modal"
           />
 
           {/* Modal Content */}
@@ -107,9 +119,11 @@ export function CompetitionSection({
               <div className="flex items-center gap-4">
                 {!imageError ? (
                   <div className="flex h-12 w-12 items-center justify-center rounded-sm bg-linear-to-br from-white/10 to-white/5 p-2">
-                    <img
+                    <Image
                       src={`https://imagecache.365scores.com/image/upload/f_auto,w_48/competitions/${competitionId}`}
                       alt={competitionName}
+                      width={48}
+                      height={48}
                       className="h-full w-full object-contain"
                       onError={() => setImageError(true)}
                     />

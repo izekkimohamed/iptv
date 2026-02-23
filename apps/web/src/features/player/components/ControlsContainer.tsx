@@ -54,6 +54,15 @@ export const ControlsContainer = memo(function ControlsContainer(props: Controls
       }}
       onClick={handleSingleClick}
       onDoubleClick={handleDoubleClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleSingleClick(e as unknown as React.MouseEvent);
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label="Video controls"
     >
       <TopBar
         title={title}

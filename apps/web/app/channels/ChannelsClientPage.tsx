@@ -1,6 +1,6 @@
 'use client';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo } from 'react';
+import { Suspense, useEffect, useMemo } from 'react';
 
 import { Tv } from 'lucide-react';
 
@@ -11,8 +11,9 @@ import EmptyState from '@/shared/components/ui/EmptyState';
 import VideoPlayer from '@/features/player/components/VideoPlayer';
 import { trpc } from '@/shared/lib/trpc';
 import { usePlayerStore, usePlaylistStore } from '@repo/store';
+import LoadingSpinner from '@/shared/components/ui/LoadingSpinner';
 
-export default function ChannelsContent() {
+function ChannelsContentInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -139,5 +140,13 @@ export default function ChannelsContent() {
         )}
       </div>
     </>
+  );
+}
+
+export default function ChannelsContent() {
+  return (
+    <Suspense fallback={<div className="flex h-full items-center justify-center"><LoadingSpinner /></div>}>
+      <ChannelsContentInner />
+    </Suspense>
   );
 }

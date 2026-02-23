@@ -216,6 +216,17 @@ export function CustomControls({
           onMouseMove={handleProgressHover}
           onMouseLeave={() => setHoverTime(0)}
           onClick={handleProgressClick}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+            }
+          }}
+          role="slider"
+          tabIndex={0}
+          aria-label="Seek"
+          aria-valuemin={0}
+          aria-valuemax={safeDuration || 100}
+          aria-valuenow={displayTime || 0}
         >
           {/* Buffered */}
           <div
@@ -308,6 +319,17 @@ export function CustomControls({
               onMouseDown={() => setIsDraggingVolume(true)}
               onMouseMove={handleVolumeMouseMove}
               onClick={handleVolumeInteract}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                }
+              }}
+              role="slider"
+              tabIndex={0}
+              aria-label="Volume"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={isMuted ? 0 : Math.round(volume * 100)}
             >
               <div
                 className="absolute top-0 left-0 h-full rounded-full bg-primary"
@@ -360,6 +382,14 @@ export function CustomControls({
               <div
                 className="animate-in slide-in-from-bottom-2 fade-in absolute right-0 bottom-full z-50 mb-4 w-80 rounded-sm border border-white/10 bg-black/95 p-4 shadow-2xl backdrop-blur-md"
                 onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label="Keyboard shortcuts"
               >
                 <div className="mb-3 flex items-center justify-between border-b border-white/10 pb-2">
                   <span className="text-sm font-bold text-white">Keyboard Shortcuts</span>
@@ -413,6 +443,14 @@ export function CustomControls({
               <div
                 className="animate-in slide-in-from-bottom-2 fade-in absolute right-0 bottom-full z-50 mb-4 w-64 rounded-sm border border-white/10 bg-black/95 p-4 shadow-2xl backdrop-blur-md"
                 onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label="Settings"
               >
                 <div className="mb-3 flex items-center justify-between border-b border-white/10 pb-2">
                   <span className="text-sm font-bold text-white">Settings</span>

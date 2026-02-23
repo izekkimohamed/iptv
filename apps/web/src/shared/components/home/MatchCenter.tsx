@@ -1,5 +1,6 @@
 'use client';
 import useSWR from 'swr';
+import Image from 'next/image';
 
 // Import your types here if they are in a separate file
 import { Game } from '@/trpc/types';
@@ -24,6 +25,15 @@ export default function MatchCenter({ gameId, onClose }: { gameId: number; onClo
       <div
         className="animate-in fade-in absolute inset-0 bg-black/90 backdrop-blur-xl"
         onClick={onClose}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onClose();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label="Close match center"
       />
 
       <div className="relative flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-[40px] border border-white/10 bg-[#0c0c0c] shadow-2xl">
@@ -37,10 +47,12 @@ export default function MatchCenter({ gameId, onClose }: { gameId: number; onClo
             <div className="border-b border-white/5 bg-white/[0.02] p-8">
               <div className="flex items-center justify-between">
                 <div className="flex-1 text-center">
-                  <img
+                  <Image
                     src={`https://imagecache.365scores.com/image/upload/f_auto,w_80/competitors/${game.homeCompetitor.id}`}
                     alt={game.homeCompetitor.name}
-                    className="mx-auto mb-3 h-16 w-16"
+                    width={64}
+                    height={64}
+                    className="mx-auto mb-3 h-16 w-16 object-contain"
                   />
                   <div className="text-sm font-black text-white uppercase">
                     {game.homeCompetitor.name}
@@ -57,10 +69,12 @@ export default function MatchCenter({ gameId, onClose }: { gameId: number; onClo
                 </div>
 
                 <div className="flex-1 text-center">
-                  <img
+                  <Image
                     src={`https://imagecache.365scores.com/image/upload/f_auto,w_80/competitors/${game.awayCompetitor.id}`}
                     alt={game.awayCompetitor.name}
-                    className="mx-auto mb-3 h-16 w-16"
+                    width={64}
+                    height={64}
+                    className="mx-auto mb-3 h-16 w-16 object-contain"
                   />
                   <div className="text-sm font-black text-white uppercase">
                     {game.awayCompetitor.name}
@@ -86,7 +100,7 @@ export default function MatchCenter({ gameId, onClose }: { gameId: number; onClo
 
                       return (
                         <div
-                          key={i}
+                          key={event.id}
                           className={`flex items-center gap-4 ${isHome ? 'flex-row' : 'flex-row-reverse'}`}
                         >
                           <div className="w-10 text-[10px] font-black text-white/20">
@@ -121,7 +135,7 @@ export default function MatchCenter({ gameId, onClose }: { gameId: number; onClo
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
                     {[game.homeCompetitor, game.awayCompetitor].map((comp, idx) => (
-                      <div key={idx} className="space-y-2">
+                      <div key={comp.id} className="space-y-2">
                         <div className="mb-3 text-[9px] font-bold text-white/40 uppercase">
                           {comp.name} Formation: {comp.lineups?.formation}
                         </div>

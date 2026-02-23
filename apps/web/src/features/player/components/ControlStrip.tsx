@@ -9,7 +9,7 @@ import {
     SkipBack,
     SkipForward,
 } from 'lucide-react';
-import React, { memo } from 'react';
+import React, { memo, useCallback } from 'react';
 
 import { AspectRatio } from '../hooks/useVideoState';
 import ProgressBar from './ProgressBar';
@@ -143,6 +143,10 @@ export const ControlStrip = memo(function ControlStrip({
   changeRate,
   toggleFullscreen,
 }: ControlStripProps) {
+  const handleBackward5 = useCallback(() => backward(5), [backward]);
+  const handleForward5 = useCallback(() => forward(5), [forward]);
+  const handleToggleSettings = useCallback(() => setShowSettings((s) => !s), [setShowSettings]);
+
   return (
     <div
       style={{
@@ -151,6 +155,14 @@ export const ControlStrip = memo(function ControlStrip({
         pointerEvents: showControls ? 'auto' : 'none', padding: '60px 0 0',
       }}
       onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label="Control strip"
     >
       <div className="flex items-center justify-center gap-1">
         <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, fontFamily: 'monospace', marginLeft: 8, letterSpacing: 1, whiteSpace: 'nowrap' }}>
@@ -169,13 +181,13 @@ export const ControlStrip = memo(function ControlStrip({
         </ControlBtn>
         <ControlBtn onClick={handlePlayNext} disabled={!hasNext} title="Next (N)"><SkipForward size={18} /></ControlBtn>
 
-        <ControlBtn onClick={() => backward(5)} title="Rewind 5s (←)">
+        <ControlBtn onClick={handleBackward5} title="Rewind 5s (←)">
           <div className="relative flex items-center justify-center">
              <RotateCcw size={20} />
              <span className="absolute text-[8px] font-bold" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)', marginTop: '1px' }}>5</span>
           </div>
         </ControlBtn>
-        <ControlBtn onClick={() => forward(5)} title="Forward 5s (→)">
+        <ControlBtn onClick={handleForward5} title="Forward 5s (→)">
           <div className="relative flex items-center justify-center">
              <RotateCw size={20} />
              <span className="absolute text-[8px] font-bold" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)', marginTop: '1px' }}>5</span>
@@ -196,11 +208,11 @@ export const ControlStrip = memo(function ControlStrip({
         </button>
 
         <div style={{ position: 'relative' }}>
-          <ControlBtn onClick={() => setShowSettings((s) => !s)} title="Settings" active={showSettings}>
+          <ControlBtn onClick={handleToggleSettings} title="Settings" active={showSettings}>
             <Settings size={16} />
           </ControlBtn>
           {showSettings && (
-            <div style={{ position: 'absolute', bottom: 'calc(100% + 8px)', right: 0, background: 'rgba(18,18,18,0.97)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: 16, width: 200, zIndex: 100 }}>
+            <div style={{ position: 'absolute', bottom: 'calc(100% + 8px)', right: 0, background: 'rgba(18,18,18,0.97)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: 16, width: 200, zIndex: 100 }}>
               <SettingsSection label="Speed (+/−)" options={RATES.map(String)} selected={String(playbackRate)} onSelect={(v) => changeRate(parseFloat(v))} />
             </div>
           )}

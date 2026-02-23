@@ -113,7 +113,7 @@ export function EventTimeline({ match }: EventTimelineProps) {
           {/* Vertical Timeline Line */}
           <div className="absolute top-0 bottom-0 left-1/2 w-px -translate-x-1/2 bg-linear-to-b from-white/20 via-white/10 to-transparent" />
 
-          {filteredEvents.map((event: any, i: number) => {
+          {filteredEvents.map((event: any) => {
             const isHome = event.competitorId === match.homeCompetitor.id;
             const eventName = event.eventType?.name || 'Event';
 
@@ -134,7 +134,7 @@ export function EventTimeline({ match }: EventTimelineProps) {
 
             return (
               <div
-                key={i}
+                key={event.id}
                 className={`animate-in fade-in slide-in-from-bottom relative flex items-center duration-500`}
                 style={{ animationDelay: `${i * 100}ms` }}
               >

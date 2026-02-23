@@ -1,9 +1,36 @@
 import { Clock, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import Image from 'next/image';
+import { useSyncExternalStore } from 'react';
 import useSWR from 'swr';
 import { EventTimeline } from './Events';
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
+// SSR-safe visibility store
+const createVisibilityStore = () => {
+  let isVisible = false;
+  const listeners = new Set<() => void>();
+
+  const setVisible = (value: boolean) => {
+    isVisible = value;
+    listeners.forEach((listener) => listener());
+  };
+
+  return {
+    subscribe: (listener: () => void) => {
+      listeners.add(listener);
+      // Delay visibility to next tick for animation
+      if (!isVisible && typeof window !== 'undefined') {
+        setTimeout(() => setVisible(true), 50);
+      }
+      return () => listeners.delete(listener);
+    },
+    getSnapshot: () => isVisible,
+    getServerSnapshot: () => false,
+  };
+};
+
+const visibilityStore = createVisibilityStore();
 
 interface MatchCenterProps {
   gameId: number;
@@ -11,7 +38,11 @@ interface MatchCenterProps {
 }
 
 export function MatchCenter({ gameId, onClose }: MatchCenterProps) {
-  const [isVisible, setIsVisible] = useState(false);
+  const isVisible = useSyncExternalStore(
+    visibilityStore.subscribe,
+    visibilityStore.getSnapshot,
+    visibilityStore.getServerSnapshot,
+  );
 
   const {
     data: match,
@@ -22,10 +53,6 @@ export function MatchCenter({ gameId, onClose }: MatchCenterProps) {
     fetcher,
     { refreshInterval: 30000 },
   );
-
-  useEffect(() => {
-    setTimeout(() => setIsVisible(true), 50);
-  }, []);
 
   const handleClose = () => {
     setIsVisible(false);
@@ -56,6 +83,15 @@ export function MatchCenter({ gameId, onClose }: MatchCenterProps) {
       <div
         className="fixed inset-0 z-100 flex items-center justify-center bg-black/90 p-4"
         onClick={handleClose}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleClose();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label="Close error dialog"
       >
         <div className="animate-in zoom-in max-w-md rounded-3xl border border-red-500/50 bg-[#0f0f0f] p-8 text-center shadow-2xl duration-300">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-500/20">
@@ -82,6 +118,15 @@ export function MatchCenter({ gameId, onClose }: MatchCenterProps) {
           isVisible ? 'opacity-100' : 'opacity-0'
         }`}
         onClick={handleClose}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleClose();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label="Close match center"
       />
 
       {/* 3. THE MODAL: Strictly 70% height and centered */}
@@ -123,9 +168,11 @@ export function MatchCenter({ gameId, onClose }: MatchCenterProps) {
               {/* Scoreline */}
               <div className="flex items-center justify-center gap-10">
                 <div className="flex flex-1 flex-col items-center">
-                  <img
+                  <Image
                     src={`https://imagecache.365scores.com/image/upload/f_auto,w_80/competitors/${match.homeCompetitor.id}`}
-                    className="mb-3 h-16 w-16"
+                    width={64}
+                    height={64}
+                    className="mb-3 h-16 w-16 object-contain"
                     alt="home"
                   />
                   <span className="text-sm font-bold text-white">{match.homeCompetitor.name}</span>
@@ -147,9 +194,11 @@ export function MatchCenter({ gameId, onClose }: MatchCenterProps) {
                 </div>
 
                 <div className="flex flex-1 flex-col items-center">
-                  <img
+                  <Image
                     src={`https://imagecache.365scores.com/image/upload/f_auto,w_80/competitors/${match.awayCompetitor.id}`}
-                    className="mb-3 h-16 w-16"
+                    width={64}
+                    height={64}
+                    className="mb-3 h-16 w-16 object-contain"
                     alt="away"
                   />
                   <span className="text-sm font-bold text-white">{match.awayCompetitor.name}</span>

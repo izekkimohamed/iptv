@@ -1,7 +1,7 @@
 import { ChevronRight, Flame, Folder, Search, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
 
 import { useAutoScrollToSelected } from '@/shared/hooks/useAutoScrollToSelected';
 import { Category } from '@/shared/lib/types';
@@ -17,7 +17,7 @@ interface CategoriesSidebarProps {
   categoryType: 'movies' | 'channels' | 'series';
 }
 
-export default function CategoriesSidebar({ categories, isLoading, selectedCategoryId, categoryType }: CategoriesSidebarProps) {
+function CategoriesSidebarContent({ categories, isLoading, selectedCategoryId, categoryType }: CategoriesSidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const isNew = searchParams.get('new') === 'true';
@@ -158,6 +158,14 @@ export default function CategoriesSidebar({ categories, isLoading, selectedCateg
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CategoriesSidebar(props: CategoriesSidebarProps) {
+  return (
+    <Suspense fallback={<div className="flex h-full w-96 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-t-2 border-primary" /></div>}>
+      <CategoriesSidebarContent {...props} />
+    </Suspense>
   );
 }
 

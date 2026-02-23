@@ -66,6 +66,7 @@ function HomeLanding() {
                     <Image
                       className="h-full w-full object-contain p-4 transition-transform duration-500 group-hover:scale-110"
                       fill
+                      sizes="(max-width: 640px) 128px, 160px"
                       src={channel.streamIcon || '/icon.png'}
                       alt={channel.name}
                       onError={(e) => {
@@ -126,6 +127,7 @@ function HomeLanding() {
                           <Image
                             className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                             fill
+                            sizes="(max-width: 1024px) 256px, 288px"
                             src={item.poster || '/icon.png'}
                             alt={item.title || 'Untitled'}
                           />
@@ -210,6 +212,7 @@ function HomeLanding() {
                           <Image
                             className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                             fill
+                            sizes="(max-width: 1024px) 256px, 288px"
                             src={s.poster || '/icon.png'}
                             alt={s.title || 'Untitled'}
                           />
@@ -293,6 +296,7 @@ function HomeLanding() {
                     <Image
                       className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                       fill
+                      sizes="(max-width: 1024px) 192px, 224px"
                       src={movie.backdropUrl || '/icon.png'}
                       alt={movie.title}
                     />
@@ -346,6 +350,7 @@ function HomeLanding() {
                     <Image
                       className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                       fill
+                      sizes="(max-width: 1024px) 192px, 224px"
                       src={s.backdropUrl || '/icon.png'}
                       alt={s.name}
                     />

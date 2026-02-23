@@ -99,7 +99,7 @@ export default function LiveScores() {
         <div className="mx-auto max-w-6xl space-y-6">
           {[1, 2, 3].map((i) => (
             <div
-              key={i}
+              key={`skeleton-${i}`}
               className="animate-pulse rounded-3xl bg-linear-to-br from-white/5 to-white/2 p-6"
               style={{ animationDelay: `${i * 100}ms` }}
             >

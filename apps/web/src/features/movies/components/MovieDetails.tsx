@@ -3,7 +3,7 @@
 import { Calendar, Clock, Play, Star, Tag } from 'lucide-react';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 
 import { CastSection } from '@/shared/components/common/CastSection';
 import { TrailerModal } from '@/shared/components/common/TrailerModels';
@@ -23,7 +23,7 @@ interface MovieDetailsProps {
   tmdb?: any;
 }
 
-export default function MovieDetails({
+function MovieDetailsContent({
   image,
   rating,
   description,
@@ -66,6 +66,7 @@ export default function MovieDetails({
           src={backdrop}
           alt={name}
           fill
+          sizes="100vw"
           className="object-cover opacity-50 blur-[1px]"
           priority
           onError={() => setImgError(true)}
@@ -183,5 +184,13 @@ export default function MovieDetails({
 
       <TrailerModal isOpen={!!trailer} onClose={handleCloseTrailer} trailerId={trailer} />
     </div>
+  );
+}
+
+export default function MovieDetails(props: MovieDetailsProps) {
+  return (
+    <Suspense fallback={<div className="flex h-screen w-full items-center justify-center"><div className="h-10 w-10 animate-spin rounded-full border-4 border-white/10 border-t-green-500" /></div>}>
+      <MovieDetailsContent {...props} />
+    </Suspense>
   );
 }

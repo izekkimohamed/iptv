@@ -40,12 +40,13 @@ const PlaylistForm = ({
 
       <CardContent className="space-y-5 pt-6">
         <div className="space-y-2">
-          <label className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
+          <label htmlFor="url" className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
             Host URL
           </label>
           <div className="group relative">
             <Globe className="absolute top-3 left-3 h-4 w-4 text-neutral-500 transition-colors group-focus-within:text-primary" />
             <input
+              id="url"
               type="url"
               placeholder="http://provider.com:8080"
               value={formData.url}
@@ -71,12 +72,13 @@ const PlaylistForm = ({
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
+            <label htmlFor="username" className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
               Username
             </label>
             <div className="group relative">
               <User className="absolute top-3 left-3 h-4 w-4 text-neutral-500 transition-colors group-focus-within:text-primary" />
               <input
+                id="username"
                 className="w-full rounded-sm border border-white/10 py-2.5 pr-4 pl-10 text-sm text-white transition-all focus:border-primary/50 focus:ring-1 focus:ring-primary/50 focus:outline-none"
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
@@ -85,12 +87,13 @@ const PlaylistForm = ({
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
+            <label htmlFor="password" className="text-xs font-medium tracking-wider text-neutral-400 uppercase">
               Password
             </label>
             <div className="group relative">
               <Key className="absolute top-3 left-3 h-4 w-4 text-neutral-500 transition-colors group-focus-within:text-primary" />
               <input
+                id="password"
                 type={'text'}
                 className="w-full rounded-sm border border-white/10 py-2.5 pr-10 pl-10 text-sm text-white transition-all focus:border-primary/50 focus:ring-1 focus:ring-primary/50 focus:outline-none"
                 value={formData.password}

@@ -42,6 +42,17 @@ export default function VolumeControl({
         ref={volumeBarRef}
         onClick={handleVolumeClick}
         onPointerDown={startVolumeDrag}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+          }
+        }}
+        role="slider"
+        tabIndex={0}
+        aria-label="Volume"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(displayVolume * 100)}
         style={{
           width: 80,
           height: 4,

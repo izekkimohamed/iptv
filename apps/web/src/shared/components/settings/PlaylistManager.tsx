@@ -88,6 +88,14 @@ const PlaylistManager = ({
             <div
               key={p.id}
               onClick={() => selectPlaylist(p)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  selectPlaylist(p);
+                }
+              }}
+              role="button"
+              tabIndex={0}
               className={cn(
                 'group relative flex cursor-pointer items-center justify-between rounded-sm border p-4 transition-all duration-300',
                 isActive

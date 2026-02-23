@@ -1,7 +1,62 @@
 'use client';
 
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+interface VirtualRowProps<T> {
+  items: T[];
+  start: number;
+  end: number;
+  renderItem: (item: T, index: number) => React.ReactNode;
+  itemKey?: (item: T, index: number) => string | number;
+  columnCount: number;
+  gapClassName: string;
+  virtualStart: number;
+  measureElement: (element: HTMLElement | null) => void;
+  virtualKey: string;
+  virtualIndex: number;
+}
+
+const VirtualRow = memo(function VirtualRow<T>({
+  items,
+  start,
+  end,
+  renderItem,
+  itemKey,
+  columnCount,
+  gapClassName,
+  virtualStart,
+  measureElement,
+  virtualKey,
+  virtualIndex,
+}: VirtualRowProps<T>) {
+  const rowItems = items.slice(start, end);
+
+  return (
+    <div
+      key={virtualKey}
+      data-index={virtualIndex}
+      ref={measureElement}
+      className={`grid ${gapClassName}`}
+      style={{
+        display: 'grid',
+        gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        transform: `translateY(${virtualStart}px)`,
+        paddingBottom: '12px',
+      }}
+    >
+      {rowItems.map((item, i) => {
+        const itemIndex = start + i;
+        const key = itemKey ? itemKey(item, itemIndex) : itemIndex;
+        return <div key={key}>{renderItem(item, itemIndex)}</div>;
+      })}
+    </div>
+  );
+}) as <T>(props: VirtualRowProps<T>) => React.ReactElement;
 
 type VirtualGridProps<T> = {
   items: T[];
@@ -89,32 +144,22 @@ export default function VirtualGrid<T>({
       >
         {virtualItems.map((virtualRow) => {
           const { start, end } = rows[virtualRow.index] || { start: 0, end: 0 };
-          const rowItems = items.slice(start, end);
 
           return (
-            <div
+            <VirtualRow
               key={virtualRow.key}
-              data-index={virtualRow.index} // 1. Important: Index for the measurer
-              ref={virtualizer.measureElement} // 2. Critical Fix: Allows dynamic height measurement
-              className={`grid ${gapClassName}`}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                transform: `translateY(${virtualRow.start}px)`,
-                // Add padding bottom to simulate vertical gap since we are absolute positioning
-                paddingBottom: '12px',
-              }}
-            >
-              {rowItems.map((item, i) => {
-                const itemIndex = start + i;
-                const key = itemKey ? itemKey(item, itemIndex) : itemIndex;
-                return <div key={key}>{renderItem(item, itemIndex)}</div>;
-              })}
-            </div>
+              items={items}
+              start={start}
+              end={end}
+              renderItem={renderItem}
+              itemKey={itemKey}
+              columnCount={columnCount}
+              gapClassName={gapClassName}
+              virtualStart={virtualRow.start}
+              measureElement={virtualizer.measureElement}
+              virtualKey={virtualRow.key}
+              virtualIndex={virtualRow.index}
+            />
           );
         })}
       </div>

@@ -21,6 +21,14 @@ export default function TopBar({
         pointerEvents: showControls ? 'auto' : 'none',
       }}
       onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label="Top bar"
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         {title && (

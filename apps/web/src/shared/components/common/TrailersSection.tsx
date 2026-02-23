@@ -23,6 +23,14 @@ export const TrailersSection: FC<TrailersSectionProps> = ({ videos, onTrailerCli
           <div
             key={video.id}
             onClick={() => onTrailerClick(video.key)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onTrailerClick(video.key);
+              }
+            }}
+            role="button"
+            tabIndex={0}
             className="group relative cursor-pointer overflow-hidden rounded-sm border border-white/10 bg-white/5 transition-all duration-500 hover:scale-[1.02] hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10"
           >
             {/* Thumbnail */}
@@ -31,6 +39,7 @@ export const TrailersSection: FC<TrailersSectionProps> = ({ videos, onTrailerCli
                 src={`https://img.youtube.com/vi/${video.key}/maxresdefault.jpg`}
                 alt={video.name}
                 fill
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                 className="object-cover opacity-60 transition-all duration-500 group-hover:scale-110 group-hover:opacity-100"
               />
               <div className="absolute inset-0 flex items-center justify-center bg-black/20 transition-all duration-500 group-hover:bg-primary/20">

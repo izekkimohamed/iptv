@@ -10,7 +10,19 @@ export const TrailerModal: FC<TrailerModalProps> = ({ isOpen, onClose, trailerId
 
   return (
      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 lg:p-8">
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/80 backdrop-blur-md"
+        onClick={onClose}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onClose();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label="Close trailer"
+      />
       <div className="relative z-50 w-full max-w-5xl overflow-hidden rounded-sm border border-white/10 shadow-2xl">
         <div className="flex justify-end bg-black/80 p-2 backdrop-blur-md">
           <Button

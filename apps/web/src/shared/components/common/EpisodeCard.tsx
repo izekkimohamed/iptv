@@ -3,7 +3,7 @@
 import { Calendar, CheckCircle2, Clock, Play, Star } from 'lucide-react';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
-import { FC } from 'react';
+import { FC, Suspense } from 'react';
 
 import { Episode } from '@/shared/lib/types';
 import { cn } from '@/shared/lib/utils';
@@ -17,7 +17,7 @@ interface EpisodeCardProps {
   onSelect: (episode: Episode) => void;
 }
 
-export const EpisodeCard: FC<EpisodeCardProps> = ({
+const EpisodeCardContent: FC<EpisodeCardProps> = ({
   episode,
   tmdbPoster,
   fallbackImage,
@@ -44,6 +44,12 @@ export const EpisodeCard: FC<EpisodeCardProps> = ({
   return (
     <div
       onClick={() => onSelect(episode)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect(episode);
+        }
+      }}
       className="group relative cursor-pointer overflow-hidden rounded-sm bg-white/[0.03] transition-all duration-300 hover:bg-white/[0.06] active:scale-[0.98]"
       role="button"
       tabIndex={0}
@@ -138,5 +144,13 @@ export const EpisodeCard: FC<EpisodeCardProps> = ({
         </div>
       </div>
     </div>
+  );
+};
+
+export const EpisodeCard: FC<EpisodeCardProps> = (props) => {
+  return (
+    <Suspense fallback={<div className="relative aspect-video w-full overflow-hidden bg-neutral-900"><div className="flex h-full items-center justify-center"><div className="h-6 w-6 animate-spin rounded-full border-t-2 border-primary" /></div></div>}>
+      <EpisodeCardContent {...props} />
+    </Suspense>
   );
 };

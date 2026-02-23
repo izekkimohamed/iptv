@@ -41,9 +41,9 @@ function Tmdb(props: TmdbProps) {
           Cast
         </h2>
         <div className="flex space-x-4 overflow-x-auto py-3">
-          {data.cast?.map((c, i) => (
+          {data.cast?.map((c) => (
             <div
-              key={i}
+              key={c.id}
               className="group relative flex aspect-square min-w-[150px] cursor-pointer items-center justify-center overflow-hidden rounded-full bg-gray-400 text-center"
             >
               <div className="absolute flex size-full items-center justify-center bg-gradient-to-t from-black/60 to-transparent">
@@ -64,10 +64,10 @@ function Tmdb(props: TmdbProps) {
           Trailers & Clips
         </h2>
         <div className="flex gap-6 space-x-4 overflow-x-auto py-3">
-          {data.videos?.map((t, i) => (
+          {data.videos?.map((t) => (
             <a
               href={`https://www.youtube.com/watch?v=${t.key}&t=0s`}
-              key={i}
+              key={t.key}
               target="_blank"
               title={t.name}
               className="relative aspect-video min-w-[200px] transform overflow-hidden rounded-sm transition-all duration-300 hover:scale-105"

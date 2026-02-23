@@ -14,6 +14,17 @@ const ProgressBar = forwardRef<
       <div
         ref={ref}
         onClick={onClick}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+          }
+        }}
+        role="slider"
+        tabIndex={0}
+        aria-label="Progress"
+        aria-valuemin={0}
+        aria-valuemax={duration || 100}
+        aria-valuenow={currentTime || 0}
         style={{
           height: 4,
           background: 'rgba(255,255,255,0.2)',

@@ -54,6 +54,17 @@ const Controls = ({
               const pos = (e.clientX - rect.left) / rect.width;
               handleSeek(pos * duration);
             }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+              }
+            }}
+            role="slider"
+            tabIndex={0}
+            aria-label="Seek"
+            aria-valuemin={0}
+            aria-valuemax={duration || 100}
+            aria-valuenow={currentTime || 0}
           >
             <div
               className="h-full bg-purple-500 transition-all duration-150"
@@ -122,6 +133,17 @@ const Controls = ({
                 const pos = (e.clientX - rect.left) / rect.width;
                 handleVolumeSliderChange(pos);
               }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                }
+              }}
+              role="slider"
+              tabIndex={0}
+              aria-label="Volume"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round((isMuted ? 0 : volume) * 100)}
             >
               <div
                 className="h-full bg-purple-500"

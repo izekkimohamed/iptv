@@ -2,7 +2,7 @@ import { Search, Star, Tv, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 
 import { Input } from '../ui/input';
 
@@ -19,7 +19,7 @@ interface ChannelsSidebarProps {
   isLoading: boolean;
 }
 
-export default function ChannelsSidebar({ channels, isLoading }: ChannelsSidebarProps) {
+function ChannelsSidebarContent({ channels, isLoading }: ChannelsSidebarProps) {
   const selectedCategoryId = useSearchParams().get('categoryId');
   const selectedChannelId = useSearchParams().get('channelId');
   const listRef = React.useRef<HTMLDivElement | null>(null);
@@ -123,6 +123,7 @@ export default function ChannelsSidebar({ channels, isLoading }: ChannelsSidebar
                   <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-sm border border-white/5 bg-white/5">
                     <Image
                       fill
+                      sizes="56px"
                       className="object-contain p-2 transition-transform duration-500 group-hover:scale-110"
                       src={channel.streamIcon || '/icon.png'}
                       alt={channel.name}
@@ -155,7 +156,7 @@ export default function ChannelsSidebar({ channels, isLoading }: ChannelsSidebar
 
               return newChannels ? (
                 <button
-                  key={index}
+                  key={`new-channel-${channel.id || channel.name || index}`}
                   onClick={() => {
                     setSrc(channel.url);
                     setTitle(channel.name);
@@ -190,6 +191,14 @@ export default function ChannelsSidebar({ channels, isLoading }: ChannelsSidebar
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ChannelsSidebar(props: ChannelsSidebarProps) {
+  return (
+    <Suspense fallback={<div className="flex h-full w-96 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-t-2 border-primary" /></div>}>
+      <ChannelsSidebarContent {...props} />
+    </Suspense>
   );
 }
 

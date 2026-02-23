@@ -55,6 +55,15 @@ export const VideoPlayerModal: FC<EnhancedProps> = ({
       <div
         className="absolute inset-0 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300"
         onClick={onClose}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onClose();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label="Close video player"
       />
       <div className="relative z-[10000] w-full max-w-6xl overflow-hidden rounded-sm border border-white/10 shadow-[0_0_100px_rgba(0,0,0,0.8)] animate-in zoom-in-95 duration-300">
         <div className="absolute top-4 right-4 z-[10001]">

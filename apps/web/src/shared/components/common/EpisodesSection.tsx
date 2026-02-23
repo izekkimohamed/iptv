@@ -1,7 +1,9 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { forwardRef, useEffect, useImperativeHandle, useMemo } from 'react';
+import { forwardRef, Suspense, useEffect, useImperativeHandle, useMemo } from 'react';
+
+import LoadingSpinner from '../ui/LoadingSpinner';
 
 import { useEpisodePlayback, useSeasonSelection, useStreamingUrls } from '@/shared/hooks/useDetails';
 import { EpisodesSectionProps } from '@/shared/lib/types';
@@ -14,7 +16,7 @@ interface EpisodesSectionHandle {
   playEpisode: (episode: any) => void;
 }
 
-export const EpisodesSection = forwardRef<EpisodesSectionHandle, EpisodesSectionProps>(
+const EpisodesSectionInner = forwardRef<EpisodesSectionHandle, EpisodesSectionProps>(
   ({ seasons, episodes, tmdbPoster, fallbackImage, containerExtension, streamId, image }, ref) => {
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -201,5 +203,15 @@ export const EpisodesSection = forwardRef<EpisodesSectionHandle, EpisodesSection
     );
   },
 );
+
+EpisodesSectionInner.displayName = 'EpisodesSectionInner';
+
+export const EpisodesSection = forwardRef<EpisodesSectionHandle, EpisodesSectionProps>((props, ref) => {
+  return (
+    <Suspense fallback={<div className="flex h-40 items-center justify-center"><LoadingSpinner /></div>}>
+      <EpisodesSectionInner {...props} ref={ref} />
+    </Suspense>
+  );
+});
 
 EpisodesSection.displayName = 'EpisodesSection';

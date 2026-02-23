@@ -40,7 +40,7 @@ const SettingsSection = memo(function SettingsSection({
               fontSize: 12,
               cursor: 'pointer',
               fontFamily: 'monospace',
-              transition: 'all 0.15s',
+              transition: 'background 0.15s, border-color 0.15s, color 0.15s',
             }}
           >
             {o}

@@ -81,11 +81,11 @@ function SearchList({ searchQuery }: SearchListProps) {
       const parts = String(text).split(regex);
       return parts.map((part, i) =>
         part.toLowerCase() === q.toLowerCase() ? (
-          <span key={i} className="rounded bg-primary/20 px-1 text-primary">
+          <span key={`highlight-${i}-${part}`} className="rounded bg-primary/20 px-1 text-primary">
             {part}
           </span>
         ) : (
-          <span key={i}>{part}</span>
+          <span key={`text-${i}-${part}`}>{part}</span>
         ),
       );
     } catch {
@@ -171,7 +171,7 @@ function SearchList({ searchQuery }: SearchListProps) {
           {isGlobalSearchLoading && (
             <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {Array.from({ length: 12 }).map((_, i) => (
-                <div key={i} className="space-y-4 animate-pulse">
+                <div key={`highlight-${i}-${part}`} className="space-y-4 animate-pulse">
                   <div className="aspect-[2/3] rounded-sm bg-white/5" />
                   <div className="h-4 w-3/4 rounded-sm bg-white/5" />
                 </div>
@@ -239,6 +239,7 @@ function SearchList({ searchQuery }: SearchListProps) {
                             <Image
                               className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                               fill
+                              sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 16vw"
                               src={type === 'channels' ? (item.streamIcon || '/icon.png') : type === 'movies' ? (item.streamIcon || '/icon.png') : (item.cover || '/icon.png')}
                               alt={item.name}
                               onError={(e) => { e.currentTarget.src = '/icon.png'; }}
@@ -278,6 +279,7 @@ function SearchList({ searchQuery }: SearchListProps) {
                             <Image
                               className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                               fill
+                              sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 16vw"
                               src={type === 'channels' ? (item.streamIcon || '/icon.png') : type === 'movies' ? (item.streamIcon || '/icon.png') : (item.cover || '/icon.png')}
                               alt={item.name}
                               onError={(e) => { e.currentTarget.src = '/icon.png'; }}
