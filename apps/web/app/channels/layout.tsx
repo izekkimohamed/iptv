@@ -2,8 +2,8 @@
 import { useSearchParams } from 'next/navigation';
 import React from 'react';
 
-import CategoriesSidebar from '@/components/common/CategoriesSidebar';
-import { trpc } from '@/lib/trpc';
+import CategoriesSidebar from '@/shared/components/common/CategoriesSidebar';
+import { trpc } from '@/shared/lib/trpc';
 import { usePlaylistStore } from '@repo/store';
 
 export default function Layout({

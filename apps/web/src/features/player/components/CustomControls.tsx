@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'; // Assuming you have a class merger
+import { cn } from '@/shared/lib/utils'; // Assuming you have a class merger
 import {
     Expand,
     Maximize,

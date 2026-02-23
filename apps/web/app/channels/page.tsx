@@ -4,12 +4,12 @@ import { Suspense, useEffect, useMemo } from 'react';
 
 import { Tv } from 'lucide-react';
 
-import ChannelInfoPanel from '@/components/channels/ChannelInfoPanel';
-import ChannelsSidebar from '@/components/channels/ChannelsSidebar';
-import PlayerHeader from '@/components/iptv/PlayerHeader';
-import EmptyState from '@/components/ui/EmptyState';
+import ChannelInfoPanel from '@/shared/components/channels/ChannelInfoPanel';
+import ChannelsSidebar from '@/shared/components/channels/ChannelsSidebar';
+import PlayerHeader from '@/shared/components/iptv/PlayerHeader';
+import EmptyState from '@/shared/components/ui/EmptyState';
 import VideoPlayer from '@/features/player/components/VideoPlayer';
-import { trpc } from '@/lib/trpc';
+import { trpc } from '@/shared/lib/trpc';
 import { usePlayerStore, usePlaylistStore } from '@repo/store';
 import ChannelsContentSkeleton from './Skeleton';
 

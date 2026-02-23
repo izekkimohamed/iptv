@@ -2,10 +2,10 @@
 
 import { debounce, parseAsString, useQueryState } from 'nuqs';
 
-import HomeSearch from '@/components/home/HomeSearch';
-import HomeLanding from '@/components/home/Landing';
-import SearchList from '@/components/home/SearchList';
-import { trpc } from '@/lib/trpc';
+import HomeSearch from '@/shared/components/home/HomeSearch';
+import HomeLanding from '@/shared/components/home/Landing';
+import SearchList from '@/shared/components/home/SearchList';
+import { trpc } from '@/shared/lib/trpc';
 import { usePlaylistStore } from '@repo/store';
 import { useEffect } from 'react';
 

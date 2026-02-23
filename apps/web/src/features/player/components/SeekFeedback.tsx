@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils';
+import { cn } from '@/shared/lib/utils';
 import { Pause, Play, RotateCcw, RotateCw, Volume2, VolumeX } from 'lucide-react';
 
 export type FeedbackAction =

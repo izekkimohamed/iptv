@@ -2,12 +2,12 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 
-import ItemsList from '@/components/iptv/ItemsList';
-import EmptyState from '@/components/ui/EmptyState';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import ItemsList from '@/shared/components/iptv/ItemsList';
+import EmptyState from '@/shared/components/ui/EmptyState';
+import LoadingSpinner from '@/shared/components/ui/LoadingSpinner';
 import MovieDetails from '@/features/movies/components/MovieDetails';
-import { trpc } from '@/lib/trpc';
-import VirtualGrid from '@/src/shared/components/common/VirtualGrid';
+import { trpc } from '@/shared/lib/trpc';
+import VirtualGrid from '@/shared/components/common/VirtualGrid';
 import { usePlaylistStore } from '@repo/store';
 import { Film } from 'lucide-react';
 

@@ -5,13 +5,13 @@ import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { useMemo, useRef, useState } from 'react';
 
-import { CastSection } from '@/components/common/CastSection';
-import { EpisodesSection } from '@/components/common/EpisodesSection';
-import { TrailerModal } from '@/components/common/TrailerModels';
-import { TrailersSection } from '@/components/common/TrailersSection';
-import { Button } from '@/components/ui/button';
-import { useTrailerPlayback } from '@/hooks/useDetails';
-import { ItemsDetailsProps } from '@/lib/types';
+import { CastSection } from '@/shared/components/common/CastSection';
+import { EpisodesSection } from '@/shared/components/common/EpisodesSection';
+import { TrailerModal } from '@/shared/components/common/TrailerModels';
+import { TrailersSection } from '@/shared/components/common/TrailersSection';
+import { Button } from '@/shared/components/ui/button';
+import { useTrailerPlayback } from '@/shared/hooks/useDetails';
+import { ItemsDetailsProps } from '@/shared/lib/types';
 import { usePlaylistStore, useWatchedSeriesStore } from '@repo/store';
 
 type SeriesDetailsProps = Omit<ItemsDetailsProps, 'container_extension'> & {

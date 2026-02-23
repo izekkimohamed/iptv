@@ -2,9 +2,9 @@ import { X } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@/shared/components/ui/button';
 import VideoPlayer from '@/features/player/components/VideoPlayer';
-import { VideoPlayerModalProps } from '@/lib/types';
+import { VideoPlayerModalProps } from '@/shared/lib/types';
 
 type EnhancedProps = VideoPlayerModalProps & {
   totalEpisodes: number;
@@ -76,9 +76,9 @@ export const VideoPlayerModal: FC<EnhancedProps> = ({
             episodeNumber={episodeNumber}
             seasonId={seasonId}
             totalEpisodes={totalEpisodes}
-            categoryId={categoryId}
-            serieId={serieId}
-            movieId={movieId}
+            categoryId={categoryId ?? undefined}
+            serieId={serieId ?? undefined}
+            movieId={movieId ?? undefined}
             playNext={onNextEpisode}
             playPrev={onPrevEpisode}
             hasNext={hasNext}

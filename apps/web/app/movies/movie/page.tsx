@@ -6,14 +6,14 @@ import { useSearchParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
 
 
-import { CastSection } from '@/components/common/CastSection';
-import { DetailSkeleton } from '@/components/common/DetailSkeleton';
-import { HeaderSection } from '@/components/common/HeaderSection';
-import { TrailerModal } from '@/components/common/TrailerModels';
-import { TrailersSection } from '@/components/common/TrailersSection';
-import { Button } from '@/components/ui/button';
-import { trpc } from '@/lib/trpc';
-import { VideoPlayerModal } from '@/src/shared/components/common/VideoPlayerModal';
+import { CastSection } from '@/shared/components/common/CastSection';
+import { DetailSkeleton } from '@/shared/components/common/DetailSkeleton';
+import { HeaderSection } from '@/shared/components/common/HeaderSection';
+import { TrailerModal } from '@/shared/components/common/TrailerModels';
+import { TrailersSection } from '@/shared/components/common/TrailersSection';
+import { Button } from '@/shared/components/ui/button';
+import { trpc } from '@/shared/lib/trpc';
+import { VideoPlayerModal } from '@/shared/components/common/VideoPlayerModal';
 import { usePlaylistStore } from '@repo/store';
 import Image from 'next/image';
 

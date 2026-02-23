@@ -1,9 +1,9 @@
 'use client';
 
-import InstallationOverlay from '@/components/settings/InstallationOverlay';
-import PlaylistForm from '@/components/settings/PlaylistForm';
-import PlaylistManager from '@/components/settings/PlaylistManager';
-import { trpc } from '@/lib/trpc';
+import InstallationOverlay from '@/shared/components/settings/InstallationOverlay';
+import PlaylistForm from '@/shared/components/settings/PlaylistForm';
+import PlaylistManager from '@/shared/components/settings/PlaylistManager';
+import { trpc } from '@/shared/lib/trpc';
 import { usePlaylistForm } from '@repo/hooks';
 import { usePlaylistStore } from '@repo/store';
 import { Globe } from 'lucide-react';

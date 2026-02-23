@@ -5,11 +5,11 @@ import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
-import { CastSection } from '@/components/common/CastSection';
-import { TrailerModal } from '@/components/common/TrailerModels';
-import { TrailersSection } from '@/components/common/TrailersSection';
-import { Button } from '@/components/ui/button';
-import { useMoviePlayback, useStreamingUrls, useTrailerPlayback } from '@/hooks/useDetails';
+import { CastSection } from '@/shared/components/common/CastSection';
+import { TrailerModal } from '@/shared/components/common/TrailerModels';
+import { TrailersSection } from '@/shared/components/common/TrailersSection';
+import { Button } from '@/shared/components/ui/button';
+import { useMoviePlayback, useStreamingUrls, useTrailerPlayback } from '@/shared/hooks/useDetails';
 import { VideoPlayerModal } from '@/shared/components/common/VideoPlayerModal';
 import { usePlaylistStore, useWatchedMoviesStore } from '@repo/store';
 

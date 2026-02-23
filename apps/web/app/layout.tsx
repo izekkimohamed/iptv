@@ -7,10 +7,10 @@ import { Inter, JetBrains_Mono, Outfit } from 'next/font/google';
 import { usePathname } from 'next/navigation';
 import { type ReactNode, Suspense, useEffect } from 'react';
 
-import Providers from '@/components/providers';
-import Sidebar from '@/components/Sidebar';
-import { Toaster } from '@/components/ui/sonner';
-import { useTauri } from '@/hooks/useTauri';
+import Providers from '@/shared/components/providers';
+import Sidebar from '@/shared/components/Sidebar';
+import { Toaster } from '@/shared/components/ui/sonner';
+import { useTauri } from '@/shared/hooks/useTauri';
 import { usePlayerStore } from '@repo/store';
 
 const jetBrainsMono = JetBrains_Mono({

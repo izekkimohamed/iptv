@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -23,18 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": [
-        "./*"
-      ],
-      "@/features/*": [
-        "./src/features/*"
-      ],
-      "@/shared/*": [
-        "./src/shared/*"
-      ],
-      "@/trpc/*": [
-        "../../packages/trpc/src/server/*"
-      ]
+      "@/*": ["./src/*"],
+      "@/app/*": ["./app/*"],
+      "@/trpc/*": ["../../packages/trpc/src/server/*"]
     }
   },
   "include": [
@@ -46,8 +33,5 @@
     "out/dev/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules",
-    "src-tauri"
-  ]
+  "exclude": ["node_modules", "src-tauri"]
 }
