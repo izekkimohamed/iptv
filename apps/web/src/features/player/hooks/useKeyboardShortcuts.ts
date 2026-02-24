@@ -13,6 +13,7 @@ interface UseKeyboardShortcutsProps {
   setVolume: (v: number) => void;
   volume: number;
   videoRef: React.RefObject<HTMLVideoElement | null>;
+  togglePiP?: () => void;
 }
 
 export function useKeyboardShortcuts({
@@ -28,6 +29,7 @@ export function useKeyboardShortcuts({
   setVolume,
   volume,
   videoRef,
+  togglePiP,
 }: UseKeyboardShortcutsProps) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -91,6 +93,11 @@ export function useKeyboardShortcuts({
           e.preventDefault();
           setVolume(Math.max(0, (videoRef.current?.volume ?? volume) - 0.05));
           break;
+        case 'p':
+        case 'P':
+          e.preventDefault();
+          togglePiP?.();
+          break;
       }
     };
 
@@ -109,5 +116,6 @@ export function useKeyboardShortcuts({
     setVolume,
     volume,
     videoRef,
+    togglePiP,
   ]);
 }

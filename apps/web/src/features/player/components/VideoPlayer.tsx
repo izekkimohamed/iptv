@@ -1,9 +1,10 @@
 import { usePlayerStore } from '@repo/store';
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { ControlsContainer } from './ControlsContainer';
 import { PlayerErrorState } from './PlayerErrorState';
 import { PlayerPausedOverlay, PlayerSpinner } from './PlayerOverlays';
+import { FeedbackAction, SeekFeedback } from './SeekFeedback';
 
 import { useControlsVisibility } from '../hooks/useControlsVisibility';
 import { useGestureHandlers } from '../hooks/useGestureHandlers';
@@ -159,6 +160,54 @@ export default function VideoPlayer({
     onRateChange, onAspectRatioChange
   });
 
+  // ─── SeekFeedback state ───
+  const [feedbackAction, setFeedbackAction] = useState<FeedbackAction>(null);
+  const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showFeedback = useCallback((action: FeedbackAction) => {
+    if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+    setFeedbackAction(action);
+    feedbackTimerRef.current = setTimeout(() => setFeedbackAction(null), 600);
+  }, []);
+
+  // Wrapped controls with feedback
+  const togglePlayWithFeedback = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    showFeedback(video.paused ? 'play' : 'pause');
+    togglePlay();
+  }, [togglePlay, showFeedback, videoRef]);
+
+  const forwardWithFeedback = useCallback((secs: number) => {
+    showFeedback('forward');
+    forward(secs);
+  }, [forward, showFeedback]);
+
+  const backwardWithFeedback = useCallback((secs: number) => {
+    showFeedback('backward');
+    backward(secs);
+  }, [backward, showFeedback]);
+
+  // ─── PiP toggle ───
+  const togglePiP = useCallback(async () => {
+    const video = videoRef.current;
+    if (!video) return;
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else {
+        await video.requestPictureInPicture();
+      }
+    } catch (err) {
+      console.warn('PiP not supported:', err);
+    }
+  }, [videoRef]);
+
+  // ─── handleProgressSeek (for drag scrubbing) ───
+  const handleProgressSeek = useCallback((time: number) => {
+    seek(time);
+  }, [seek]);
+
   const handlePlayNext = useCallback(() => {
     if (!hasNext || !playNext) return;
     saveEpisodeProgress();
@@ -184,11 +233,45 @@ export default function VideoPlayer({
   }, [hasPrev, playPrev, saveEpisodeProgress, isFullscreen]);
 
   useKeyboardShortcuts({
-    togglePlay, forward, backward, changeRate, toggleFullscreen, toggleMute,
-    handlePlayNext, handlePlayPrev, playbackRate, setVolume, volume, videoRef
+    togglePlay: togglePlayWithFeedback,
+    forward: forwardWithFeedback,
+    backward: backwardWithFeedback,
+    changeRate, toggleFullscreen, toggleMute,
+    handlePlayNext, handlePlayPrev, playbackRate, setVolume, volume, videoRef,
+    togglePiP,
   });
 
-  const { handleSingleClick, handleDoubleClick } = useGestureHandlers({ togglePlay, toggleFullscreen });
+  const { handleSingleClick, handleDoubleClick } = useGestureHandlers({ togglePlay: togglePlayWithFeedback, toggleFullscreen });
+
+  // ─── Mobile double-tap seek ───
+  const lastTapRef = useRef<{ time: number; x: number } | null>(null);
+  const mobileTapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleMobileTap = useCallback((e: React.TouchEvent) => {
+    const now = Date.now();
+    const touch = e.changedTouches[0];
+    if (!touch || !containerRef.current) return;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = touch.clientX - rect.left;
+    const isLeftHalf = x < rect.width / 2;
+
+    if (lastTapRef.current && now - lastTapRef.current.time < 300) {
+      // Double-tap detected
+      if (mobileTapTimerRef.current) {
+        clearTimeout(mobileTapTimerRef.current);
+        mobileTapTimerRef.current = null;
+      }
+      if (isLeftHalf) {
+        backwardWithFeedback(10);
+      } else {
+        forwardWithFeedback(10);
+      }
+      lastTapRef.current = null;
+    } else {
+      lastTapRef.current = { time: now, x };
+    }
+  }, [containerRef, backwardWithFeedback, forwardWithFeedback]);
 
   useEffect(() => {
     setPlaybackError(null);
@@ -304,6 +387,7 @@ export default function VideoPlayer({
         onMouseLeave={() => {
           if (!paused) setShowControls(false);
         }}
+        onTouchEnd={handleMobileTap}
       >
         <video
           ref={videoRef}
@@ -318,6 +402,8 @@ export default function VideoPlayer({
 
         {isLoading && !paused && <PlayerSpinner />}
         {paused && !isLoading && <PlayerPausedOverlay />}
+
+        <SeekFeedback action={feedbackAction} />
 
         <ControlsContainer
           showControls={showControls}
@@ -343,11 +429,12 @@ export default function VideoPlayer({
           handleSingleClick={handleSingleClick}
           handleDoubleClick={handleDoubleClick}
           handleProgressClick={handleProgressClick}
+          handleProgressSeek={handleProgressSeek}
           handlePlayPrev={handlePlayPrev}
           handlePlayNext={handlePlayNext}
-          togglePlay={togglePlay}
-          backward={backward}
-          forward={forward}
+          togglePlay={togglePlayWithFeedback}
+          backward={backwardWithFeedback}
+          forward={forwardWithFeedback}
           toggleMute={toggleMute}
           handleVolumeClick={handleVolumeClick}
           startVolumeDrag={startVolumeDrag}
@@ -355,6 +442,7 @@ export default function VideoPlayer({
           setShowSettings={setShowSettings}
           changeRate={changeRate}
           toggleFullscreen={toggleFullscreen}
+          togglePiP={togglePiP}
         />
       </div>
     </>

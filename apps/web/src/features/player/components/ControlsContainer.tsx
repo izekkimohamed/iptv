@@ -28,6 +28,7 @@ interface ControlsContainerProps {
   handleSingleClick: (e: React.MouseEvent) => void;
   handleDoubleClick: (e: React.MouseEvent) => void;
   handleProgressClick: (e: React.MouseEvent<HTMLDivElement>) => void;
+  handleProgressSeek: (time: number) => void;
   handlePlayPrev: () => void;
   handlePlayNext: () => void;
   togglePlay: () => void;
@@ -40,6 +41,7 @@ interface ControlsContainerProps {
   setShowSettings: React.Dispatch<React.SetStateAction<boolean>>;
   changeRate: (rate: number) => void;
   toggleFullscreen: () => void;
+  togglePiP?: () => void;
 }
 
 export const ControlsContainer = memo(function ControlsContainer(props: ControlsContainerProps) {
