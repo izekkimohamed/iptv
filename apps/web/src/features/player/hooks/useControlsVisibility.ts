@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { PLAYER_CONSTANTS } from '@/constants/player';
+
 export function useControlsVisibility(paused: boolean) {
   const [showControls, setShowControls] = useState(true);
   const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -12,7 +14,7 @@ export function useControlsVisibility(paused: boolean) {
         if (!p) setShowControls(false);
         return p;
       });
-    }, 3000);
+    }, PLAYER_CONSTANTS.CONTROLS_HIDE_DELAY);
   }, []);
 
   // Use a ref-based callback mechanism to read paused state securely inside the timer if needed

@@ -1,11 +1,12 @@
 import { usePlayerStore } from '@repo/store';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-import { ControlsContainer } from './ControlsContainer';
+import { CustomControls } from './CustomControls';
 import { PlayerErrorState } from './PlayerErrorState';
 import { PlayerPausedOverlay, PlayerSpinner } from './PlayerOverlays';
 import { FeedbackAction, SeekFeedback } from './SeekFeedback';
 
+import { PLAYER_CONSTANTS } from '@/constants/player';
 import { useControlsVisibility } from '../hooks/useControlsVisibility';
 import { useGestureHandlers } from '../hooks/useGestureHandlers';
 import { useHls } from '../hooks/useHls';
@@ -256,22 +257,36 @@ export default function VideoPlayer({
     const x = touch.clientX - rect.left;
     const isLeftHalf = x < rect.width / 2;
 
-    if (lastTapRef.current && now - lastTapRef.current.time < 300) {
-      // Double-tap detected
+    if (lastTapRef.current && now - lastTapRef.current.time < PLAYER_CONSTANTS.DOUBLE_TAP_THRESHOLD) {
+      // Double-tap detected - cancel any pending single-tap action and seek
       if (mobileTapTimerRef.current) {
         clearTimeout(mobileTapTimerRef.current);
         mobileTapTimerRef.current = null;
       }
       if (isLeftHalf) {
-        backwardWithFeedback(10);
+        backwardWithFeedback(PLAYER_CONSTANTS.MOBILE_SEEK_OFFSET_SECONDS);
       } else {
-        forwardWithFeedback(10);
+        forwardWithFeedback(PLAYER_CONSTANTS.MOBILE_SEEK_OFFSET_SECONDS);
       }
       lastTapRef.current = null;
     } else {
+      // First tap - store and set timer for single-tap play/pause
       lastTapRef.current = { time: now, x };
+      mobileTapTimerRef.current = setTimeout(() => {
+        // Single-tap - toggle play/pause
+        const video = videoRef.current;
+        if (video) {
+          if (video.paused) {
+            video.play().catch(() => { });
+          } else {
+            video.pause();
+          }
+        }
+        lastTapRef.current = null;
+        mobileTapTimerRef.current = null;
+      }, PLAYER_CONSTANTS.DOUBLE_TAP_THRESHOLD);
     }
-  }, [containerRef, backwardWithFeedback, forwardWithFeedback]);
+  }, [containerRef, videoRef, backwardWithFeedback, forwardWithFeedback]);
 
   useEffect(() => {
     setPlaybackError(null);
@@ -398,6 +413,9 @@ export default function VideoPlayer({
           className="w-full h-full block object-contain"
           onClick={handleSingleClick}
           onDoubleClick={handleDoubleClick}
+          onEnded={() => {
+            handlePlayNext();
+          }}
         />
 
         {isLoading && !paused && <PlayerSpinner />}
@@ -405,7 +423,7 @@ export default function VideoPlayer({
 
         <SeekFeedback action={feedbackAction} />
 
-        <ControlsContainer
+        <CustomControls
           showControls={showControls}
           title={title}
           episodeNumber={episodeNumber}
