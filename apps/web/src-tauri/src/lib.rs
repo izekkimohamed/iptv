@@ -1,3 +1,7 @@
+use std::process::Command;
+use tokio::time::sleep;
+use std::time::Duration;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 use tauri::Manager;
 
@@ -21,9 +25,83 @@ fn minimize_app(window: tauri::Window) {
     let _ = window.minimize();
 }
 
+fn find_vlc_binary() -> Option<String> {
+    let vlc_binaries = ["vlc", "/snap/bin/vlc", "/usr/bin/vlc", "/usr/local/bin/vlc"];
+    for binary in &vlc_binaries {
+        if Command::new(binary)
+            .arg("--version")
+            .output()
+            .is_ok()
+        {
+            return Some(binary.to_string());
+        }
+    }
+    None
+}
+
+#[tauri::command]
+async fn open_in_vlc(url: String, aspect_ratio: Option<String>, start_position: Option<f64>) -> Result<f64, String> {
+    let vlc_binary = find_vlc_binary().ok_or("VLC not found")?;
+    let password = "tauri_internal";
+    let port = "8080";
+
+    let mut cmd = Command::new(&vlc_binary);
+    
+    // Set aspect ratio if provided
+    if let Some(ratio) = aspect_ratio {
+        cmd.arg(format!("--aspect-ratio={}", ratio));
+    }
+    
+    // Hide video title
+    cmd.arg("--no-video-title-show");
+    
+    // Start from position if provided (in seconds)
+    if let Some(pos) = start_position {
+        cmd.arg(format!("--start-time={}", pos));
+    }
+    
+    cmd.arg(&url);
+    cmd.arg("--extraintf=http");
+    cmd.arg(format!("--http-password={}", password));
+    cmd.arg(format!("--http-port={}", port));
+
+    let mut child = cmd.spawn()
+        .map_err(|e| format!("Failed to launch VLC: {}", e))?;
+
+    let mut last_position = 0.0;
+    let client = reqwest::Client::new();
+    let status_url = format!("http://localhost:{}/requests/status.json", port);
+
+    // Poll VLC status until the process exits
+    loop {
+        match child.try_wait() {
+            Ok(Some(_status)) => break, // VLC closed
+            Ok(None) => {
+                // VLC is still running, try to get the time
+                if let Ok(resp) = client.get(&status_url)
+                    .basic_auth("", Some(password.to_string()))
+                    .send()
+                    .await {
+
+                    if let Ok(json) = resp.json::<serde_json::Value>().await {
+                        // VLC returns 'time' in seconds
+                        if let Some(time) = json["time"].as_f64() {
+                            last_position = time;
+                        }
+                    }
+                }
+                sleep(Duration::from_millis(1000)).await;
+            }
+            Err(e) => return Err(format!("Error waiting for VLC: {}", e)),
+        }
+    }
+
+    println!("VLC closed at: {} seconds", last_position);
+    Ok(last_position)
+}
 pub fn run() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![close_splashscreen, quit_app, minimize_app])
+        .invoke_handler(tauri::generate_handler![close_splashscreen, quit_app, minimize_app, open_in_vlc])
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(

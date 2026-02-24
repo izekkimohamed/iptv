@@ -9,7 +9,7 @@ export const PLAYER_CONSTANTS = {
   MAX_AUTO_RETRIES: 3,
   VOLUME_STEP: 0.05,
   PLAYBACK_RATES: [0.5, 0.75, 1, 1.25, 1.5, 2] as const,
-  ASPECT_RATIOS: ['16:9', '4:3', '1:1'] as const,
+  ASPECT_RATIOS: ['16:9', '4:3', '1:1', '16:10'] as const,
 } as const;
 
 export const VOLUME_KEYBOARD_STEP = 0.1;

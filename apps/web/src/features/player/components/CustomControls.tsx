@@ -1,9 +1,8 @@
 import { cn } from '@/shared/lib/utils';
+import { invoke } from '@tauri-apps/api/core';
 import {
-  Expand,
   Maximize2,
   Minimize,
-  MoveHorizontal,
   Pause,
   PictureInPicture,
   Play,
@@ -12,10 +11,11 @@ import {
   Settings,
   SkipBack,
   SkipForward,
+  Tv,
   Volume1,
   Volume2,
   VolumeX,
-  X,
+  X
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -60,6 +60,12 @@ interface CustomControlsProps {
   changeRate: (rate: number) => void;
   toggleFullscreen: () => void;
   togglePiP?: () => void;
+  src?: string;
+  isDesktopApp?: boolean;
+  isHlsStream?: boolean;
+  onOpenInVlc?: (url: string, aspectRatio: string) => void;
+  onPauseVideo?: () => void;
+  onVlcPositionUpdate?: (position: number) => void;
 }
 
 function formatTime(seconds: number, padHrs: boolean = false): string {
@@ -74,9 +80,10 @@ function formatTime(seconds: number, padHrs: boolean = false): string {
 }
 
 const aspectRatioIcon = {
-  '16:9': <Maximize2 className="h-4 w-4" />,
-  '4:3': <Expand className="h-4 w-4" />,
-  '1:1': <MoveHorizontal className="h-4 w-4" />,
+  '16:9': <span>16:9</span>,
+  "16:10": <span>16:10</span>,
+  '4:3': <span>4:3</span>,
+  '1:1': <span>1:1</span>,
 };
 
 const VolumeIcon = ({ volume, isMuted }: { volume: number; isMuted: boolean }) => {
@@ -145,16 +152,60 @@ export function CustomControls({
   changeRate,
   toggleFullscreen,
   togglePiP,
+  src,
+  isDesktopApp,
+  isHlsStream,
+  onOpenInVlc,
+  onPauseVideo,
+  onVlcPositionUpdate,
 }: CustomControlsProps) {
   const [hoverTime, setHoverTime] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isDraggingVolume, setIsDraggingVolume] = useState(false);
   const [showKeyboardHints, setShowKeyboardHints] = useState(false);
   const [isVolumeHovering, setIsVolumeHovering] = useState(false);
+  const [vlcStatus, setVlcStatus] = useState<'idle' | 'opening' | 'playing' | 'closed'>('idle');
+
+  const videoRefForVlc = useRef<HTMLVideoElement | null>(null);
 
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const volumeFeedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const localProgressRef = useRef<HTMLDivElement>(null);
+
+  const handleOpenInVlc = useCallback(async () => {
+    if (!src || !isDesktopApp) return;
+
+    setVlcStatus('opening');
+
+    // Pause the browser video
+    if (onPauseVideo) {
+      onPauseVideo();
+    }
+
+    try {
+      if (onOpenInVlc) {
+        onOpenInVlc(src, aspectRatio);
+      } else {
+        // Pass current position to VLC so it starts from where we left off
+        const position = await invoke<number>('open_in_vlc', {
+          url: src,
+          aspectRatio,
+          startPosition: currentTime
+        });
+        console.log('VLC closed at position:', position, 'seconds');
+
+        // Call the position update callback
+        if (onVlcPositionUpdate) {
+          onVlcPositionUpdate(position);
+        }
+      }
+      // VLC closed - show option to resume in HTML player
+      setVlcStatus('closed');
+    } catch (error) {
+      console.error('Failed to open in VLC:', error);
+      setVlcStatus('idle');
+    }
+  }, [src, isDesktopApp, aspectRatio, onOpenInVlc, onPauseVideo, onVlcPositionUpdate, currentTime]);
 
   const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : 0;
   const displayTime = isDragging ? hoverTime : currentTime;
@@ -476,6 +527,32 @@ export function CustomControls({
             {togglePiP && (
               <button onClick={togglePiP} className={buttonBaseClass} title="Picture-in-Picture (P)">
                 <PictureInPicture className="h-4 w-4" />
+              </button>
+            )}
+
+            {/* VLC */}
+            {isDesktopApp && src && (
+              <button
+                onClick={vlcStatus === 'closed' ? () => setVlcStatus('idle') : handleOpenInVlc}
+                disabled={vlcStatus !== 'idle' && vlcStatus !== 'closed'}
+                className={cn(
+                  buttonBaseClass,
+                  !isHlsStream && 'text-orange-400 hover:text-orange-300',
+                  vlcStatus === 'playing' && 'animate-pulse text-green-400',
+                  vlcStatus === 'opening' && 'text-yellow-400',
+                  vlcStatus === 'closed' && 'text-blue-400 hover:text-blue-300',
+                )}
+                title={vlcStatus === 'playing' ? 'Playing in VLC' : vlcStatus === 'opening' ? 'Opening VLC...' : vlcStatus === 'closed' ? 'Click to resume in player' : isHlsStream ? 'Open in VLC (V)' : 'Open in VLC (recommended for this format) (V)'}
+              >
+                <Tv className={cn('h-4 w-4', vlcStatus === 'playing' && 'animate-pulse')} />
+                {vlcStatus !== 'idle' && (
+                  <span className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-black/80 px-2 py-1 text-xs text-white">
+                    {vlcStatus === 'playing' ? 'Playing in VLC' : vlcStatus === 'opening' ? 'Opening VLC...' : 'VLC closed - click to resume'}
+                  </span>
+                )}
+                {!isHlsStream && vlcStatus === 'idle' && (
+                  <span className="absolute -top-1 -right-1 h-2 w-2 animate-ping rounded-full bg-orange-400" />
+                )}
               </button>
             )}
 

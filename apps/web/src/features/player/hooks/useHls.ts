@@ -2,7 +2,7 @@ import Hls from 'hls.js';
 import { RefObject, useEffect } from 'react';
 
 function isHlsSrc(src: string) {
-  return src.includes('.m3u8');
+  return src.includes('.m3u8') || src.includes('.ts');
 }
 
 export function useHls(

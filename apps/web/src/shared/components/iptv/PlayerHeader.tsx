@@ -75,7 +75,7 @@ export default function PlayerHeader(props: PlayerHeaderProps) {
           <button
             onClick={handleRefreshCategory}
             disabled={isUpdatingCategory}
-            className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-white/70 transition-all duration-200 hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-white/70 transition-all duration-200 hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <RefreshCw size={14} className={isUpdatingCategory ? 'animate-spin' : ''} />
             {isUpdatingCategory ? 'Updating...' : 'Refresh Category'}

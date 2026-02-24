@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export type AspectRatio = '16:9' | '4:3' | '1:1';
+export type AspectRatio = '16:9' | '4:3' | '1:1' | '16:10';
 export const ASPECT_RATIOS: AspectRatio[] = ['16:9', '4:3', '1:1'];
 export type PlayerError = { message: string; code: number } | null;
 

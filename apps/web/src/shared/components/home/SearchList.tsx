@@ -5,9 +5,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
+import HorizontalCarousel from '@/shared/components/common/HorizontalCarousel';
 import { useDebounce } from '@/shared/hooks/useDebounce';
 import { trpc } from '@/shared/lib/trpc';
-import HorizontalCarousel from '@/shared/components/common/HorizontalCarousel';
 import { usePlaylistStore } from '@repo/store';
 
 import { cn } from '@/shared/lib/utils';
@@ -171,8 +171,8 @@ function SearchList({ searchQuery }: SearchListProps) {
           {isGlobalSearchLoading && (
             <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {Array.from({ length: 12 }).map((_, i) => (
-                <div key={`highlight-${i}-${part}`} className="space-y-4 animate-pulse">
-                  <div className="aspect-[2/3] rounded-sm bg-white/5" />
+                <div key={`skeleton-${i}`} className="space-y-4 animate-pulse">
+                  <div className="aspect-2/3 rounded-sm bg-white/5" />
                   <div className="h-4 w-3/4 rounded-sm bg-white/5" />
                 </div>
               ))}
@@ -187,13 +187,13 @@ function SearchList({ searchQuery }: SearchListProps) {
               </div>
 
               <div className="relative z-10 mb-10">
-                 <div className="relative flex h-40 w-40 items-center justify-center rounded-[2.5rem] bg-white/5 border border-white/10 backdrop-blur-3xl transition-transform duration-500 hover:scale-105">
-                    <div className="absolute inset-0 rounded-[2.5rem] bg-linear-to-tr from-primary/20 to-transparent opacity-50" />
-                    <Search className="h-20 w-20 text-primary/30" />
-                 </div>
-                 <div className="absolute -bottom-2 -right-2 flex h-12 w-12 items-center justify-center rounded-sm bg-primary text-primary-foreground shadow-2xl">
-                    <X className="h-6 w-6" />
-                 </div>
+                <div className="relative flex h-40 w-40 items-center justify-center rounded-[2.5rem] bg-white/5 border border-white/10 backdrop-blur-3xl transition-transform duration-500 hover:scale-105">
+                  <div className="absolute inset-0 rounded-[2.5rem] bg-linear-to-tr from-primary/20 to-transparent opacity-50" />
+                  <Search className="h-20 w-20 text-primary/30" />
+                </div>
+                <div className="absolute -bottom-2 -right-2 flex h-12 w-12 items-center justify-center rounded-sm bg-primary text-primary-foreground shadow-2xl">
+                  <X className="h-6 w-6" />
+                </div>
               </div>
 
               <h3 className="relative z-10 text-4xl font-black tracking-tighter text-foreground mb-4">
@@ -205,10 +205,10 @@ function SearchList({ searchQuery }: SearchListProps) {
               </p>
 
               <Link href="/">
-                 <Button className="relative z-10 group h-14 rounded-sm px-10 text-base font-black uppercase tracking-widest shadow-2xl shadow-primary/20 transition-all hover:scale-105 hover:shadow-primary/40">
-                    <Home className="mr-3 h-5 w-5 transition-transform group-hover:-translate-y-0.5" />
-                    Return Home
-                 </Button>
+                <Button className="relative z-10 group h-14 rounded-sm px-10 text-base font-black uppercase tracking-widest shadow-2xl shadow-primary/20 transition-all hover:scale-105 hover:shadow-primary/40">
+                  <Home className="mr-3 h-5 w-5 transition-transform group-hover:-translate-y-0.5" />
+                  Return Home
+                </Button>
               </Link>
             </div>
           )}
@@ -235,35 +235,35 @@ function SearchList({ searchQuery }: SearchListProps) {
                         href={type === 'channels' ? `/channels?categoryId=${item.categoryId}&channelId=${item.id}` : type === 'movies' ? `/movies?categoryId=${item.categoryId}&movieId=${item.streamId}` : `/series?categoryId=${item.categoryId}&serieId=${item.seriesId}`}
                         className="group relative"
                       >
-                         <div className="relative aspect-[2/3] overflow-hidden rounded-sm border border-white/5 bg-white/5 transition-all duration-500 group-hover:border-primary/50 group-hover:shadow-[0_0_30px_rgba(var(--primary),0.1)]">
-                            <Image
-                              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                              fill
-                              sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 16vw"
-                              src={type === 'channels' ? (item.streamIcon || '/icon.png') : type === 'movies' ? (item.streamIcon || '/icon.png') : (item.cover || '/icon.png')}
-                              alt={item.name}
-                              onError={(e) => { e.currentTarget.src = '/icon.png'; }}
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-100 transition-opacity" />
+                        <div className="relative aspect-[2/3] overflow-hidden rounded-sm border border-white/5 bg-white/5 transition-all duration-500 group-hover:border-primary/50 group-hover:shadow-[0_0_30px_rgba(var(--primary),0.1)]">
+                          <Image
+                            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                            fill
+                            sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 16vw"
+                            src={type === 'channels' ? (item.streamIcon || '/icon.png') : type === 'movies' ? (item.streamIcon || '/icon.png') : (item.cover || '/icon.png')}
+                            alt={item.name}
+                            onError={(e) => { e.currentTarget.src = '/icon.png'; }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-100 transition-opacity" />
 
-                            {item.rating && (
-                              <div className="absolute top-3 left-3 flex items-center gap-1 rounded-sm bg-black/40 px-2 py-1 text-[10px] font-black text-amber-400 backdrop-blur-md border border-white/5">
-                                 <Star className="h-3 w-3 fill-current" />
-                                 {parseFloat(item.rating).toFixed(1)}
-                              </div>
-                            )}
-
-                            <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-all duration-300 group-hover:opacity-100">
-                               <div className="h-14 w-14 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-2xl scale-75 group-hover:scale-100 transition-transform">
-                                  <Play className="ml-1 h-8 w-8 fill-current" />
-                               </div>
+                          {item.rating && (
+                            <div className="absolute top-3 left-3 flex items-center gap-1 rounded-sm bg-black/40 px-2 py-1 text-[10px] font-black text-amber-400 backdrop-blur-md border border-white/5">
+                              <Star className="h-3 w-3 fill-current" />
+                              {parseFloat(item.rating).toFixed(1)}
                             </div>
-                         </div>
-                         <div className="mt-3">
-                            <p className="truncate text-sm font-bold text-foreground transition-colors group-hover:text-primary">
-                              {highlight(item.name || item.plot || '', searchQuery)}
-                            </p>
-                         </div>
+                          )}
+
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-all duration-300 group-hover:opacity-100">
+                            <div className="h-14 w-14 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-2xl scale-75 group-hover:scale-100 transition-transform">
+                              <Play className="ml-1 h-8 w-8 fill-current" />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-3">
+                          <p className="truncate text-sm font-bold text-foreground transition-colors group-hover:text-primary">
+                            {highlight(item.name || item.plot || '', searchQuery)}
+                          </p>
+                        </div>
                       </Link>
                     ))}
                   </div>
@@ -275,25 +275,25 @@ function SearchList({ searchQuery }: SearchListProps) {
                         href={type === 'channels' ? `/channels?categoryId=${item.categoryId}&channelId=${item.id}` : type === 'movies' ? `/movies?categoryId=${item.categoryId}&movieId=${item.streamId}` : `/series?categoryId=${item.categoryId}&serieId=${item.seriesId}`}
                         className="group relative w-48 shrink-0 lg:w-56"
                       >
-                         <div className="relative aspect-[2/3] overflow-hidden rounded-sm border border-white/5 bg-white/5 transition-all duration-500 group-hover:border-primary/50 group-hover:shadow-[0_0_30px_rgba(var(--primary),0.1)]">
-                            <Image
-                              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                              fill
-                              sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 16vw"
-                              src={type === 'channels' ? (item.streamIcon || '/icon.png') : type === 'movies' ? (item.streamIcon || '/icon.png') : (item.cover || '/icon.png')}
-                              alt={item.name}
-                              onError={(e) => { e.currentTarget.src = '/icon.png'; }}
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                            <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-all duration-300 group-hover:opacity-100">
-                               <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-2xl">
-                                  <Play className="ml-0.5 h-6 w-6 fill-current" />
-                               </div>
+                        <div className="relative aspect-[2/3] overflow-hidden rounded-sm border border-white/5 bg-white/5 transition-all duration-500 group-hover:border-primary/50 group-hover:shadow-[0_0_30px_rgba(var(--primary),0.1)]">
+                          <Image
+                            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                            fill
+                            sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 16vw"
+                            src={type === 'channels' ? (item.streamIcon || '/icon.png') : type === 'movies' ? (item.streamIcon || '/icon.png') : (item.cover || '/icon.png')}
+                            alt={item.name}
+                            onError={(e) => { e.currentTarget.src = '/icon.png'; }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-all duration-300 group-hover:opacity-100">
+                            <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-2xl">
+                              <Play className="ml-0.5 h-6 w-6 fill-current" />
                             </div>
-                         </div>
-                         <p className="mt-3 truncate text-sm font-bold transition-colors group-hover:text-primary">
-                            {highlight(item.name || item.plot || '', searchQuery)}
-                         </p>
+                          </div>
+                        </div>
+                        <p className="mt-3 truncate text-sm font-bold transition-colors group-hover:text-primary">
+                          {highlight(item.name || item.plot || '', searchQuery)}
+                        </p>
                       </Link>
                     ))}
                   </HorizontalCarousel>

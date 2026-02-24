@@ -1,4 +1,5 @@
 import { usePlayerStore } from '@repo/store';
+import { invoke } from '@tauri-apps/api/core';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { CustomControls } from './CustomControls';
@@ -7,6 +8,7 @@ import { PlayerPausedOverlay, PlayerSpinner } from './PlayerOverlays';
 import { FeedbackAction, SeekFeedback } from './SeekFeedback';
 
 import { PLAYER_CONSTANTS } from '@/constants/player';
+import { useTauri } from '@/shared/hooks/useTauri';
 import { useControlsVisibility } from '../hooks/useControlsVisibility';
 import { useGestureHandlers } from '../hooks/useGestureHandlers';
 import { useHls } from '../hooks/useHls';
@@ -16,16 +18,6 @@ import { useVideoControls } from '../hooks/useVideoControls';
 import { useVideoEvents } from '../hooks/useVideoEvents';
 import { AspectRatio, useVideoState } from '../hooks/useVideoState';
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatTime(seconds: number): string {
-  if (!isFinite(seconds) || isNaN(seconds)) return '0:00';
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
-  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-  return `${m}:${String(s).padStart(2, '0')}`;
-}
 
 
 
@@ -80,7 +72,7 @@ export default function VideoPlayer({
   hasNext,
   hasPrev,
   preferredRate = 1,
-  preferredAspectRatio = '16:9',
+  preferredAspectRatio = '16:10',
   onRateChange,
   onAspectRatioChange,
 }: VideoPlayerProps) {
@@ -111,6 +103,8 @@ export default function VideoPlayer({
   } = useVideoState(autoPlay, storedMuted, preferredRate, preferredAspectRatio);
 
   const { showControls, setShowControls, resetHideTimer } = useControlsVisibility(paused);
+
+  const { isDesktopApp } = useTauri();
 
   const {
     saveEpisodeProgress,
@@ -151,6 +145,101 @@ export default function VideoPlayer({
     onEnded,
     saveProgressNow,
   });
+
+  // Handle VLC position update when user closes VLC
+  const handleVlcPositionUpdate = useCallback((position: number) => {
+    if (position > 0 && videoRef.current && src) {
+      // Set video to the position from VLC and save progress
+      videoRef.current.currentTime = position;
+      saveProgressNow();
+    }
+  }, [saveProgressNow, src]);
+
+  // Auto-fallback to VLC when native video fails or gets stuck loading
+  const isHlsStream = src?.includes('.m3u8') || src?.includes('.ts');
+  const [loadingStartTime, setLoadingStartTime] = useState<number | null>(null);
+  const vlcFallbackRef = useRef(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    vlcFallbackRef.current = false;
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, [src]);
+
+  useEffect(() => {
+    if (isLoading && !loadingStartTime) {
+      setLoadingStartTime(Date.now());
+    } else if (!isLoading) {
+      setLoadingStartTime(null);
+    }
+  }, [isLoading, loadingStartTime]);
+
+  useEffect(() => {
+    if (!isDesktopApp || !src || isHlsStream) return;
+    if (vlcFallbackRef.current) return;
+
+    const checkStuckLoading = () => {
+      if (!vlcFallbackRef.current && loadingStartTime && Date.now() - loadingStartTime > 15000 && isLoading) {
+        console.log('Video stuck loading for 15s, falling back to VLC...');
+        vlcFallbackRef.current = true;
+        
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+        
+        invoke<number>('open_in_vlc', {
+          url: src,
+          aspectRatio,
+          startPosition: currentTime,
+        }).then((position) => {
+          if (position > 0 && videoRef.current) {
+            videoRef.current.currentTime = position;
+            saveProgressNow();
+          }
+          setIsLoading(false);
+        }).catch((err) => {
+          console.error('VLC fallback failed:', err);
+          vlcFallbackRef.current = false;
+        });
+      }
+    };
+
+    intervalRef.current = setInterval(checkStuckLoading, 1000);
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [isDesktopApp, isHlsStream, src, loadingStartTime, isLoading, aspectRatio, currentTime, saveProgressNow, setIsLoading]);
+
+  useEffect(() => {
+    if (playbackError && isDesktopApp && !isHlsStream && src && !vlcFallbackRef.current) {
+      vlcFallbackRef.current = true;
+      const openVlcFallback = async () => {
+        try {
+          const position = await invoke<number>('open_in_vlc', {
+            url: src,
+            aspectRatio,
+            startPosition: currentTime,
+          });
+          if (position > 0) {
+            videoRef.current!.currentTime = position;
+            saveProgressNow();
+          }
+          setPlaybackError(null);
+        } catch (err) {
+          console.error('VLC fallback failed:', err);
+          vlcFallbackRef.current = false;
+        }
+      };
+      openVlcFallback();
+    }
+  }, [playbackError, isDesktopApp, isHlsStream, src, aspectRatio, currentTime, saveProgressNow, setPlaybackError]);
 
   const {
     togglePlay, seek, forward, backward, toggleMute, setVolume,
@@ -461,6 +550,11 @@ export default function VideoPlayer({
           changeRate={changeRate}
           toggleFullscreen={toggleFullscreen}
           togglePiP={togglePiP}
+          src={src}
+          isDesktopApp={isDesktopApp}
+          isHlsStream={isHlsStream}
+          onPauseVideo={() => videoRef.current?.pause()}
+          onVlcPositionUpdate={handleVlcPositionUpdate}
         />
       </div>
     </>
