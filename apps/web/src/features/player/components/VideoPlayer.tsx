@@ -185,12 +185,12 @@ export default function VideoPlayer({
       if (!vlcFallbackRef.current && loadingStartTime && Date.now() - loadingStartTime > 15000 && isLoading) {
         console.log('Video stuck loading for 15s, falling back to VLC...');
         vlcFallbackRef.current = true;
-        
+
         if (intervalRef.current) {
           clearInterval(intervalRef.current);
           intervalRef.current = null;
         }
-        
+
         invoke<number>('open_in_vlc', {
           url: src,
           aspectRatio,
@@ -500,11 +500,11 @@ export default function VideoPlayer({
           loop={loop}
           playsInline
           className="w-full h-full block object-contain"
-          onClick={handleSingleClick}
-          onDoubleClick={handleDoubleClick}
           onEnded={() => {
             handlePlayNext();
           }}
+          onClick={handleSingleClick}
+          onDoubleClick={handleDoubleClick}
         />
 
         {isLoading && !paused && <PlayerSpinner />}

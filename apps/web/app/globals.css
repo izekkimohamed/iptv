@@ -137,6 +137,9 @@
     [data-aspect-ratio='16:9'] video {
       object-fit: fill !important;
     }
+    [data-aspect-ratio='16:10'] video {
+      object-fit: fill !important;
+    }
     [data-is-paused='true'] video {
       cursor: pointer;
       transform: scale(1.1);

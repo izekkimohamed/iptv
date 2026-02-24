@@ -27,6 +27,7 @@ const createVisibilityStore = () => {
     },
     getSnapshot: () => isVisible,
     getServerSnapshot: () => false,
+    setVisible,
   };
 };
 
@@ -55,7 +56,7 @@ export function MatchCenter({ gameId, onClose }: MatchCenterProps) {
   );
 
   const handleClose = () => {
-    setIsVisible(false);
+    visibilityStore.setVisible(false);
     setTimeout(onClose, 300);
   };
 
@@ -114,9 +115,8 @@ export function MatchCenter({ gameId, onClose }: MatchCenterProps) {
     <div className="fixed inset-0 z-100 flex items-center justify-center p-4 md:p-10">
       {/* 2. BACKDROP: Dims the background */}
       <div
-        className={`animate-in fade-in absolute inset-0 bg-black/15 backdrop-blur-xl duration-300 ${
-          isVisible ? 'opacity-100' : 'opacity-0'
-        }`}
+        className={`animate-in fade-in absolute inset-0 bg-black/15 backdrop-blur-xl duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'
+          }`}
         onClick={handleClose}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -131,9 +131,8 @@ export function MatchCenter({ gameId, onClose }: MatchCenterProps) {
 
       {/* 3. THE MODAL: Strictly 70% height and centered */}
       <div
-        className={`h-70vh animate-in zoom-in relative flex max-h-[70vh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-linear-to-br from-[#1a1a1a24] to-[#0a0a0a24] duration-300 ${
-          isVisible ? 'opacity-100' : 'opacity-0'
-        }`}
+        className={`h-70vh animate-in zoom-in relative flex max-h-[70vh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-linear-to-br from-[#1a1a1a24] to-[#0a0a0a24] duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'
+          }`}
       >
         {/* Close Button */}
         <button

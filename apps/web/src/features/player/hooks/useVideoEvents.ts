@@ -32,11 +32,15 @@ export function useVideoEvents({
     const video = videoRef.current;
     if (!video) return;
 
-    const onPlay = () => setPaused(false);
-    const onPause = () => setPaused(true);
+    const onPlay = () => setPaused(video.paused);
+    const onPause = () => setPaused(video.paused);
+    const onPlaying = () => setPaused(video.paused);
     const onTimeUpdateEvt = () => {
       setCurrentTime(video.currentTime);
       if (video.buffered.length > 0) setBufferedEnd(video.buffered.end(video.buffered.length - 1));
+
+      // Fallback: if video is playing but React thinks it's paused, fix it
+      setPaused(video.paused);
     };
     const onDurationChange = () => setDuration(video.duration);
     const onVolumeChange = () => {
@@ -63,6 +67,7 @@ export function useVideoEvents({
 
     video.addEventListener('play', onPlay);
     video.addEventListener('pause', onPause);
+    video.addEventListener('playing', onPlaying);
     video.addEventListener('timeupdate', onTimeUpdateEvt);
     video.addEventListener('durationchange', onDurationChange);
     video.addEventListener('volumechange', onVolumeChange);
@@ -76,6 +81,7 @@ export function useVideoEvents({
     return () => {
       video.removeEventListener('play', onPlay);
       video.removeEventListener('pause', onPause);
+      video.removeEventListener('playing', onPlaying);
       video.removeEventListener('timeupdate', onTimeUpdateEvt);
       video.removeEventListener('durationchange', onDurationChange);
       video.removeEventListener('volumechange', onVolumeChange);

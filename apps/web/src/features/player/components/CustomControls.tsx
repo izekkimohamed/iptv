@@ -137,6 +137,8 @@ export function CustomControls({
   isFullscreen,
   progressRef,
   volumeBarRef,
+  handleSingleClick,
+  handleDoubleClick,
   handleProgressClick,
   handleProgressSeek,
   handlePlayPrev,
@@ -299,10 +301,11 @@ export function CustomControls({
       )}
       onClick={(e) => {
         if ((e.target as HTMLElement).closest('button, [role="slider"]')) return;
-        handleProgressClick(e);
+        handleSingleClick(e);
       }}
       onDoubleClick={(e) => {
         if ((e.target as HTMLElement).closest('button, [role="slider"]')) return;
+        handleDoubleClick(e);
       }}
       role="presentation"
     >
