@@ -1,6 +1,7 @@
 import { Game } from '@/trpc/types';
+import { GOAL_POPUP_DURATION } from '@/constants/player';
 import Image from 'next/image';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, memo } from 'react';
 import { GoalPopup } from './Goal';
 import { MatchCenter } from './MatchCenter';
 
@@ -15,7 +16,7 @@ interface MatchCardState {
   isHovered: boolean;
 }
 
-export function MatchCard({ game, priority = false }: MatchCardProps) {
+export const MatchCard = memo(function MatchCard({ game, priority = false }: MatchCardProps) {
   const [state, setState] = useState<MatchCardState>({
     showGoalPopup: false,
     isModalOpen: false,
@@ -32,7 +33,10 @@ export function MatchCard({ game, priority = false }: MatchCardProps) {
   useEffect(() => {
     if (isLive && currentTotalScore > prevScoreRef.current) {
       setState((prev) => ({ ...prev, showGoalPopup: true }));
-      const timer = setTimeout(() => setState((prev) => ({ ...prev, showGoalPopup: false })), 8000);
+      const timer = setTimeout(
+        () => setState((prev) => ({ ...prev, showGoalPopup: false })),
+        GOAL_POPUP_DURATION,
+      );
       return () => clearTimeout(timer);
     }
     prevScoreRef.current = currentTotalScore;
@@ -62,7 +66,7 @@ export function MatchCard({ game, priority = false }: MatchCardProps) {
         tabIndex={0}
         className={`group relative flex w-[340px] shrink-0 cursor-pointer snap-start flex-col overflow-hidden rounded-3xl border transition-all duration-500 ${
           showGoalPopup
-            ? 'z-50 scale-[1.02] border-primary shadow-[0_0_40px_rgba(var(--primary),0.3)]'
+            ? 'border-primary z-50 scale-[1.02] shadow-[0_0_40px_rgba(var(--primary),0.3)]'
             : isLive
               ? 'border-white/20 bg-linear-to-br from-white/10 to-transparent shadow-2xl backdrop-blur-xl'
               : 'border-white/10 bg-white/3'
@@ -77,12 +81,12 @@ export function MatchCard({ game, priority = false }: MatchCardProps) {
           <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center gap-2">
               {isLive ? (
-                <div className="flex items-center gap-2 rounded-sm border border-primary/30 bg-primary/20 px-3 py-1.5 shadow-[0_0_15px_-5px_rgba(var(--primary),0.5)]">
+                <div className="border-primary/30 bg-primary/20 flex items-center gap-2 rounded-sm border px-3 py-1.5 shadow-[0_0_15px_-5px_rgba(var(--primary),0.5)]">
                   <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"></span>
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-primary"></span>
+                    <span className="bg-primary absolute inline-flex h-full w-full animate-ping rounded-full opacity-75"></span>
+                    <span className="bg-primary relative inline-flex h-2 w-2 rounded-full"></span>
                   </span>
-                  <span className="text-[11px] font-black text-primary uppercase tabular-nums tracking-wider">
+                  <span className="text-primary text-[11px] font-black tracking-wider uppercase tabular-nums">
                     {game.gameTime}' min
                   </span>
                 </div>
@@ -142,7 +146,7 @@ export function MatchCard({ game, priority = false }: MatchCardProps) {
 
         {/* --- VISUAL PROGRESS BAR --- */}
         {!isScheduled && (
-          <div className="relative h-1.5 w-full bg-white/5 overflow-hidden">
+          <div className="relative h-1.5 w-full overflow-hidden bg-white/5">
             <div
               className={`h-full transition-all duration-1000 ease-out ${
                 isLive ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary),0.6)]' : 'bg-white/10'
@@ -155,4 +159,4 @@ export function MatchCard({ game, priority = false }: MatchCardProps) {
       {isModalOpen && <MatchCenter gameId={game.id} onClose={handleCloseModal} />}
     </>
   );
-}
+});

@@ -18,9 +18,6 @@ import { useVideoControls } from '../hooks/useVideoControls';
 import { useVideoEvents } from '../hooks/useVideoEvents';
 import { AspectRatio, useVideoState } from '../hooks/useVideoState';
 
-
-
-
 // ─── VideoPlayerProps ─────────────────────────────────────────────────────────
 
 interface VideoPlayerProps {
@@ -47,6 +44,48 @@ interface VideoPlayerProps {
   preferredAspectRatio?: AspectRatio;
   onRateChange?: (rate: number) => void;
   onAspectRatioChange?: (ratio: AspectRatio) => void;
+}
+
+// ─── Video Element Component ───────────────────────────────────────────────────
+
+function VideoElement({
+  videoRef,
+  poster,
+  isMuted,
+  loop,
+  onEnded,
+  onClick,
+  onDoubleClick,
+}: {
+  videoRef: React.RefObject<HTMLVideoElement | null>;
+  poster?: string;
+  isMuted: boolean;
+  loop?: boolean;
+  onEnded: () => void;
+  onClick: (e: React.MouseEvent) => void;
+  onDoubleClick: (e: React.MouseEvent) => void;
+}) {
+  return (
+    <video
+      ref={videoRef}
+      poster={poster}
+      muted={isMuted}
+      loop={loop}
+      playsInline
+      className="block h-full w-full object-contain"
+      onEnded={onEnded}
+      onClick={onClick}
+      onDoubleClick={onDoubleClick}
+    />
+  );
+}
+
+// ─── Player Loader Component ─────────────────────────────────────────────────
+
+function PlayerLoader({ isLoading, paused }: { isLoading: boolean; paused: boolean }) {
+  if (isLoading && !paused) return <PlayerSpinner />;
+  if (paused && !isLoading) return <PlayerPausedOverlay />;
+  return null;
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -87,53 +126,70 @@ export default function VideoPlayer({
   const storeSetMuted = usePlayerStore((s) => s.setMuted);
 
   const {
-    paused, setPaused,
-    currentTime, setCurrentTime,
-    duration, setDuration,
-    bufferedEnd, setBufferedEnd,
-    volume, setVolumeState,
-    isMuted, setIsMuted,
-    isLoading, setIsLoading,
-    isFullscreen, setIsFullscreen,
-    showVolume, setShowVolume,
-    showSettings, setShowSettings,
-    playbackRate, setPlaybackRateState,
-    aspectRatio, setAspectRatioState,
-    playbackError, setPlaybackError,
+    paused,
+    setPaused,
+    currentTime,
+    setCurrentTime,
+    duration,
+    setDuration,
+    bufferedEnd,
+    setBufferedEnd,
+    volume,
+    setVolumeState,
+    isMuted,
+    setIsMuted,
+    isLoading,
+    setIsLoading,
+    isFullscreen,
+    setIsFullscreen,
+    showVolume,
+    setShowVolume,
+    showSettings,
+    setShowSettings,
+    playbackRate,
+    setPlaybackRateState,
+    aspectRatio,
+    setAspectRatioState,
+    playbackError,
+    setPlaybackError,
   } = useVideoState(autoPlay, storedMuted, preferredRate, preferredAspectRatio);
 
   const { showControls, setShowControls, resetHideTimer } = useControlsVisibility(paused);
 
   const { isDesktopApp } = useTauri();
 
-  const {
-    saveEpisodeProgress,
-    saveMovieProgress,
-    getEpisodeProgress,
-    movies,
-    saveProgressNow,
-  } = useProgressTracking({
+  const { saveEpisodeProgress, saveMovieProgress, getEpisodeProgress, movies, saveProgressNow } =
+    useProgressTracking({
+      videoRef,
+      isPlaying: !paused,
+      src,
+      movieId,
+      serieId,
+      categoryId,
+      poster,
+      title,
+      episodeNumber,
+      seasonId,
+      totalEpisodes,
+    });
+
+  const handleHlsError = useCallback(
+    (message: string, code: number) => {
+      setPlaybackError({ message, code });
+    },
+    [setPlaybackError],
+  );
+
+  const { qualityLevels, currentQuality, setQuality } = useHls(
     videoRef,
-    isPlaying: !paused,
     src,
-    movieId,
-    serieId,
-    categoryId,
-    poster,
-    title,
-    episodeNumber,
-    seasonId,
-    totalEpisodes,
-  });
-
-  const handleHlsError = useCallback((message: string, code: number) => {
-    setPlaybackError({ message, code });
-  }, [setPlaybackError]);
-
-  useHls(videoRef, src, autoPlay, handleHlsError);
+    autoPlay,
+    handleHlsError,
+  );
 
   useVideoEvents({
     videoRef,
+    src,
     setPaused,
     setCurrentTime,
     setBufferedEnd,
@@ -146,16 +202,16 @@ export default function VideoPlayer({
     saveProgressNow,
   });
 
-  // Handle VLC position update when user closes VLC
-  const handleVlcPositionUpdate = useCallback((position: number) => {
-    if (position > 0 && videoRef.current && src) {
-      // Set video to the position from VLC and save progress
-      videoRef.current.currentTime = position;
-      saveProgressNow();
-    }
-  }, [saveProgressNow, src]);
+  const handleVlcPositionUpdate = useCallback(
+    (position: number) => {
+      if (position > 0 && videoRef.current && src) {
+        videoRef.current.currentTime = position;
+        saveProgressNow();
+      }
+    },
+    [saveProgressNow, src],
+  );
 
-  // Auto-fallback to VLC when native video fails or gets stuck loading
   const isHlsStream = src?.includes('.m3u8') || src?.includes('.ts');
   const [loadingStartTime, setLoadingStartTime] = useState<number | null>(null);
   const vlcFallbackRef = useRef(false);
@@ -182,8 +238,12 @@ export default function VideoPlayer({
     if (vlcFallbackRef.current) return;
 
     const checkStuckLoading = () => {
-      if (!vlcFallbackRef.current && loadingStartTime && Date.now() - loadingStartTime > 15000 && isLoading) {
-        console.log('Video stuck loading for 15s, falling back to VLC...');
+      if (
+        !vlcFallbackRef.current &&
+        loadingStartTime &&
+        Date.now() - loadingStartTime > PLAYER_CONSTANTS.VLC_STUCK_LOADING_THRESHOLD &&
+        isLoading
+      ) {
         vlcFallbackRef.current = true;
 
         if (intervalRef.current) {
@@ -195,27 +255,38 @@ export default function VideoPlayer({
           url: src,
           aspectRatio,
           startPosition: currentTime,
-        }).then((position) => {
-          if (position > 0 && videoRef.current) {
-            videoRef.current.currentTime = position;
-            saveProgressNow();
-          }
-          setIsLoading(false);
-        }).catch((err) => {
-          console.error('VLC fallback failed:', err);
-          vlcFallbackRef.current = false;
-        });
+        })
+          .then((position) => {
+            if (position > 0 && videoRef.current) {
+              videoRef.current.currentTime = position;
+              saveProgressNow();
+            }
+            setIsLoading(false);
+          })
+          .catch(() => {
+            vlcFallbackRef.current = false;
+          });
       }
     };
 
-    intervalRef.current = setInterval(checkStuckLoading, 1000);
+    intervalRef.current = setInterval(checkStuckLoading, PLAYER_CONSTANTS.VLC_CHECK_INTERVAL);
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
     };
-  }, [isDesktopApp, isHlsStream, src, loadingStartTime, isLoading, aspectRatio, currentTime, saveProgressNow, setIsLoading]);
+  }, [
+    isDesktopApp,
+    isHlsStream,
+    src,
+    loadingStartTime,
+    isLoading,
+    aspectRatio,
+    currentTime,
+    saveProgressNow,
+    setIsLoading,
+  ]);
 
   useEffect(() => {
     if (playbackError && isDesktopApp && !isHlsStream && src && !vlcFallbackRef.current) {
@@ -232,35 +303,59 @@ export default function VideoPlayer({
             saveProgressNow();
           }
           setPlaybackError(null);
-        } catch (err) {
-          console.error('VLC fallback failed:', err);
+        } catch {
           vlcFallbackRef.current = false;
         }
       };
       openVlcFallback();
     }
-  }, [playbackError, isDesktopApp, isHlsStream, src, aspectRatio, currentTime, saveProgressNow, setPlaybackError]);
+  }, [
+    playbackError,
+    isDesktopApp,
+    isHlsStream,
+    src,
+    aspectRatio,
+    currentTime,
+    saveProgressNow,
+    setPlaybackError,
+  ]);
 
   const {
-    togglePlay, seek, forward, backward, toggleMute, setVolume,
-    toggleFullscreen, changeRate, cycleAspectRatio
+    togglePlay,
+    seek,
+    forward,
+    backward,
+    toggleMute,
+    setVolume,
+    toggleFullscreen,
+    changeRate,
+    cycleAspectRatio,
   } = useVideoControls({
-    videoRef, containerRef, setPaused, setIsMuted, setVolumeState,
-    setPlaybackRateState, setAspectRatioState, storeSetVolume, storeSetMuted,
-    onRateChange, onAspectRatioChange
+    videoRef,
+    containerRef,
+    setPaused,
+    setIsMuted,
+    setVolumeState,
+    setPlaybackRateState,
+    setAspectRatioState,
+    storeSetVolume,
+    storeSetMuted,
+    onRateChange,
+    onAspectRatioChange,
   });
 
-  // ─── SeekFeedback state ───
   const [feedbackAction, setFeedbackAction] = useState<FeedbackAction>(null);
   const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showFeedback = useCallback((action: FeedbackAction) => {
     if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
     setFeedbackAction(action);
-    feedbackTimerRef.current = setTimeout(() => setFeedbackAction(null), 600);
+    feedbackTimerRef.current = setTimeout(
+      () => setFeedbackAction(null),
+      PLAYER_CONSTANTS.FEEDBACK_DURATION,
+    );
   }, []);
 
-  // Wrapped controls with feedback
   const togglePlayWithFeedback = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -268,17 +363,22 @@ export default function VideoPlayer({
     togglePlay();
   }, [togglePlay, showFeedback, videoRef]);
 
-  const forwardWithFeedback = useCallback((secs: number) => {
-    showFeedback('forward');
-    forward(secs);
-  }, [forward, showFeedback]);
+  const forwardWithFeedback = useCallback(
+    (secs: number) => {
+      showFeedback('forward');
+      forward(secs);
+    },
+    [forward, showFeedback],
+  );
 
-  const backwardWithFeedback = useCallback((secs: number) => {
-    showFeedback('backward');
-    backward(secs);
-  }, [backward, showFeedback]);
+  const backwardWithFeedback = useCallback(
+    (secs: number) => {
+      showFeedback('backward');
+      backward(secs);
+    },
+    [backward, showFeedback],
+  );
 
-  // ─── PiP toggle ───
   const togglePiP = useCallback(async () => {
     const video = videoRef.current;
     if (!video) return;
@@ -288,15 +388,17 @@ export default function VideoPlayer({
       } else {
         await video.requestPictureInPicture();
       }
-    } catch (err) {
-      console.warn('PiP not supported:', err);
+    } catch {
+      // PiP not supported
     }
   }, [videoRef]);
 
-  // ─── handleProgressSeek (for drag scrubbing) ───
-  const handleProgressSeek = useCallback((time: number) => {
-    seek(time);
-  }, [seek]);
+  const handleProgressSeek = useCallback(
+    (time: number) => {
+      seek(time);
+    },
+    [seek],
+  );
 
   const handlePlayNext = useCallback(() => {
     if (!hasNext || !playNext) return;
@@ -305,7 +407,7 @@ export default function VideoPlayer({
     playNext();
     if (wasFullscreen) {
       setTimeout(() => {
-        containerRef.current?.requestFullscreen().catch(() => { });
+        containerRef.current?.requestFullscreen().catch(() => {});
       }, 100);
     }
   }, [hasNext, playNext, saveEpisodeProgress, isFullscreen]);
@@ -317,7 +419,7 @@ export default function VideoPlayer({
     playPrev();
     if (wasFullscreen) {
       setTimeout(() => {
-        containerRef.current?.requestFullscreen().catch(() => { });
+        containerRef.current?.requestFullscreen().catch(() => {});
       }, 100);
     }
   }, [hasPrev, playPrev, saveEpisodeProgress, isFullscreen]);
@@ -326,56 +428,68 @@ export default function VideoPlayer({
     togglePlay: togglePlayWithFeedback,
     forward: forwardWithFeedback,
     backward: backwardWithFeedback,
-    changeRate, toggleFullscreen, toggleMute,
-    handlePlayNext, handlePlayPrev, playbackRate, setVolume, volume, videoRef,
+    changeRate,
+    toggleFullscreen,
+    toggleMute,
+    handlePlayNext,
+    handlePlayPrev,
+    playbackRate,
+    setVolume,
+    volume,
+    videoRef,
     togglePiP,
   });
 
-  const { handleSingleClick, handleDoubleClick } = useGestureHandlers({ togglePlay: togglePlayWithFeedback, toggleFullscreen });
+  const { handleSingleClick, handleDoubleClick } = useGestureHandlers({
+    togglePlay: togglePlayWithFeedback,
+    toggleFullscreen,
+  });
 
-  // ─── Mobile double-tap seek ───
   const lastTapRef = useRef<{ time: number; x: number } | null>(null);
   const mobileTapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleMobileTap = useCallback((e: React.TouchEvent) => {
-    const now = Date.now();
-    const touch = e.changedTouches[0];
-    if (!touch || !containerRef.current) return;
+  const handleMobileTap = useCallback(
+    (e: React.TouchEvent) => {
+      const now = Date.now();
+      const touch = e.changedTouches[0];
+      if (!touch || !containerRef.current) return;
 
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = touch.clientX - rect.left;
-    const isLeftHalf = x < rect.width / 2;
+      const rect = containerRef.current.getBoundingClientRect();
+      const x = touch.clientX - rect.left;
+      const isLeftHalf = x < rect.width / 2;
 
-    if (lastTapRef.current && now - lastTapRef.current.time < PLAYER_CONSTANTS.DOUBLE_TAP_THRESHOLD) {
-      // Double-tap detected - cancel any pending single-tap action and seek
-      if (mobileTapTimerRef.current) {
-        clearTimeout(mobileTapTimerRef.current);
-        mobileTapTimerRef.current = null;
-      }
-      if (isLeftHalf) {
-        backwardWithFeedback(PLAYER_CONSTANTS.MOBILE_SEEK_OFFSET_SECONDS);
-      } else {
-        forwardWithFeedback(PLAYER_CONSTANTS.MOBILE_SEEK_OFFSET_SECONDS);
-      }
-      lastTapRef.current = null;
-    } else {
-      // First tap - store and set timer for single-tap play/pause
-      lastTapRef.current = { time: now, x };
-      mobileTapTimerRef.current = setTimeout(() => {
-        // Single-tap - toggle play/pause
-        const video = videoRef.current;
-        if (video) {
-          if (video.paused) {
-            video.play().catch(() => { });
-          } else {
-            video.pause();
-          }
+      if (
+        lastTapRef.current &&
+        now - lastTapRef.current.time < PLAYER_CONSTANTS.DOUBLE_TAP_THRESHOLD
+      ) {
+        if (mobileTapTimerRef.current) {
+          clearTimeout(mobileTapTimerRef.current);
+          mobileTapTimerRef.current = null;
+        }
+        if (isLeftHalf) {
+          backwardWithFeedback(PLAYER_CONSTANTS.MOBILE_SEEK_OFFSET_SECONDS);
+        } else {
+          forwardWithFeedback(PLAYER_CONSTANTS.MOBILE_SEEK_OFFSET_SECONDS);
         }
         lastTapRef.current = null;
-        mobileTapTimerRef.current = null;
-      }, PLAYER_CONSTANTS.DOUBLE_TAP_THRESHOLD);
-    }
-  }, [containerRef, videoRef, backwardWithFeedback, forwardWithFeedback]);
+      } else {
+        lastTapRef.current = { time: now, x };
+        mobileTapTimerRef.current = setTimeout(() => {
+          const video = videoRef.current;
+          if (video) {
+            if (video.paused) {
+              video.play().catch(() => {});
+            } else {
+              video.pause();
+            }
+          }
+          lastTapRef.current = null;
+          mobileTapTimerRef.current = null;
+        }, PLAYER_CONSTANTS.DOUBLE_TAP_THRESHOLD);
+      }
+    },
+    [containerRef, videoRef, backwardWithFeedback, forwardWithFeedback],
+  );
 
   useEffect(() => {
     setPlaybackError(null);
@@ -385,7 +499,9 @@ export default function VideoPlayer({
     if (movieId) {
       const movieItem = movies.find((item) => item.id.toString() === movieId);
       if (movieItem) {
-        const onLoaded = () => { video.currentTime = movieItem.position; };
+        const onLoaded = () => {
+          video.currentTime = movieItem.position;
+        };
         video.addEventListener('loadedmetadata', onLoaded, { once: true });
       }
     } else if (serieId) {
@@ -395,11 +511,22 @@ export default function VideoPlayer({
         seasonId || 0,
       );
       if (episodeProgress) {
-        const onLoaded = () => { video.currentTime = episodeProgress.position; };
+        const onLoaded = () => {
+          video.currentTime = episodeProgress.position;
+        };
         video.addEventListener('loadedmetadata', onLoaded, { once: true });
       }
     }
-  }, [src, movieId, serieId, episodeNumber, seasonId, movies, getEpisodeProgress, setPlaybackError]);
+  }, [
+    src,
+    movieId,
+    serieId,
+    episodeNumber,
+    seasonId,
+    movies,
+    getEpisodeProgress,
+    setPlaybackError,
+  ]);
 
   useEffect(() => {
     const v = videoRef.current;
@@ -493,22 +620,17 @@ export default function VideoPlayer({
         }}
         onTouchEnd={handleMobileTap}
       >
-        <video
-          ref={videoRef}
+        <VideoElement
+          videoRef={videoRef}
           poster={poster}
-          muted={isMuted}
+          isMuted={isMuted}
           loop={loop}
-          playsInline
-          className="w-full h-full block object-contain"
-          onEnded={() => {
-            handlePlayNext();
-          }}
+          onEnded={handlePlayNext}
           onClick={handleSingleClick}
           onDoubleClick={handleDoubleClick}
         />
 
-        {isLoading && !paused && <PlayerSpinner />}
-        {paused && !isLoading && <PlayerPausedOverlay />}
+        <PlayerLoader isLoading={isLoading} paused={paused} />
 
         <SeekFeedback action={feedbackAction} />
 
@@ -553,6 +675,9 @@ export default function VideoPlayer({
           src={src}
           isDesktopApp={isDesktopApp}
           isHlsStream={isHlsStream}
+          qualityLevels={qualityLevels}
+          currentQuality={currentQuality}
+          onQualityChange={setQuality}
           onPauseVideo={() => videoRef.current?.pause()}
           onVlcPositionUpdate={handleVlcPositionUpdate}
         />

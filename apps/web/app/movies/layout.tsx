@@ -39,7 +39,6 @@ function LayoutContent({
       <CategoriesSidebar
         categories={categories}
         isLoading={isFetchingCategories}
-        selectedCategoryId={selectedCategoryId}
         categoryType="movies"
       />
       {children}
@@ -53,7 +52,13 @@ export default function Layout({
   children: React.ReactNode;
 }>) {
   return (
-    <Suspense fallback={<div className="flex h-full items-center justify-center"><LoadingSpinner /></div>}>
+    <Suspense
+      fallback={
+        <div className="flex h-full items-center justify-center">
+          <LoadingSpinner />
+        </div>
+      }
+    >
       <LayoutContent>{children}</LayoutContent>
     </Suspense>
   );

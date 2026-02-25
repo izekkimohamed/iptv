@@ -3,6 +3,7 @@ import { PlayerError } from './useVideoState';
 
 interface UseVideoEventsProps {
   videoRef: RefObject<HTMLVideoElement | null>;
+  src: string;
   setPaused: React.Dispatch<React.SetStateAction<boolean>>;
   setCurrentTime: React.Dispatch<React.SetStateAction<number>>;
   setBufferedEnd: React.Dispatch<React.SetStateAction<number>>;
@@ -17,6 +18,7 @@ interface UseVideoEventsProps {
 
 export function useVideoEvents({
   videoRef,
+  src,
   setPaused,
   setCurrentTime,
   setBufferedEnd,
@@ -31,6 +33,12 @@ export function useVideoEvents({
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+
+    // Reset state when src changes
+    setCurrentTime(0);
+    setDuration(0);
+    setBufferedEnd(0);
+    setPlaybackError(null);
 
     const onPlay = () => setPaused(video.paused);
     const onPause = () => setPaused(video.paused);
@@ -93,8 +101,17 @@ export function useVideoEvents({
       video.removeEventListener('ended', onEndedEvt);
     };
   }, [
-    videoRef, setPaused, setCurrentTime, setBufferedEnd, setDuration,
-    setVolumeState, setIsMuted, setIsLoading, setPlaybackError,
-    onEnded, saveProgressNow
+    videoRef,
+    src,
+    setPaused,
+    setCurrentTime,
+    setBufferedEnd,
+    setDuration,
+    setVolumeState,
+    setIsMuted,
+    setIsLoading,
+    setPlaybackError,
+    onEnded,
+    saveProgressNow,
   ]);
 }

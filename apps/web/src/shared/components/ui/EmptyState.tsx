@@ -1,4 +1,5 @@
 import { ChevronLeft } from 'lucide-react';
+import { memo } from 'react';
 
 import { Button } from './button';
 
@@ -10,8 +11,7 @@ interface EmptyStateProps {
   goBack?: boolean;
 }
 
-
-export default function EmptyState({
+const EmptyState = memo(function EmptyState({
   icon = '📂',
   title,
   description,
@@ -43,4 +43,6 @@ export default function EmptyState({
       </div>
     </div>
   );
-}
+});
+
+export default EmptyState;

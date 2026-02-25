@@ -46,20 +46,23 @@ async fn open_in_vlc(url: String, aspect_ratio: Option<String>, start_position: 
     let port = "8080";
 
     let mut cmd = Command::new(&vlc_binary);
-    
+
     // Set aspect ratio if provided
     if let Some(ratio) = aspect_ratio {
         cmd.arg(format!("--aspect-ratio={}", ratio));
     }
-    
+
     // Hide video title
     cmd.arg("--no-video-title-show");
-    
+
+    // toggle fullscreen
+    cmd.arg("--fullscreen");
+
     // Start from position if provided (in seconds)
     if let Some(pos) = start_position {
         cmd.arg(format!("--start-time={}", pos));
     }
-    
+
     cmd.arg(&url);
     cmd.arg("--extraintf=http");
     cmd.arg(format!("--http-password={}", password));

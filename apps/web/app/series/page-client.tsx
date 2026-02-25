@@ -70,13 +70,8 @@ function SeriesPageInner() {
   };
   return (
     <div className="flex h-full">
-      <CategoriesSidebar
-        categories={categories}
-        isLoading={isLoading}
-        selectedCategoryId={selectedCategoryId}
-        categoryType="series"
-      />
-      <div className="h-full w-full overflow-y-auto bg-background/50 backdrop-blur-3xl scrollbar-hide ">
+      <CategoriesSidebar categories={categories} isLoading={isLoading} categoryType="series" />
+      <div className="bg-background/50 scrollbar-hide h-full w-full overflow-y-auto backdrop-blur-3xl">
         {serieError && (
           <EmptyState
             icon="📺"
@@ -88,7 +83,7 @@ function SeriesPageInner() {
         )}
         {!selectedCategoryId && !serieId && !newSeries && (
           <EmptyState
-            icon={<Tv className="h-12 w-12 text-muted-foreground/40" />}
+            icon={<Tv className="text-muted-foreground/40 h-12 w-12" />}
             title="No Series Selected"
             description="Please select a category from the sidebar to continue"
             fullScreen
@@ -97,7 +92,7 @@ function SeriesPageInner() {
 
         {(isFetchingSeries || isFetchingSerie || loadingNewData) && (
           <div className="flex h-full items-center justify-center">
-             <LoadingSpinner />
+            <LoadingSpinner />
           </div>
         )}
         {serieId && serie && (
@@ -114,10 +109,32 @@ function SeriesPageInner() {
         )}
 
         {series && !isFetchingSeries && !isFetchingSerie && !serieId && (
+          <VirtualGrid
+            className="h-full p-3"
+            items={series}
+            renderItem={(serie) => (
+              <ItemsList
+                image={serie.cover || ''}
+                title={serie.name || ''}
+                rating={serie.rating || ''}
+                streamId={serie.seriesId}
+                onMovieClick={() => handleserieClick(serie.seriesId)}
+                itemType="series"
+              />
+            )}
+            gapClassName="gap-6"
+          />
+        )}
 
+        {newSeriesData &&
+          !series &&
+          !isFetchingSeries &&
+          !loadingNewData &&
+          !isFetchingSerie &&
+          !serieId && (
             <VirtualGrid
               className="h-full p-3"
-              items={series}
+              items={newSeriesData}
               renderItem={(serie) => (
                 <ItemsList
                   image={serie.cover || ''}
@@ -130,42 +147,21 @@ function SeriesPageInner() {
               )}
               gapClassName="gap-6"
             />
-
-        )}
-
-        {newSeriesData &&
-          !series &&
-          !isFetchingSeries &&
-          !loadingNewData &&
-          !isFetchingSerie &&
-          !serieId && (
-
-              <VirtualGrid
-                className="h-full p-3"
-                items={newSeriesData}
-                renderItem={(serie) => (
-                  <ItemsList
-                    image={serie.cover || ''}
-                    title={serie.name || ''}
-                    rating={serie.rating || ''}
-                    streamId={serie.seriesId}
-                    onMovieClick={() => handleserieClick(serie.seriesId)}
-                    itemType="series"
-                  />
-                )}
-                gapClassName="gap-6"
-              />
-
           )}
       </div>
-
     </div>
   );
 }
 
 export function SeriesPageContent() {
   return (
-    <Suspense fallback={<div className="flex h-full items-center justify-center"><LoadingSpinner /></div>}>
+    <Suspense
+      fallback={
+        <div className="flex h-full items-center justify-center">
+          <LoadingSpinner />
+        </div>
+      }
+    >
       <SeriesPageInner />
     </Suspense>
   );

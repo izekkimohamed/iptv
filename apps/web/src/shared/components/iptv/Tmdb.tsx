@@ -41,20 +41,22 @@ function Tmdb(props: TmdbProps) {
           Cast
         </h2>
         <div className="flex space-x-4 overflow-x-auto py-3">
-          {data.cast?.map((c) => (
-            <div
-              key={c.id}
-              className="group relative flex aspect-square min-w-[150px] cursor-pointer items-center justify-center overflow-hidden rounded-full bg-gray-400 text-center"
-            >
-              <div className="absolute flex size-full items-center justify-center bg-gradient-to-t from-black/60 to-transparent">
-                <p className="text-lg font-semibold">{c.name}</p>
+          {data.cast?.map(
+            (c: { id?: number; name: string; profilePath: string | null }, idx: number) => (
+              <div
+                key={c.id ?? idx}
+                className="group relative flex aspect-square min-w-[150px] cursor-pointer items-center justify-center overflow-hidden rounded-full bg-gray-400 text-center"
+              >
+                <div className="absolute flex size-full items-center justify-center bg-gradient-to-t from-black/60 to-transparent">
+                  <p className="text-lg font-semibold">{c.name}</p>
+                </div>
+                <Image fill src={c.profilePath ? c.profilePath : ''} alt={c.name} sizes="200px" />
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/60 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                  <p className="text-lg font-semibold">{c.name}</p>
+                </div>
               </div>
-              <Image fill src={c.profilePath ? c.profilePath : ''} alt={c.name} sizes="200px" />
-              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/60 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                <p className="text-lg font-semibold">{c.name}</p>
-              </div>
-            </div>
-          ))}
+            ),
+          )}
         </div>
       </section>
 

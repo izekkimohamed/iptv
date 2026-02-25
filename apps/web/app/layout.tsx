@@ -7,6 +7,7 @@ import { Inter, JetBrains_Mono, Outfit } from 'next/font/google';
 import { usePathname } from 'next/navigation';
 import { type ReactNode, Suspense, useEffect } from 'react';
 
+import ErrorBoundary from '@/shared/components/common/ErrorBoundary';
 import Providers from '@/shared/components/providers';
 import Sidebar from '@/shared/components/Sidebar';
 import { Toaster } from '@/shared/components/ui/sonner';
@@ -53,13 +54,32 @@ export default function RootLayout({
     };
   }, [pathname, clearPlayer]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable)
+        return;
+
+      if (e.key === 'ArrowRight' && e.altKey) {
+        e.preventDefault();
+        window.history.forward();
+      } else if (e.key === 'ArrowLeft' && e.altKey) {
+        e.preventDefault();
+        window.history.back();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   return (
     <html lang="en">
       <Providers>
         <body
           className={`${outfit.variable} ${inter.variable} ${jetBrainsMono.variable} font-mono antialiased`}
         >
-          <div className="relative flex h-screen w-full overflow-hidden bg-background text-foreground">
+          <div className="bg-background text-foreground relative flex h-screen w-full overflow-hidden">
             {/* Background Gradient */}
             <div className="pointer-events-none fixed inset-0 z-0">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,_oklch(0.2_0.05_260_/_0.15)_0%,_transparent_50%)]" />
@@ -68,10 +88,11 @@ export default function RootLayout({
 
             <Sidebar />
 
-
             <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
               <main className="flex-1 overflow-hidden">
-                <Suspense>{children}</Suspense>
+                <ErrorBoundary>
+                  <Suspense>{children}</Suspense>
+                </ErrorBoundary>
               </main>
             </div>
           </div>
@@ -81,4 +102,3 @@ export default function RootLayout({
     </html>
   );
 }
-

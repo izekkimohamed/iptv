@@ -3,10 +3,11 @@
 import { Calendar, CheckCircle2, Clock, Play, Star } from 'lucide-react';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
-import { FC, Suspense } from 'react';
+import { FC, Suspense, memo } from 'react';
 
 import { Episode } from '@/shared/lib/types';
 import { cn } from '@/shared/lib/utils';
+import { WATCHED_THRESHOLD } from '@/constants/player';
 import { useWatchedSeriesStore } from '@repo/store';
 import { cleanName, formatDate, formatDuration } from '@repo/utils';
 
@@ -35,7 +36,7 @@ const EpisodeCardContent: FC<EpisodeCardProps> = ({
   const progress = duration > 0 ? position / duration : 0;
   const progressPercent = Math.min(progress * 100, 100);
 
-  const isWatched = progressPercent >= 95;
+  const isWatched = progressPercent >= WATCHED_THRESHOLD;
   const isInProgress = progress > 0 && !isWatched;
 
   const imageSrc = episode.info?.movie_image || tmdbPoster || fallbackImage;
@@ -62,7 +63,7 @@ const EpisodeCardContent: FC<EpisodeCardProps> = ({
           fill
           className={cn(
             'object-cover transition-transform duration-500 group-hover:scale-105',
-            isWatched ? 'opacity-40' : 'opacity-100'
+            isWatched ? 'opacity-40' : 'opacity-100',
           )}
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
         />
@@ -72,29 +73,29 @@ const EpisodeCardContent: FC<EpisodeCardProps> = ({
 
         {/* Play Overlay */}
         <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/90 text-primary-foreground shadow-lg backdrop-blur-sm transition-transform duration-300 group-hover:scale-110">
+          <div className="bg-primary/90 text-primary-foreground flex h-12 w-12 items-center justify-center rounded-full shadow-lg backdrop-blur-sm transition-transform duration-300 group-hover:scale-110">
             <Play className="ml-1 h-6 w-6 fill-current" />
           </div>
         </div>
 
         {/* Floating Badges */}
         <div className="absolute top-2 left-2 flex gap-2">
-            <div className="rounded-sm bg-black/60 px-2 py-1 text-[10px] font-bold text-white/90 backdrop-blur-md">
-                E{episode.episode_num}
+          <div className="rounded-sm bg-black/60 px-2 py-1 text-[10px] font-bold text-white/90 backdrop-blur-md">
+            E{episode.episode_num}
+          </div>
+          {isWatched && (
+            <div className="flex items-center gap-1 rounded-sm bg-emerald-500/80 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-md">
+              <CheckCircle2 className="h-3 w-3" />
+              <span>DONE</span>
             </div>
-            {isWatched && (
-                <div className="flex items-center gap-1 rounded-sm bg-emerald-500/80 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-md">
-                    <CheckCircle2 className="h-3 w-3" />
-                    <span>DONE</span>
-                </div>
-            )}
+          )}
         </div>
 
         {/* Progress Bar */}
         {isInProgress && (
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10">
+          <div className="absolute right-0 bottom-0 left-0 h-1 bg-white/10">
             <div
-              className="h-full bg-primary transition-all duration-300"
+              className="bg-primary h-full transition-all duration-300"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -102,20 +103,20 @@ const EpisodeCardContent: FC<EpisodeCardProps> = ({
       </div>
 
       {/* Content Section */}
-      <div className="p-4 space-y-3">
+      <div className="space-y-3 p-4">
         <div className="space-y-1">
           <div className="flex items-start justify-between gap-2">
-            <h4 className="line-clamp-1 text-sm font-bold text-white transition-colors group-hover:text-primary">
+            <h4 className="group-hover:text-primary line-clamp-1 text-sm font-bold text-white transition-colors">
               {cleanName(episode.title) || `Episode ${episode.episode_num}`}
             </h4>
             {rating && (
-              <div className="flex items-center gap-1 shrink-0 text-amber-400">
+              <div className="flex shrink-0 items-center gap-1 text-amber-400">
                 <Star className="h-3 w-3 fill-current" />
                 <span className="text-[10px] font-bold">{rating.toFixed(1)}</span>
               </div>
             )}
           </div>
-          <p className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+          <p className="text-[10px] font-medium tracking-wider text-white/40 uppercase">
             Season {episode.season} • Episode {episode.episode_num}
           </p>
         </div>
@@ -137,7 +138,7 @@ const EpisodeCardContent: FC<EpisodeCardProps> = ({
           </div>
 
           {isInProgress && (
-            <span className="text-[10px] font-bold text-primary">
+            <span className="text-primary text-[10px] font-bold">
               {Math.max(1, Math.floor((duration - position) / 60))}m left
             </span>
           )}
@@ -147,10 +148,18 @@ const EpisodeCardContent: FC<EpisodeCardProps> = ({
   );
 };
 
-export const EpisodeCard: FC<EpisodeCardProps> = (props) => {
+export const EpisodeCard: FC<EpisodeCardProps> = memo((props) => {
   return (
-    <Suspense fallback={<div className="relative aspect-video w-full overflow-hidden bg-neutral-900"><div className="flex h-full items-center justify-center"><div className="h-6 w-6 animate-spin rounded-full border-t-2 border-primary" /></div></div>}>
+    <Suspense
+      fallback={
+        <div className="relative aspect-video w-full overflow-hidden bg-neutral-900">
+          <div className="flex h-full items-center justify-center">
+            <div className="border-primary h-6 w-6 animate-spin rounded-full border-t-2" />
+          </div>
+        </div>
+      }
+    >
       <EpisodeCardContent {...props} />
     </Suspense>
   );
-};
+});

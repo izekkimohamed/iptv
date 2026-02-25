@@ -48,12 +48,22 @@ export function useKeyboardShortcuts({
           togglePlay();
           break;
         case 'ArrowRight':
-          e.preventDefault();
-          forward(5);
+          if (e.altKey && e.location === 2) {
+            e.preventDefault();
+            window.history.forward();
+          } else if (!e.altKey) {
+            e.preventDefault();
+            forward(5);
+          }
           break;
         case 'ArrowLeft':
-          e.preventDefault();
-          backward(5);
+          if (e.altKey && e.location === 2) {
+            e.preventDefault();
+            window.history.back();
+          } else if (!e.altKey) {
+            e.preventDefault();
+            backward(5);
+          }
           break;
         case '+':
         case '=':

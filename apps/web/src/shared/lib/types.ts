@@ -45,14 +45,14 @@ export interface Tmdb {
   poster?: string | null;
   backdrop?: string | null;
   director?: string | null;
-  cast?: { name: string; profilePath: string | null; character?: string | null }[];
-  videos?: {
+  cast?: Array<{ id: number; name: string; profilePath: string | null; character?: string | null }>;
+  videos?: Array<{
     id: string;
     key: string;
     name: string;
     site: string;
     type: string;
-  }[];
+  }>;
 }
 
 export type Episode = {
@@ -150,4 +150,54 @@ export interface EpisodesSectionProps {
   streamId: string;
   image: string;
   tmdb?: Tmdb;
+}
+
+export interface GameEvent {
+  id: string;
+  competitorId: number;
+  playerId?: number;
+  order: number;
+  gameTimeDisplay: string;
+  eventType: {
+    name: string;
+    subTypeName?: string;
+  };
+}
+
+export interface GameMember {
+  id: number;
+  shortName: string;
+}
+
+export interface GameLineupMember {
+  statusText?: string;
+  stats?: Array<{
+    isTop?: boolean;
+    value: number;
+    shortName: string;
+  }>;
+}
+
+export interface GameLineup {
+  formation?: string;
+  members?: GameLineupMember[];
+}
+
+export interface GameCompetitor {
+  id: number;
+  name: string;
+  score?: number;
+  lineups?: GameLineup;
+}
+
+export interface Game {
+  id: number;
+  homeCompetitor: GameCompetitor;
+  awayCompetitor: GameCompetitor;
+  events?: GameEvent[];
+  members?: GameMember[];
+  statusText?: string;
+  gameTimeDisplay?: string;
+  score?: { home: number; away: number };
+  lineups?: GameMember[];
 }

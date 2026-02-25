@@ -1,10 +1,18 @@
 'use client';
 import { useRouter, useSearchParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { Suspense, useEffect, useMemo } from 'react';
 
 import { Tv } from 'lucide-react';
 
-import VideoPlayer from '@/features/player/components/VideoPlayer';
+const VideoPlayer = dynamic(() => import('@/features/player/components/VideoPlayer'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex aspect-video items-center justify-center bg-black">
+      <div className="border-primary h-8 w-8 animate-spin rounded-full border-2 border-t-transparent" />
+    </div>
+  ),
+});
 import ChannelInfoPanel from '@/shared/components/channels/ChannelInfoPanel';
 import ChannelsSidebar from '@/shared/components/channels/ChannelsSidebar';
 import PlayerHeader from '@/shared/components/iptv/PlayerHeader';
@@ -145,7 +153,13 @@ function ChannelsContentInner() {
 
 export default function ChannelsContent() {
   return (
-    <Suspense fallback={<div className="flex h-full items-center justify-center"><LoadingSpinner /></div>}>
+    <Suspense
+      fallback={
+        <div className="flex h-full items-center justify-center">
+          <LoadingSpinner />
+        </div>
+      }
+    >
       <ChannelsContentInner />
     </Suspense>
   );

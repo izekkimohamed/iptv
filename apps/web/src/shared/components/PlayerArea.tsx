@@ -37,9 +37,9 @@ function PlayerArea({ selectedChannel }: { selectedChannel: SelectedChannel | un
                 title={selectedChannel?.name}
                 autoPlay
                 totalEpisodes={0}
-                serieId={null}
-                movieId={null}
-                categoryId={null}
+                serieId={undefined}
+                movieId={undefined}
+                categoryId={undefined}
               />
             </div>
 
@@ -55,18 +55,18 @@ function PlayerArea({ selectedChannel }: { selectedChannel: SelectedChannel | un
             </div>
           </div>
         ) : (
-          <div className="relative flex h-full flex-1 items-center justify-center overflow-hidden bg-background">
+          <div className="bg-background relative flex h-full flex-1 items-center justify-center overflow-hidden">
             {/* Cinematic Background Elements */}
             <div className="absolute inset-0 z-0">
-              <div className="absolute top-1/2 left-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/5 blur-[120px] animate-pulse" />
+              <div className="bg-primary/5 absolute top-1/2 left-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 animate-pulse rounded-full blur-[120px]" />
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(var(--background),1)_70%)]" />
             </div>
 
             <div className="relative z-10 text-center">
               <div className="group relative mb-8 inline-block">
-                <div className="absolute -inset-4 rounded-full bg-primary/20 opacity-0 blur-2xl transition-all duration-700 group-hover:opacity-100" />
-                <div className="relative flex h-32 w-32 items-center justify-center rounded-[2.5rem] border border-white/10 bg-white/5 backdrop-blur-3xl shadow-2xl transition-transform duration-500 hover:scale-110">
-                  <Play className="h-12 w-12 fill-primary text-primary drop-shadow-[0_0_15px_rgba(var(--primary),0.5)]" />
+                <div className="bg-primary/20 absolute -inset-4 rounded-full opacity-0 blur-2xl transition-all duration-700 group-hover:opacity-100" />
+                <div className="relative flex h-32 w-32 items-center justify-center rounded-[2.5rem] border border-white/10 bg-white/5 shadow-2xl backdrop-blur-3xl transition-transform duration-500 hover:scale-110">
+                  <Play className="fill-primary text-primary h-12 w-12 drop-shadow-[0_0_15px_rgba(var(--primary),0.5)]" />
                 </div>
               </div>
 
@@ -76,22 +76,23 @@ function PlayerArea({ selectedChannel }: { selectedChannel: SelectedChannel | un
                 </h4>
                 <div className="flex items-center justify-center gap-3">
                   <div className="h-[1px] w-8 bg-linear-to-r from-transparent to-white/20" />
-                  <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">
+                  <p className="text-[10px] font-black tracking-[0.4em] text-white/40 uppercase">
                     Your Premium Streaming Lounge
                   </p>
                   <div className="h-[1px] w-8 bg-linear-to-l from-transparent to-white/20" />
                 </div>
-                <p className="mx-auto max-w-sm text-sm font-medium leading-relaxed text-muted-foreground/60">
-                   Select a channel from the menu to transform your space into a private screening room.
+                <p className="text-muted-foreground/60 mx-auto max-w-sm text-sm leading-relaxed font-medium">
+                  Select a channel from the menu to transform your space into a private screening
+                  room.
                 </p>
               </div>
 
               {/* Decorative Accent */}
               <div className="mt-12 flex items-center justify-center gap-2">
-                {[...Array(3)].map((_, i) => (
+                {['dot-0', 'dot-1', 'dot-2'].map((key, i) => (
                   <div
-                    key={`dot-${i}`}
-                    className="h-1.5 w-1.5 rounded-full bg-primary/20 animate-bounce"
+                    key={key}
+                    className="bg-primary/20 h-1.5 w-1.5 animate-bounce rounded-full"
                     style={{ animationDelay: `${i * 0.2}s` }}
                   />
                 ))}

@@ -2,8 +2,7 @@
 import useSWR from 'swr';
 import Image from 'next/image';
 
-// Import your types here if they are in a separate file
-import { Game } from '@/trpc/types';
+import { Game } from '@/shared/lib/types';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 

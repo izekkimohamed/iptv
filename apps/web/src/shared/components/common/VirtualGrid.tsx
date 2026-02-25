@@ -18,6 +18,19 @@ interface VirtualRowProps<T> {
   virtualIndex: number;
 }
 
+function VirtualRowItemWrapper<T>({
+  item,
+  index,
+  renderItem,
+}: {
+  item: T;
+  index: number;
+  renderItem: (item: T, index: number) => React.ReactNode;
+}) {
+  const content = renderItem(item, index);
+  return <>{content}</>;
+}
+
 const VirtualRow = memo(function VirtualRow<T>({
   items,
   start,
@@ -38,7 +51,7 @@ const VirtualRow = memo(function VirtualRow<T>({
       key={virtualKey}
       data-index={virtualIndex}
       ref={measureElement}
-      className={`grid absolute top-0 left-0 w-full ${gapClassName}`}
+      className={`absolute top-0 left-0 grid w-full ${gapClassName}`}
       style={{
         display: 'grid',
         gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
@@ -49,7 +62,11 @@ const VirtualRow = memo(function VirtualRow<T>({
       {rowItems.map((item, i) => {
         const itemIndex = start + i;
         const key = itemKey ? itemKey(item, itemIndex) : itemIndex;
-        return <div key={key}>{renderItem(item, itemIndex)}</div>;
+        return (
+          <div key={key}>
+            <VirtualRowItemWrapper item={item} index={itemIndex} renderItem={renderItem} />
+          </div>
+        );
       })}
     </div>
   );
@@ -77,7 +94,6 @@ export default function VirtualGrid<T>({
   const parentRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState<number>(0);
 
-  // Resize Observer logic...
   useEffect(() => {
     if (!parentRef.current) return;
     let timeoutId: NodeJS.Timeout;
@@ -97,10 +113,9 @@ export default function VirtualGrid<T>({
     };
   }, []);
 
-  // Calculate columns
   const { columnCount, rowCount } = useMemo(() => {
     if (containerWidth === 0) return { columnCount: 1, rowCount: 0 };
-    const cols = Math.max(1, Math.floor(containerWidth / minItemWidth)); // Ensure at least 1 col
+    const cols = Math.max(1, Math.floor(containerWidth / minItemWidth));
     const rows = Math.ceil(items.length / cols);
     return { columnCount: cols, rowCount: rows };
   }, [containerWidth, minItemWidth, items.length]);
@@ -115,7 +130,6 @@ export default function VirtualGrid<T>({
     overscan: 3,
   });
 
-  // Pre-calculate data slices
   const rows = useMemo(() => {
     return Array.from({ length: rowCount }, (_, rowIndex) => {
       const start = rowIndex * columnCount;
@@ -143,7 +157,7 @@ export default function VirtualGrid<T>({
 
           return (
             <VirtualRow
-              key={virtualRow.key}
+              key={String(virtualRow.key)}
               items={items}
               start={start}
               end={end}
@@ -153,7 +167,7 @@ export default function VirtualGrid<T>({
               gapClassName={gapClassName}
               virtualStart={virtualRow.start}
               measureElement={virtualizer.measureElement}
-              virtualKey={virtualRow.key}
+              virtualKey={String(virtualRow.key)}
               virtualIndex={virtualRow.index}
             />
           );

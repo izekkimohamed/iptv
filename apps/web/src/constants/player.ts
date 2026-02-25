@@ -10,7 +10,13 @@ export const PLAYER_CONSTANTS = {
   VOLUME_STEP: 0.05,
   PLAYBACK_RATES: [0.5, 0.75, 1, 1.25, 1.5, 2] as const,
   ASPECT_RATIOS: ['16:9', '4:3', '1:1', '16:10'] as const,
+  FEEDBACK_DURATION: 600,
+  VLC_CHECK_INTERVAL: 1000,
+  VLC_STUCK_LOADING_THRESHOLD: 15000,
 } as const;
+
+export const WATCHED_THRESHOLD = 95;
+export const GOAL_POPUP_DURATION = 8000;
 
 export const VOLUME_KEYBOARD_STEP = 0.1;
 export const SEEK_KEYBOARD_STEP = 5;

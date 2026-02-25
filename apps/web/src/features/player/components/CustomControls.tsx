@@ -15,7 +15,7 @@ import {
   Volume1,
   Volume2,
   VolumeX,
-  X
+  X,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -63,6 +63,9 @@ interface CustomControlsProps {
   src?: string;
   isDesktopApp?: boolean;
   isHlsStream?: boolean;
+  qualityLevels?: { index: number; height?: number; bitrate?: number; label: string }[];
+  currentQuality?: number;
+  onQualityChange?: (quality: number) => void;
   onOpenInVlc?: (url: string, aspectRatio: string) => void;
   onPauseVideo?: () => void;
   onVlcPositionUpdate?: (position: number) => void;
@@ -81,7 +84,7 @@ function formatTime(seconds: number, padHrs: boolean = false): string {
 
 const aspectRatioIcon = {
   '16:9': <span>16:9</span>,
-  "16:10": <span>16:10</span>,
+  '16:10': <span>16:10</span>,
   '4:3': <span>4:3</span>,
   '1:1': <span>1:1</span>,
 };
@@ -109,7 +112,7 @@ const SeekButton = ({
     onClick={onClick}
     disabled={disabled}
     title={title}
-    className="relative flex h-8 w-8 items-center justify-center rounded-md text-white/80 transition-all hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+    className="relative flex h-8 w-8 items-center justify-center rounded-md text-white/80 transition-all hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
   >
     {children}
     <span className="absolute text-[7px] font-bold">{seconds}</span>
@@ -192,9 +195,8 @@ export function CustomControls({
         const position = await invoke<number>('open_in_vlc', {
           url: src,
           aspectRatio,
-          startPosition: currentTime
+          startPosition: currentTime,
         });
-        console.log('VLC closed at position:', position, 'seconds');
 
         // Call the position update callback
         if (onVlcPositionUpdate) {
@@ -203,8 +205,7 @@ export function CustomControls({
       }
       // VLC closed - show option to resume in HTML player
       setVlcStatus('closed');
-    } catch (error) {
-      console.error('Failed to open in VLC:', error);
+    } catch {
       setVlcStatus('idle');
     }
   }, [src, isDesktopApp, aspectRatio, onOpenInVlc, onPauseVideo, onVlcPositionUpdate, currentTime]);
@@ -222,69 +223,78 @@ export function CustomControls({
     return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
   }, []);
 
-  const handleProgressHover = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const ref = progressRef.current || localProgressRef.current;
-    if (!ref) return;
-    const rect = ref.getBoundingClientRect();
-    const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    setHoverTime(percent * safeDuration);
-  }, [safeDuration, progressRef]);
-
-  const handleVolumeMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const ref = volumeBarRef.current;
-    if (!ref) return;
-
-    const getPct = (clientX: number) => {
+  const handleProgressHover = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const ref = progressRef.current || localProgressRef.current;
+      if (!ref) return;
       const rect = ref.getBoundingClientRect();
-      return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-    };
+      const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      setHoverTime(percent * safeDuration);
+    },
+    [safeDuration, progressRef],
+  );
 
-    const pct = getPct(e.clientX);
-    handleVolumeClick(e);
+  const handleVolumeMouseDown = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const ref = volumeBarRef.current;
+      if (!ref) return;
 
-    const onMove = (ev: PointerEvent) => {
-      handleVolumeClick({ clientX: ev.clientX } as React.MouseEvent<HTMLDivElement>);
-    };
-    const onUp = () => {
-      document.removeEventListener('pointermove', onMove);
-      document.removeEventListener('pointerup', onUp);
-    };
+      const getPct = (clientX: number) => {
+        const rect = ref.getBoundingClientRect();
+        return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      };
 
-    document.addEventListener('pointermove', onMove);
-    document.addEventListener('pointerup', onUp);
-  }, [volumeBarRef, handleVolumeClick]);
+      const pct = getPct(e.clientX);
+      handleVolumeClick(e);
 
-  const handleProgressPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
+      const onMove = (ev: PointerEvent) => {
+        handleVolumeClick({ clientX: ev.clientX } as React.MouseEvent<HTMLDivElement>);
+      };
+      const onUp = () => {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+      };
 
-    const ref = progressRef.current || localProgressRef.current;
-    if (!ref || !safeDuration) return;
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+    },
+    [volumeBarRef, handleVolumeClick],
+  );
 
-    const getPct = (clientX: number) => {
-      const rect = ref.getBoundingClientRect();
-      return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-    };
+  const handleProgressPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(true);
 
-    const pct = getPct(e.clientX);
-    setHoverTime(pct * safeDuration);
+      const ref = progressRef.current || localProgressRef.current;
+      if (!ref || !safeDuration) return;
 
-    const onMove = (ev: PointerEvent) => {
-      const p = getPct(ev.clientX);
-      setHoverTime(p * safeDuration);
-    };
-    const onUp = (ev: PointerEvent) => {
-      const p = getPct(ev.clientX);
-      handleProgressSeek(p * safeDuration);
-      setIsDragging(false);
-      document.removeEventListener('pointermove', onMove);
-      document.removeEventListener('pointerup', onUp);
-    };
+      const getPct = (clientX: number) => {
+        const rect = ref.getBoundingClientRect();
+        return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      };
 
-    document.addEventListener('pointermove', onMove);
-    document.addEventListener('pointerup', onUp);
-  }, [safeDuration, handleProgressSeek, progressRef]);
+      const pct = getPct(e.clientX);
+      setHoverTime(pct * safeDuration);
+
+      const onMove = (ev: PointerEvent) => {
+        const p = getPct(ev.clientX);
+        setHoverTime(p * safeDuration);
+      };
+      const onUp = (ev: PointerEvent) => {
+        const p = getPct(ev.clientX);
+        handleProgressSeek(p * safeDuration);
+        setIsDragging(false);
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+      };
+
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+    },
+    [safeDuration, handleProgressSeek, progressRef],
+  );
 
   const buttonBaseClass =
     'flex items-center justify-center rounded-md p-2 text-white/90 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:opacity-40 disabled:cursor-not-allowed active:scale-95';
@@ -297,7 +307,7 @@ export function CustomControls({
     <div
       className={cn(
         'absolute inset-0 flex flex-col justify-between',
-        showControls ? 'cursor-default pointer-events-auto' : 'cursor-none pointer-events-none',
+        showControls ? 'pointer-events-auto cursor-default' : 'pointer-events-none cursor-none',
       )}
       onClick={(e) => {
         if ((e.target as HTMLElement).closest('button, [role="slider"]')) return;
@@ -326,7 +336,7 @@ export function CustomControls({
           </span>
         )}
         {episodeNumber != null && (
-          <span className="rounded border border-white/20 bg-white/15 px-2.5 py-0.5 text-xs font-mono tracking-wider text-white/85 backdrop-blur-sm">
+          <span className="rounded border border-white/20 bg-white/15 px-2.5 py-0.5 font-mono text-xs tracking-wider text-white/85 backdrop-blur-sm">
             {seasonId != null ? `S${seasonId} · ` : ''}E{episodeNumber}
           </span>
         )}
@@ -335,7 +345,7 @@ export function CustomControls({
       {/* Bottom Controls */}
       <div
         className={cn(
-          'flex flex-col gap-3 px-4 pb-4 pt-16 transition-opacity duration-300',
+          'flex flex-col gap-3 px-4 pt-16 pb-4 transition-opacity duration-300',
           showControls ? 'opacity-100' : 'opacity-0',
         )}
         style={{
@@ -345,7 +355,7 @@ export function CustomControls({
       >
         {/* Progress Bar Row */}
         <div className="flex items-center gap-4 select-none">
-          <span className="min-w-[45px] text-right text-xs font-mono font-medium text-white/90 tabular-nums">
+          <span className="min-w-[45px] text-right font-mono text-xs font-medium text-white/90 tabular-nums">
             {formatTime(displayTime, padHours)}
           </span>
 
@@ -356,7 +366,7 @@ export function CustomControls({
                 (progressRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
               }
             }}
-            className="group relative h-1.5 flex-1 cursor-pointer rounded-full bg-white/20 transition-all hover:h-2.5 select-none"
+            className="group relative h-1.5 flex-1 cursor-pointer rounded-full bg-white/20 transition-all select-none hover:h-2.5"
             onMouseDown={handleProgressPointerDown}
             onMouseMove={handleProgressHover}
             onMouseLeave={() => setHoverTime(0)}
@@ -389,11 +399,11 @@ export function CustomControls({
 
             {/* Progress */}
             <div
-              className="absolute top-0 left-0 h-full rounded-full bg-linear-to-r from-primary to-teal-500"
+              className="from-primary absolute top-0 left-0 h-full rounded-full bg-linear-to-r to-teal-500"
               style={{ width: `${progressPercent}%` }}
             >
               {/* Thumb */}
-              <div className="absolute top-1/2 right-0 h-3.5 w-3.5 -translate-y-1/2 translate-x-1/2 rounded-full bg-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100" />
+              <div className="absolute top-1/2 right-0 h-3.5 w-3.5 translate-x-1/2 -translate-y-1/2 rounded-full bg-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100" />
             </div>
 
             {/* Hover timestamp tooltip */}
@@ -407,7 +417,7 @@ export function CustomControls({
             )}
           </div>
 
-          <span className="min-w-[45px] text-xs font-mono font-medium text-white/90 tabular-nums">
+          <span className="min-w-[45px] font-mono text-xs font-medium text-white/90 tabular-nums">
             {formatTime(safeDuration, padHours)}
           </span>
         </div>
@@ -432,7 +442,11 @@ export function CustomControls({
               className={cn(buttonBaseClass, 'mx-1 h-10 w-10 bg-white/10 backdrop-blur-sm')}
               title={paused ? 'Play (Space)' : 'Pause (Space)'}
             >
-              {paused ? <Play className="h-5 w-5 fill-current" /> : <Pause className="h-5 w-5 fill-current" />}
+              {paused ? (
+                <Play className="h-5 w-5 fill-current" />
+              ) : (
+                <Pause className="h-5 w-5 fill-current" />
+              )}
             </button>
 
             {/* Next */}
@@ -469,7 +483,11 @@ export function CustomControls({
               onMouseEnter={() => setIsVolumeHovering(true)}
               onMouseLeave={() => setIsVolumeHovering(false)}
             >
-              <button onClick={toggleMute} className={buttonBaseClass} title={isMuted ? 'Unmute (M)' : 'Mute (M)'}>
+              <button
+                onClick={toggleMute}
+                className={buttonBaseClass}
+                title={isMuted ? 'Unmute (M)' : 'Mute (M)'}
+              >
                 <VolumeIcon volume={volume} isMuted={isMuted} />
               </button>
 
@@ -494,7 +512,7 @@ export function CustomControls({
                 aria-valuenow={isMuted ? 0 : Math.round(volume * 100)}
               >
                 <div
-                  className="absolute top-0 left-0 h-full rounded-full bg-primary"
+                  className="bg-primary absolute top-0 left-0 h-full rounded-full"
                   style={{ width: `${isMuted ? 0 : volume * 100}%` }}
                 />
                 <div
@@ -520,7 +538,10 @@ export function CustomControls({
             {/* Aspect Ratio */}
             <button
               onClick={cycleAspectRatio}
-              className={cn(buttonBaseClass, 'hidden border border-white/10 bg-white/5 px-3 md:flex')}
+              className={cn(
+                buttonBaseClass,
+                'hidden border border-white/10 bg-white/5 px-3 md:flex',
+              )}
               title={`Aspect Ratio: ${aspectRatio}`}
             >
               {aspectRatioIcon[aspectRatio]}
@@ -528,7 +549,11 @@ export function CustomControls({
 
             {/* PiP */}
             {togglePiP && (
-              <button onClick={togglePiP} className={buttonBaseClass} title="Picture-in-Picture (P)">
+              <button
+                onClick={togglePiP}
+                className={buttonBaseClass}
+                title="Picture-in-Picture (P)"
+              >
                 <PictureInPicture className="h-4 w-4" />
               </button>
             )}
@@ -545,12 +570,26 @@ export function CustomControls({
                   vlcStatus === 'opening' && 'text-yellow-400',
                   vlcStatus === 'closed' && 'text-blue-400 hover:text-blue-300',
                 )}
-                title={vlcStatus === 'playing' ? 'Playing in VLC' : vlcStatus === 'opening' ? 'Opening VLC...' : vlcStatus === 'closed' ? 'Click to resume in player' : isHlsStream ? 'Open in VLC (V)' : 'Open in VLC (recommended for this format) (V)'}
+                title={
+                  vlcStatus === 'playing'
+                    ? 'Playing in VLC'
+                    : vlcStatus === 'opening'
+                      ? 'Opening VLC...'
+                      : vlcStatus === 'closed'
+                        ? 'Click to resume in player'
+                        : isHlsStream
+                          ? 'Open in VLC (V)'
+                          : 'Open in VLC (recommended for this format) (V)'
+                }
               >
                 <Tv className={cn('h-4 w-4', vlcStatus === 'playing' && 'animate-pulse')} />
                 {vlcStatus !== 'idle' && (
-                  <span className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-black/80 px-2 py-1 text-xs text-white">
-                    {vlcStatus === 'playing' ? 'Playing in VLC' : vlcStatus === 'opening' ? 'Opening VLC...' : 'VLC closed - click to resume'}
+                  <span className="absolute -top-8 left-1/2 -translate-x-1/2 rounded bg-black/80 px-2 py-1 text-xs whitespace-nowrap text-white">
+                    {vlcStatus === 'playing'
+                      ? 'Playing in VLC'
+                      : vlcStatus === 'opening'
+                        ? 'Opening VLC...'
+                        : 'VLC closed - click to resume'}
                   </span>
                 )}
                 {!isHlsStream && vlcStatus === 'idle' && (
@@ -575,16 +614,34 @@ export function CustomControls({
                 >
                   <div className="mb-3 flex items-center justify-between border-b border-white/10 pb-2">
                     <span className="text-sm font-bold text-white">Keyboard Shortcuts</span>
-                    <button onClick={() => setShowKeyboardHints(false)} className="text-white/50 hover:text-white">
+                    <button
+                      onClick={() => setShowKeyboardHints(false)}
+                      className="text-white/50 hover:text-white"
+                    >
                       <X className="h-4 w-4" />
                     </button>
                   </div>
                   <div className="space-y-2 text-xs text-white/80">
-                    <div className="flex justify-between"><span>Play/Pause</span><kbd className="rounded bg-white/10 px-2 py-1">Space / K</kbd></div>
-                    <div className="flex justify-between"><span>Forward {PLAYER_CONSTANTS.SEEK_OFFSET_SECONDS}s</span><kbd className="rounded bg-white/10 px-2 py-1">→</kbd></div>
-                    <div className="flex justify-between"><span>Backward {PLAYER_CONSTANTS.SEEK_OFFSET_SECONDS}s</span><kbd className="rounded bg-white/10 px-2 py-1">←</kbd></div>
-                    <div className="flex justify-between"><span>Mute/Unmute</span><kbd className="rounded bg-white/10 px-2 py-1">M</kbd></div>
-                    <div className="flex justify-between"><span>Fullscreen</span><kbd className="rounded bg-white/10 px-2 py-1">F</kbd></div>
+                    <div className="flex justify-between">
+                      <span>Play/Pause</span>
+                      <kbd className="rounded bg-white/10 px-2 py-1">Space / K</kbd>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Forward {PLAYER_CONSTANTS.SEEK_OFFSET_SECONDS}s</span>
+                      <kbd className="rounded bg-white/10 px-2 py-1">→</kbd>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Backward {PLAYER_CONSTANTS.SEEK_OFFSET_SECONDS}s</span>
+                      <kbd className="rounded bg-white/10 px-2 py-1">←</kbd>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Mute/Unmute</span>
+                      <kbd className="rounded bg-white/10 px-2 py-1">M</kbd>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Fullscreen</span>
+                      <kbd className="rounded bg-white/10 px-2 py-1">F</kbd>
+                    </div>
                   </div>
                 </div>
               )}
@@ -624,7 +681,9 @@ export function CustomControls({
                   </div>
 
                   <div className="space-y-2">
-                    <span className="text-xs font-medium uppercase text-white/60">Playback Speed</span>
+                    <span className="text-xs font-medium text-white/60 uppercase">
+                      Playback Speed
+                    </span>
                     <div className="grid grid-cols-3 gap-2">
                       {PLAYER_CONSTANTS.PLAYBACK_RATES.map((speed) => (
                         <button
@@ -647,7 +706,11 @@ export function CustomControls({
             </div>
 
             {/* Fullscreen */}
-            <button onClick={toggleFullscreen} className={buttonBaseClass} title={isFullscreen ? 'Exit fullscreen (F)' : 'Fullscreen (F)'}>
+            <button
+              onClick={toggleFullscreen}
+              className={buttonBaseClass}
+              title={isFullscreen ? 'Exit fullscreen (F)' : 'Fullscreen (F)'}
+            >
               {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             </button>
           </div>
