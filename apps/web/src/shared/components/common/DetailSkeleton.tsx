@@ -66,14 +66,14 @@ export const DetailSkeleton = () => {
                 <Skeleton className="h-8 w-1.5 rounded-full" />
                 <Skeleton className="h-8 w-40 rounded-full" />
              </div>
-             <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="flex flex-col items-center gap-4">
-                    <Skeleton className="aspect-square w-full rounded-full" />
-                    <Skeleton className="h-4 w-20 rounded-full" />
-                  </div>
-                ))}
-             </div>
+              <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8">
+                 {Array.from({ length: 8 }).map((_, i) => (
+                   <div key={`cast-${i}`} className="flex flex-col items-center gap-4">
+                     <Skeleton className="aspect-square w-full rounded-full" />
+                     <Skeleton className="h-4 w-20 rounded-full" />
+                   </div>
+                 ))}
+              </div>
           </div>
 
           {/* Trailers Section */}
@@ -82,10 +82,10 @@ export const DetailSkeleton = () => {
                 <Skeleton className="h-8 w-1.5 rounded-full" />
                 <Skeleton className="h-8 w-48 rounded-full" />
              </div>
-             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <Skeleton key={i} className="aspect-video w-full rounded-sm" />
-                ))}
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                 {Array.from({ length: 4 }).map((_, i) => (
+                   <Skeleton key={`trailer-${i}`} className="aspect-video w-full rounded-sm" />
+                 ))}
              </div>
           </div>
         </div>
