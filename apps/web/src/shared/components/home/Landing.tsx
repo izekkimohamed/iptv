@@ -74,9 +74,9 @@ function HomeLanding() {
                   key={channel.id}
                   className="group relative flex w-32 shrink-0 flex-col gap-3 sm:w-40"
                 >
-                  <div className="group-hover:border-primary/50 relative aspect-square overflow-hidden rounded-sm border border-white/5 bg-white/5 transition-all duration-500 group-hover:shadow-[0_0_30px_rgba(var(--primary),0.2)]">
+                  <div className="group-hover:border-primary/50 relative aspect-square overflow-hidden rounded-sm border border-white/5 bg-white/5 transition-all">
                     <Image
-                      className="h-full w-full object-contain p-4 transition-transform duration-500 group-hover:scale-110"
+                      className="h-full w-full object-contain p-4"
                       fill
                       sizes="(max-width: 640px) 128px, 160px"
                       src={channel.streamIcon || '/icon.png'}
@@ -85,15 +85,15 @@ function HomeLanding() {
                         e.currentTarget.src = '/icon.png';
                       }}
                     />
-                    <div className="absolute top-3 left-3 flex items-center gap-1.5 rounded-sm bg-red-500 px-2 py-0.5 text-[9px] font-black tracking-widest text-white shadow-[0_0_20px_rgba(239,68,68,0.4)]">
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5 rounded-sm bg-red-500 px-2 py-0.5 text-[9px] font-black tracking-widest text-white">
                       <span className="relative flex h-1.5 w-1.5">
                         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
                         <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
                       </span>
                       LIVE
                     </div>
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 backdrop-blur-[2px] transition-all duration-300 group-hover:opacity-100">
-                      <div className="bg-primary text-primary-foreground flex h-12 w-12 items-center justify-center rounded-full shadow-xl transition-transform duration-300 group-hover:scale-110">
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                      <div className="bg-primary text-primary-foreground flex h-12 w-12 items-center justify-center rounded-full">
                         <Play className="ml-1 h-6 w-6 fill-current" />
                       </div>
                     </div>

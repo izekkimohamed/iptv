@@ -1,5 +1,4 @@
-import { memo, useCallback, useRef, useState } from 'react';
-import { cn } from '@/shared/lib/utils';
+import { memo, useCallback, useRef } from 'react';
 
 interface ProgressBarProps {
   progressRef: React.RefObject<HTMLDivElement | null>;
@@ -119,7 +118,7 @@ export const ProgressBar = memo(function ProgressBar({
         )}
 
         <div
-          className="from-primary absolute top-0 left-0 h-full rounded-full bg-linear-to-r to-teal-500"
+          className="from-primary absolute top-0 left-0 h-full rounded-full bg-linear-to-r to-primary/80 shadow-sm"
           style={{ width: `${progressPercent}%` }}
         >
           <div className="absolute top-1/2 right-0 h-3.5 w-3.5 translate-x-1/2 -translate-y-1/2 rounded-full bg-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100" />

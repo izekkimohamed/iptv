@@ -82,18 +82,15 @@ export default function Sidebar() {
       )}
 
       {/* Logo Section */}
-      <div className="relative flex h-24 w-full items-center justify-center px-4 transition-all duration-300 lg:justify-start">
-        {/* Mesh Gradient background for logo area */}
-        <div className="absolute inset-0 z-0 hidden bg-[radial-gradient(at_top_left,rgba(var(--primary),0.4),transparent_50%),radial-gradient(at_bottom_right,rgba(var(--primary),0.2),transparent_50%)] opacity-20 lg:block" />
-
-        <Link href="/" className="relative z-10 flex items-center gap-3">
-          <div className="group bg-primary/20 relative h-12 w-12 shrink-0 overflow-hidden rounded-sm p-1.5 transition-all duration-500 hover:shadow-[0_0_20px_rgba(var(--primary),0.3)]">
+      <div className="flex h-24 w-full items-center justify-center px-4 transition-all duration-300 lg:justify-start">
+        <Link href="/" className="flex items-center gap-3">
+          <div className="group bg-primary/20 relative h-12 w-12 shrink-0 overflow-hidden rounded-sm p-1.5">
             <Image
               src="/icon.png"
               alt="StreamMax"
               width={48}
               height={48}
-              className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-110"
+              className="h-full w-full object-contain"
             />
           </div>
           <div className="flex hidden flex-col lg:flex">
@@ -119,16 +116,14 @@ export default function Sidebar() {
               className={cn(
                 'group relative flex items-center gap-3 overflow-hidden rounded-sm px-4 py-3.5 transition-all duration-300 ease-out',
                 isActive
-                  ? 'bg-primary/10 text-primary before:from-primary/5 shadow-[inset_0_0_20px_rgba(var(--primary),0.05)] before:absolute before:inset-0 before:rounded-sm before:bg-gradient-to-r before:to-transparent'
+                  ? 'bg-primary/10 text-primary border-primary border-l-2'
                   : 'text-muted-foreground hover:text-foreground hover:bg-white/5',
               )}
             >
               <item.icon
                 className={cn(
-                  'h-5 w-5 transition-all duration-300 group-hover:scale-110',
-                  isActive
-                    ? 'text-primary drop-shadow-[0_0_8px_rgba(var(--primary),0.5)]'
-                    : 'text-muted-foreground group-hover:text-foreground',
+                  'h-5 w-5',
+                  isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground',
                 )}
               />
               <span

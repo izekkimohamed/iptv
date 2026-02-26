@@ -611,7 +611,7 @@ export default function VideoPlayer({
     <>
       <div
         ref={containerRef}
-        className={`relative flex aspect-video max-h-full touch-none select-none ${className || ''}`}
+        className={`relative flex aspect-video max-h-full w-full touch-none select-none ${!showControls ? 'cursor-none' : ''} ${className || ''}`}
         data-isfullscreen={String(isFullscreen)}
         data-aspect-ratio={aspectRatio}
         onMouseMove={resetHideTimer}

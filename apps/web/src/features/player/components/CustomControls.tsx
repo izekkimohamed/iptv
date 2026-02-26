@@ -11,7 +11,7 @@ import {
   Settings,
   SkipBack,
   SkipForward,
-  Tv,
+  Tv2Icon as Vlc,
   Volume1,
   Volume2,
   VolumeX,
@@ -83,10 +83,10 @@ function formatTime(seconds: number, padHrs: boolean = false): string {
 }
 
 const aspectRatioIcon = {
-  '16:9': <span>16:9</span>,
-  '16:10': <span>16:10</span>,
-  '4:3': <span>4:3</span>,
-  '1:1': <span>1:1</span>,
+  '16:9': <span className='text-xs'>16:9</span>,
+  '16:10': <span className='text-xs'>16:10</span>,
+  '4:3': <span className='text-xs'>4:3</span>,
+  '1:1': <span className='text-xs'>1:1</span>,
 };
 
 const VolumeIcon = ({ volume, isMuted }: { volume: number; isMuted: boolean }) => {
@@ -297,7 +297,7 @@ export function CustomControls({
   );
 
   const buttonBaseClass =
-    'flex items-center justify-center rounded-md p-2 text-white/90 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:opacity-40 disabled:cursor-not-allowed active:scale-95';
+    'flex items-center cursor-pointer justify-center rounded-md p-2 text-white/90 transition-all hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:opacity-40 disabled:cursor-not-allowed active:scale-95';
 
   const bufferedPercent = safeDuration > 0 ? (bufferedEnd / safeDuration) * 100 : 0;
   const progressPercent = safeDuration > 0 ? (displayTime / safeDuration) * 100 : 0;
@@ -355,7 +355,7 @@ export function CustomControls({
       >
         {/* Progress Bar Row */}
         <div className="flex items-center gap-4 select-none">
-          <span className="min-w-[45px] text-right font-mono text-xs font-medium text-white/90 tabular-nums">
+          <span className="min-w-11.25 text-right font-mono text-xs font-medium text-white/90 tabular-nums">
             {formatTime(displayTime, padHours)}
           </span>
 
@@ -399,7 +399,7 @@ export function CustomControls({
 
             {/* Progress */}
             <div
-              className="from-primary absolute top-0 left-0 h-full rounded-full bg-linear-to-r to-teal-500"
+              className="to-primary absolute top-0 left-0 h-full rounded-full bg-linear-to-r from-yellow-600/80 shadow-sm"
               style={{ width: `${progressPercent}%` }}
             >
               {/* Thumb */}
@@ -417,7 +417,7 @@ export function CustomControls({
             )}
           </div>
 
-          <span className="min-w-[45px] font-mono text-xs font-medium text-white/90 tabular-nums">
+          <span className="min-w-11.25 font-mono text-xs font-medium text-white/90 tabular-nums">
             {formatTime(safeDuration, padHours)}
           </span>
         </div>
@@ -527,7 +527,7 @@ export function CustomControls({
 
             {/* Title (mobile) */}
             {title && (
-              <span className="ml-4 block max-w-[150px] truncate text-sm font-medium text-white/90 md:hidden">
+              <span className="ml-4 block max-w-37.5 truncate text-sm font-medium text-white/90 md:hidden">
                 {title}
               </span>
             )}
@@ -540,7 +540,7 @@ export function CustomControls({
               onClick={cycleAspectRatio}
               className={cn(
                 buttonBaseClass,
-                'hidden border border-white/10 bg-white/5 px-3 md:flex',
+                'hidden border border-white/10 bg-white/5 px-1 md:flex',
               )}
               title={`Aspect Ratio: ${aspectRatio}`}
             >
@@ -582,7 +582,7 @@ export function CustomControls({
                           : 'Open in VLC (recommended for this format) (V)'
                 }
               >
-                <Tv className={cn('h-4 w-4', vlcStatus === 'playing' && 'animate-pulse')} />
+                <Vlc className={cn('h-4 w-4', vlcStatus === 'playing' && 'animate-pulse')} />
                 {vlcStatus !== 'idle' && (
                   <span className="absolute -top-8 left-1/2 -translate-x-1/2 rounded bg-black/80 px-2 py-1 text-xs whitespace-nowrap text-white">
                     {vlcStatus === 'playing'

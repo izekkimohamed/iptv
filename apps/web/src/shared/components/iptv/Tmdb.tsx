@@ -29,17 +29,13 @@ function Tmdb(props: TmdbProps) {
     <div className="container mx-auto space-y-16 px-6 py-12">
       {/* Description */}
       <section className="max-w-4xl">
-        <h2 className="mb-6 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-3xl font-bold text-transparent">
-          Synopsis
-        </h2>
-        <p className="text-lg leading-relaxed text-gray-300">{data.overview}</p>
+        <h2 className="text-foreground mb-6 text-3xl font-bold">Synopsis</h2>
+        <p className="text-muted-foreground text-lg leading-relaxed">{data.overview}</p>
       </section>
 
       {/* Cast */}
       <section>
-        <h2 className="mb-8 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-3xl font-bold text-transparent">
-          Cast
-        </h2>
+        <h2 className="text-foreground mb-8 text-3xl font-bold">Cast</h2>
         <div className="flex space-x-4 overflow-x-auto py-3">
           {data.cast?.map(
             (c: { id?: number; name: string; profilePath: string | null }, idx: number) => (
@@ -62,9 +58,7 @@ function Tmdb(props: TmdbProps) {
 
       {/* Trailers */}
       <section>
-        <h2 className="mb-8 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-3xl font-bold text-transparent">
-          Trailers & Clips
-        </h2>
+        <h2 className="text-foreground mb-8 text-3xl font-bold">Trailers & Clips</h2>
         <div className="flex gap-6 space-x-4 overflow-x-auto py-3">
           {data.videos?.map((t) => (
             <a
@@ -90,9 +84,7 @@ function Tmdb(props: TmdbProps) {
       {/* Recommended */}
       <section>
         <div className="mb-8 flex items-center justify-between">
-          <h2 className="bg-gradient-to-r from-white to-gray-400 bg-clip-text text-3xl font-bold text-transparent">
-            You Might Also Like
-          </h2>
+          <h2 className="text-foreground text-3xl font-bold">You Might Also Like</h2>
           <Button className="text-gray-400 transition-colors duration-300 hover:text-white">
             View All →
           </Button>

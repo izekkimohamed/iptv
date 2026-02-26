@@ -16,7 +16,11 @@ interface CategoriesSidebarProps {
   categoryType: 'movies' | 'channels' | 'series';
 }
 
-function CategoriesSidebarContent({ categories, isLoading, categoryType }: Omit<CategoriesSidebarProps, 'selectedCategoryId'>) {
+function CategoriesSidebarContent({
+  categories,
+  isLoading,
+  categoryType,
+}: Omit<CategoriesSidebarProps, 'selectedCategoryId'>) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const selectedCategoryId = searchParams.get('categoryId');
@@ -49,21 +53,24 @@ function CategoriesSidebarContent({ categories, isLoading, categoryType }: Omit<
   const typeName = categoryType.charAt(0).toUpperCase() + categoryType.slice(1);
 
   return (
-    <div className="flex h-full w-96 flex-col border-r border-white/5 bg-background/40 backdrop-blur-xl">
+    <div className="border-border/50 bg-background/50 flex h-full w-72 flex-col border-r">
       {/* Search Header */}
-      <div className="flex flex-col gap-6 py-6 px-2 border-b border-white/10">
+      <div className="border-border/50 flex flex-col gap-6 border-b px-4 py-6">
         <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="text-muted-foreground absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2" />
           <Input
             placeholder="Search categories..."
-            className="h-11 rounded-sm border border-white/5 bg-white/5 pl-10 pr-10 text-sm font-medium placeholder:text-muted-foreground/50 transition-all focus:bg-white/10 focus:ring-1 focus:ring-primary/40"
+            className="border-input bg-background placeholder:text-muted-foreground focus:ring-ring/20 h-11 rounded-sm border pr-10 pl-10 text-sm font-medium focus:ring-2"
             value={searchValue}
             onChange={handleChange}
           />
           {searchValue && (
             <button
-              onClick={() => { setSearchValue(''); setFilteredCategories(categories); }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-sm p-1 hover:bg-white/10 text-muted-foreground"
+              onClick={() => {
+                setSearchValue('');
+                setFilteredCategories(categories);
+              }}
+              className="text-muted-foreground hover:bg-accent absolute top-1/2 right-3 -translate-y-1/2 rounded-sm p-1"
             >
               <X className="h-3 w-3" />
             </button>
@@ -71,19 +78,18 @@ function CategoriesSidebarContent({ categories, isLoading, categoryType }: Omit<
         </div>
       </div>
 
-
       {/* List */}
-      <div className="flex-1 overflow-y-auto p-2 scrollbar-hide" ref={categoryRef}>
+      <div className="scrollbar-hide flex-1 overflow-y-auto p-2" ref={categoryRef}>
         {isLoading ? (
           <div className="flex h-40 items-center justify-center">
             <LoadingSpinner />
           </div>
         ) : !filteredCategories?.length ? (
           <div className="flex flex-col items-center justify-center space-y-4 py-20 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-sm bg-white/5">
-              <Folder className="h-6 w-6 text-muted-foreground/40" />
+            <div className="bg-muted flex h-12 w-12 items-center justify-center rounded-sm">
+              <Folder className="text-muted-foreground/40 h-6 w-6" />
             </div>
-            <p className="text-sm font-medium text-muted-foreground">
+            <p className="text-muted-foreground text-sm font-medium">
               {searchValue ? 'No results found' : 'No categories available'}
             </p>
           </div>
@@ -93,22 +99,33 @@ function CategoriesSidebarContent({ categories, isLoading, categoryType }: Omit<
             <Link
               href={`/${categoryType}?new=true`}
               className={cn(
-                "group relative flex items-center justify-between rounded-sm border border-transparent px-3 py-2 transition-all duration-300",
+                'group relative flex items-center justify-between rounded-sm border border-transparent px-3 py-2 transition-all duration-300',
                 isNew
-                  ? "bg-primary/10 border-primary/20 text-primary shadow-lg shadow-primary/5"
-                  : "bg-white/5 border-white/5 text-muted-foreground text-foreground"
+                  ? 'bg-primary/10 border-primary/20 text-primary shadow-primary/5 shadow-lg'
+                  : 'text-muted-foreground text-foreground border-white/5 bg-white/5',
               )}
             >
               <div className="flex items-center gap-3">
-                <div className={cn(
-                  "flex h-14 w-14 items-center justify-center rounded-sm transition-colors",
-                  isNew ? "bg-primary text-primary-foreground" : "bg-white/5 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
-                )}>
-                  <Flame className="h-8 w-8" />
+                <div
+                  className={cn(
+                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-sm transition-colors md:h-12 md:w-12',
+                    isNew
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary bg-white/5',
+                  )}
+                >
+                  <Flame className="h-4 w-4 md:h-5 md:w-5" />
                 </div>
-                <span className="text-lg font-bold truncate">New {typeName}</span>
+                <span className="truncate text-sm font-medium md:text-base">New {typeName}</span>
               </div>
-              <ChevronRight className={cn("h-4 w-4 transition-all", isNew ? "opacity-100" : "opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0")} />
+              <ChevronRight
+                className={cn(
+                  'h-4 w-4 transition-all',
+                  isNew
+                    ? 'opacity-100'
+                    : '-translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100',
+                )}
+              />
             </Link>
 
             {/* Category List */}
@@ -121,25 +138,36 @@ function CategoriesSidebarContent({ categories, isLoading, categoryType }: Omit<
                   href={`/${categoryType}?categoryId=${category.categoryId}`}
                   data-category-id={category.categoryId}
                   className={cn(
-                    "group relative flex items-center justify-between rounded-sm overflow-hidden border border-transparent p-2 transition-all duration-300",
+                    'group relative flex items-center justify-between overflow-hidden rounded-sm border border-transparent p-2 transition-all duration-300',
                     isSelected
-                      ? "bg-primary/10 border-primary/20 text-primary shadow-lg shadow-primary/5"
-                      : "bg-white/5 border-white/5 text-muted-foreground text-foreground"
+                      ? 'bg-primary/10 border-primary/20 text-primary shadow-primary/5 shadow-lg'
+                      : 'text-muted-foreground text-foreground border-white/5 bg-white/5',
                   )}
                 >
                   <div className="flex items-center gap-1.5">
-                    <div className={cn(
-                      "flex h-14 w-14 items-center justify-center rounded-sm transition-colors",
-                      isSelected ? "bg-primary/20 text-primary" : "bg-white/5 text-muted-foreground group-hover:bg-white/10"
-                    )}>
-                      <Folder className="h-8 w-8" />
+                    <div
+                      className={cn(
+                        'flex h-10 w-10 shrink-0 items-center justify-center rounded-sm transition-colors md:h-12 md:w-12',
+                        isSelected
+                          ? 'bg-primary/20 text-primary'
+                          : 'text-muted-foreground bg-white/5 group-hover:bg-white/10',
+                      )}
+                    >
+                      <Folder className="h-4 w-4 md:h-5 md:w-5" />
                     </div>
-                    <span className="truncate">{category.categoryName}</span>
+                    <span className="truncate text-sm md:text-base">{category.categoryName}</span>
                   </div>
-                  <ChevronRight className={cn("h-4 w-4 transition-all", isSelected ? "opacity-100" : "opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0")} />
+                  <ChevronRight
+                    className={cn(
+                      'h-4 w-4 transition-all',
+                      isSelected
+                        ? 'opacity-100'
+                        : '-translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100',
+                    )}
+                  />
 
                   {isSelected && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 h-full w-1 rounded-l-full bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]" />
+                    <div className="bg-primary absolute top-1/2 left-0 h-full w-1 -translate-y-1/2 rounded-l-full shadow-[0_0_10px_rgba(var(--primary),0.5)]" />
                   )}
                 </Link>
               );
@@ -149,10 +177,10 @@ function CategoriesSidebarContent({ categories, isLoading, categoryType }: Omit<
       </div>
 
       {/* Footer Info */}
-      <div className="border border-white/5 p-4 bg-white/5">
-        <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+      <div className="border border-white/5 bg-white/5 p-4">
+        <div className="text-muted-foreground/60 flex items-center justify-between text-[10px] font-black tracking-widest uppercase">
           <span>{searchValue ? 'Matches Found' : 'Total Groups'}</span>
-          <span className="rounded-sm bg-white/5 px-2 py-0.5 text-foreground ring-1 ring-white/10">
+          <span className="text-foreground rounded-sm bg-white/5 px-2 py-0.5 ring-1 ring-white/10">
             {filteredCategories?.length || 0}
           </span>
         </div>
@@ -163,9 +191,14 @@ function CategoriesSidebarContent({ categories, isLoading, categoryType }: Omit<
 
 export default function CategoriesSidebar(props: CategoriesSidebarProps) {
   return (
-    <Suspense fallback={<div className="flex h-full w-96 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-t-2 border-primary" /></div>}>
+    <Suspense
+      fallback={
+        <div className="flex h-full w-96 items-center justify-center">
+          <div className="border-primary h-8 w-8 animate-spin rounded-full border-t-2" />
+        </div>
+      }
+    >
       <CategoriesSidebarContent {...props} />
     </Suspense>
   );
 }
-

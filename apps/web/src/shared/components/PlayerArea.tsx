@@ -56,22 +56,15 @@ function PlayerArea({ selectedChannel }: { selectedChannel: SelectedChannel | un
           </div>
         ) : (
           <div className="bg-background relative flex h-full flex-1 items-center justify-center overflow-hidden">
-            {/* Cinematic Background Elements */}
-            <div className="absolute inset-0 z-0">
-              <div className="bg-primary/5 absolute top-1/2 left-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 animate-pulse rounded-full blur-[120px]" />
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(var(--background),1)_70%)]" />
-            </div>
-
             <div className="relative z-10 text-center">
               <div className="group relative mb-8 inline-block">
-                <div className="bg-primary/20 absolute -inset-4 rounded-full opacity-0 blur-2xl transition-all duration-700 group-hover:opacity-100" />
-                <div className="relative flex h-32 w-32 items-center justify-center rounded-[2.5rem] border border-white/10 bg-white/5 shadow-2xl backdrop-blur-3xl transition-transform duration-500 hover:scale-110">
-                  <Play className="fill-primary text-primary h-12 w-12 drop-shadow-[0_0_15px_rgba(var(--primary),0.5)]" />
+                <div className="relative flex h-32 w-32 items-center justify-center rounded-[2.5rem] border border-white/10 bg-white/5">
+                  <Play className="fill-primary text-primary h-12 w-12" />
                 </div>
               </div>
 
               <div className="space-y-4">
-                <h4 className="text-4xl font-black tracking-tighter text-white">
+                <h4 className="text-foreground text-4xl font-black tracking-tighter">
                   Cinema <span className="text-primary italic">Paradiso</span>
                 </h4>
                 <div className="flex items-center justify-center gap-3">
