@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { ReactNode, memo, useRef } from 'react';
+import { ReactNode, memo, useCallback, useEffect, useRef } from 'react';
 
 import { Button } from '@/shared/components/ui/button';
 import { cn } from '@/shared/lib/utils';
@@ -24,13 +24,38 @@ const HorizontalCarousel = memo(function HorizontalCarousel({
   showEdges = true,
 }: HorizontalCarouselProps) {
   const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const handleScroll = (amount: number) => {
+  const handleScroll = useCallback((amount: number) => {
     scrollerRef.current?.scrollBy({ left: amount, behavior: 'smooth' });
-  };
+  }, []);
+
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      handleScroll(-scrollBy);
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      handleScroll(scrollBy);
+    }
+  }, [handleScroll, scrollBy]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    container.addEventListener('keydown', handleKeyDown);
+    return () => container.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
   return (
-    <div className={cn('group/carousel relative', className)}>
+    <div 
+      ref={containerRef}
+      className={cn('group/carousel relative', className)}
+      tabIndex={0}
+      role="region"
+      aria-label="Carousel with keyboard navigation"
+    >
       {showEdges && (
         <>
           <div className="from-background via-background/50 pointer-events-none absolute inset-y-0 left-0 z-20 w-32 bg-gradient-to-r to-transparent" />

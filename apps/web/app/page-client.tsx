@@ -1,13 +1,13 @@
 'use client';
 
-import { debounce, parseAsString, useQueryState } from 'nuqs';
+import { parseAsString, useQueryState } from 'nuqs';
+import { useEffect } from 'react';
 
 import HomeSearch from '@/shared/components/home/HomeSearch';
 import HomeLanding from '@/shared/components/home/Landing';
 import SearchList from '@/shared/components/home/SearchList';
 import { trpc } from '@/shared/lib/trpc';
 import { usePlaylistStore } from '@repo/store';
-import { useEffect } from 'react';
 
 export function IPTVHomePageClient() {
   // Sync search with the URL ?q=...
@@ -68,12 +68,7 @@ export function IPTVHomePageClient() {
   ]);
 
   const handleInputSearch = (term: string) => {
-    // Update the URL with the new search term
-
-    setSearchQuery(term, {
-      // Send immediate update if resetting, otherwise debounce at 500ms
-      limitUrlUpdates: term === '' ? undefined : debounce(500),
-    });
+    setSearchQuery(term);
   };
 
   return (

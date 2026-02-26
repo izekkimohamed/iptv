@@ -116,7 +116,7 @@ function ChannelsSidebarContent({ channels, isLoading }: ChannelsSidebarProps) {
                     'group relative flex items-center gap-2 overflow-hidden rounded-sm border border-transparent p-2 transition-all duration-300',
                     isSelected
                       ? 'bg-primary/10 border-primary/20 text-primary'
-                      : 'text-muted-foreground text-foreground border-white/5 bg-white/5',
+                      : ' text-foreground border-white/5 bg-white/5',
                   )}
                 >
                   <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-sm border border-white/5 bg-white/5 md:h-12 md:w-12">
@@ -135,7 +135,7 @@ function ChannelsSidebarContent({ channels, isLoading }: ChannelsSidebarProps) {
                   <div className="min-w-0 flex-1 pr-1">
                     <p
                       className={cn(
-                        'truncate text-sm transition-colors md:text-base',
+                        'text-start font-mono font-medium size-fit text-sm',
                         isSelected
                           ? 'text-primary'
                           : 'text-foreground/80 group-hover:text-foreground',

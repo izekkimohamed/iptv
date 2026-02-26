@@ -1,6 +1,7 @@
 use std::process::Command;
 use tokio::time::sleep;
 use std::time::Duration;
+use tauri::Emitter;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 use tauri::Manager;
@@ -40,7 +41,7 @@ fn find_vlc_binary() -> Option<String> {
 }
 
 #[tauri::command]
-async fn open_in_vlc(url: String, aspect_ratio: Option<String>, start_position: Option<f64>) -> Result<f64, String> {
+async fn open_in_vlc(app: tauri::AppHandle, url: String, aspect_ratio: Option<String>, start_position: Option<f64>) -> Result<f64, String> {
     let vlc_binary = find_vlc_binary().ok_or("VLC not found")?;
     let password = "tauri_internal";
     let port = "8080";
@@ -90,6 +91,8 @@ async fn open_in_vlc(url: String, aspect_ratio: Option<String>, start_position: 
                         // VLC returns 'time' in seconds
                         if let Some(time) = json["time"].as_f64() {
                             last_position = time;
+                            // Emit position update to frontend
+                            let _ = app.emit("vlc-position-update", time);
                         }
                     }
                 }
@@ -98,6 +101,9 @@ async fn open_in_vlc(url: String, aspect_ratio: Option<String>, start_position: 
             Err(e) => return Err(format!("Error waiting for VLC: {}", e)),
         }
     }
+
+    // Emit vlc-closed event to frontend
+    let _ = app.emit("vlc-closed", last_position);
 
     println!("VLC closed at: {} seconds", last_position);
     Ok(last_position)

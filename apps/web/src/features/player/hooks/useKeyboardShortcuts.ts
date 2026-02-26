@@ -14,6 +14,7 @@ interface UseKeyboardShortcutsProps {
   volume: number;
   videoRef: React.RefObject<HTMLVideoElement | null>;
   togglePiP?: () => void;
+  handleOpenInVlc?: () => void;
 }
 
 export function useKeyboardShortcuts({
@@ -30,6 +31,7 @@ export function useKeyboardShortcuts({
   volume,
   videoRef,
   togglePiP,
+  handleOpenInVlc,
 }: UseKeyboardShortcutsProps) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -108,6 +110,11 @@ export function useKeyboardShortcuts({
           e.preventDefault();
           togglePiP?.();
           break;
+        case 'v':
+        case 'V':
+          e.preventDefault();
+          handleOpenInVlc?.();
+          break;
       }
     };
 
@@ -127,5 +134,6 @@ export function useKeyboardShortcuts({
     volume,
     videoRef,
     togglePiP,
+    handleOpenInVlc,
   ]);
 }

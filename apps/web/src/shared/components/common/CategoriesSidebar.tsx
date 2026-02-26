@@ -1,4 +1,4 @@
-import { ChevronRight, Flame, Folder, Search, X } from 'lucide-react';
+import { ChevronRight, Folder, Search, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import React, { Suspense, useEffect, useRef, useState } from 'react';
@@ -24,7 +24,6 @@ function CategoriesSidebarContent({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const selectedCategoryId = searchParams.get('categoryId');
-  const isNew = searchParams.get('new') === 'true';
   const categoryRef = useRef<HTMLDivElement>(null);
   const [searchValue, setSearchValue] = useState('');
   const [filteredCategories, setFilteredCategories] = useState<Category[] | undefined>([]);
@@ -95,39 +94,6 @@ function CategoriesSidebarContent({
           </div>
         ) : (
           <div className="flex flex-col gap-1">
-            {/* "New" Filter */}
-            <Link
-              href={`/${categoryType}?new=true`}
-              className={cn(
-                'group relative flex items-center justify-between rounded-sm border border-transparent px-3 py-2 transition-all duration-300',
-                isNew
-                  ? 'bg-primary/10 border-primary/20 text-primary shadow-primary/5 shadow-lg'
-                  : 'text-muted-foreground text-foreground border-white/5 bg-white/5',
-              )}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className={cn(
-                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-sm transition-colors md:h-12 md:w-12',
-                    isNew
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary bg-white/5',
-                  )}
-                >
-                  <Flame className="h-4 w-4 md:h-5 md:w-5" />
-                </div>
-                <span className="truncate text-sm font-medium md:text-base">New {typeName}</span>
-              </div>
-              <ChevronRight
-                className={cn(
-                  'h-4 w-4 transition-all',
-                  isNew
-                    ? 'opacity-100'
-                    : '-translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100',
-                )}
-              />
-            </Link>
-
             {/* Category List */}
             {filteredCategories.map((category) => {
               const isSelected = selectedCategoryId === category.categoryId.toString();
@@ -141,10 +107,10 @@ function CategoriesSidebarContent({
                     'group relative flex items-center justify-between overflow-hidden rounded-sm border border-transparent p-2 transition-all duration-300',
                     isSelected
                       ? 'bg-primary/10 border-primary/20 text-primary shadow-primary/5 shadow-lg'
-                      : 'text-muted-foreground text-foreground border-white/5 bg-white/5',
+                      : 'text-foreground border-white/5 bg-white/5',
                   )}
                 >
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2">
                     <div
                       className={cn(
                         'flex h-10 w-10 shrink-0 items-center justify-center rounded-sm transition-colors md:h-12 md:w-12',
@@ -155,7 +121,7 @@ function CategoriesSidebarContent({
                     >
                       <Folder className="h-4 w-4 md:h-5 md:w-5" />
                     </div>
-                    <span className="truncate text-sm md:text-base">{category.categoryName}</span>
+                    <span className="text-start font-mono font-medium size-fit">{category.categoryName}</span>
                   </div>
                   <ChevronRight
                     className={cn(

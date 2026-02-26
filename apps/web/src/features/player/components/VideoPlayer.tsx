@@ -1,24 +1,29 @@
 import { usePlayerStore } from '@repo/store';
 import { invoke } from '@tauri-apps/api/core';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useRef } from 'react';
 
 import { CustomControls } from './CustomControls';
 import { PlayerErrorState } from './PlayerErrorState';
 import { PlayerPausedOverlay, PlayerSpinner } from './PlayerOverlays';
-import { FeedbackAction, SeekFeedback } from './SeekFeedback';
+import { SeekFeedback } from './SeekFeedback';
 
-import { PLAYER_CONSTANTS } from '@/constants/player';
 import { useTauri } from '@/shared/hooks/useTauri';
 import { useControlsVisibility } from '../hooks/useControlsVisibility';
+import { useEpisodeNavigation } from '../hooks/useEpisodeNavigation';
+import { useFeedback } from '../hooks/useFeedback';
 import { useGestureHandlers } from '../hooks/useGestureHandlers';
 import { useHls } from '../hooks/useHls';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import { useMobileTap } from '../hooks/useMobileTap';
+import { useProgressHandlers } from '../hooks/useProgressHandlers';
+import { useProgressResume } from '../hooks/useProgressResume';
 import { useProgressTracking } from '../hooks/useProgressTracking';
 import { useVideoControls } from '../hooks/useVideoControls';
 import { useVideoEvents } from '../hooks/useVideoEvents';
 import { AspectRatio, useVideoState } from '../hooks/useVideoState';
-
-// ─── VideoPlayerProps ─────────────────────────────────────────────────────────
+import { useVlcFallback } from '../hooks/useVlcFallback';
+import { useVolumeHandlers } from '../hooks/useVolumeHandlers';
+import { useVolumeSync } from '../hooks/useVolumeSync';
 
 interface VideoPlayerProps {
   src: string;
@@ -45,8 +50,6 @@ interface VideoPlayerProps {
   onRateChange?: (rate: number) => void;
   onAspectRatioChange?: (ratio: AspectRatio) => void;
 }
-
-// ─── Video Element Component ───────────────────────────────────────────────────
 
 function VideoElement({
   videoRef,
@@ -80,15 +83,11 @@ function VideoElement({
   );
 }
 
-// ─── Player Loader Component ─────────────────────────────────────────────────
-
 function PlayerLoader({ isLoading, paused }: { isLoading: boolean; paused: boolean }) {
   if (isLoading && !paused) return <PlayerSpinner />;
   if (paused && !isLoading) return <PlayerPausedOverlay />;
   return null;
 }
-
-// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function VideoPlayer({
   src,
@@ -155,7 +154,6 @@ export default function VideoPlayer({
   } = useVideoState(autoPlay, storedMuted, preferredRate, preferredAspectRatio);
 
   const { showControls, setShowControls, resetHideTimer } = useControlsVisibility(paused);
-
   const { isDesktopApp } = useTauri();
 
   const { saveEpisodeProgress, saveMovieProgress, getEpisodeProgress, movies, saveProgressNow } =
@@ -202,123 +200,21 @@ export default function VideoPlayer({
     saveProgressNow,
   });
 
-  const handleVlcPositionUpdate = useCallback(
-    (position: number) => {
-      if (position > 0 && videoRef.current && src) {
-        videoRef.current.currentTime = position;
-        saveProgressNow();
-      }
-    },
-    [saveProgressNow, src],
-  );
-
   const isHlsStream = src?.includes('.m3u8') || src?.includes('.ts');
-  const [loadingStartTime, setLoadingStartTime] = useState<number | null>(null);
-  const vlcFallbackRef = useRef(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    vlcFallbackRef.current = false;
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-  }, [src]);
-
-  useEffect(() => {
-    if (isLoading && !loadingStartTime) {
-      setLoadingStartTime(Date.now());
-    } else if (!isLoading) {
-      setLoadingStartTime(null);
-    }
-  }, [isLoading, loadingStartTime]);
-
-  useEffect(() => {
-    if (!isDesktopApp || !src || isHlsStream) return;
-    if (vlcFallbackRef.current) return;
-
-    const checkStuckLoading = () => {
-      if (
-        !vlcFallbackRef.current &&
-        loadingStartTime &&
-        Date.now() - loadingStartTime > PLAYER_CONSTANTS.VLC_STUCK_LOADING_THRESHOLD &&
-        isLoading
-      ) {
-        vlcFallbackRef.current = true;
-
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
-
-        invoke<number>('open_in_vlc', {
-          url: src,
-          aspectRatio,
-          startPosition: currentTime,
-        })
-          .then((position) => {
-            if (position > 0 && videoRef.current) {
-              videoRef.current.currentTime = position;
-              saveProgressNow();
-            }
-            setIsLoading(false);
-          })
-          .catch(() => {
-            vlcFallbackRef.current = false;
-          });
-      }
-    };
-
-    intervalRef.current = setInterval(checkStuckLoading, PLAYER_CONSTANTS.VLC_CHECK_INTERVAL);
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [
+  const { vlcStatus, handleOpenInVlc, handleVlcPositionUpdate } = useVlcFallback({
+    src,
     isDesktopApp,
     isHlsStream,
-    src,
-    loadingStartTime,
     isLoading,
-    aspectRatio,
-    currentTime,
-    saveProgressNow,
-    setIsLoading,
-  ]);
-
-  useEffect(() => {
-    if (playbackError && isDesktopApp && !isHlsStream && src && !vlcFallbackRef.current) {
-      vlcFallbackRef.current = true;
-      const openVlcFallback = async () => {
-        try {
-          const position = await invoke<number>('open_in_vlc', {
-            url: src,
-            aspectRatio,
-            startPosition: currentTime,
-          });
-          if (position > 0) {
-            videoRef.current!.currentTime = position;
-            saveProgressNow();
-          }
-          setPlaybackError(null);
-        } catch {
-          vlcFallbackRef.current = false;
-        }
-      };
-      openVlcFallback();
-    }
-  }, [
     playbackError,
-    isDesktopApp,
-    isHlsStream,
-    src,
-    aspectRatio,
     currentTime,
-    saveProgressNow,
+    aspectRatio,
+    setIsLoading,
     setPlaybackError,
-  ]);
+    saveProgressNow,
+    videoRef,
+  });
 
   const {
     togglePlay,
@@ -344,85 +240,54 @@ export default function VideoPlayer({
     onAspectRatioChange,
   });
 
-  const [feedbackAction, setFeedbackAction] = useState<FeedbackAction>(null);
-  const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { feedbackAction, togglePlayWithFeedback, forwardWithFeedback, backwardWithFeedback } =
+    useFeedback({ togglePlay, forward, backward });
 
-  const showFeedback = useCallback((action: FeedbackAction) => {
-    if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
-    setFeedbackAction(action);
-    feedbackTimerRef.current = setTimeout(
-      () => setFeedbackAction(null),
-      PLAYER_CONSTANTS.FEEDBACK_DURATION,
-    );
-  }, []);
+  const { handlePlayNext, handlePlayPrev } = useEpisodeNavigation({
+    hasNext,
+    hasPrev,
+    playNext,
+    playPrev,
+    saveEpisodeProgress,
+    isFullscreen,
+    containerRef,
+  });
 
-  const togglePlayWithFeedback = useCallback(() => {
+  const { handleProgressClick } = useProgressHandlers({ duration, seek });
+  const { handleVolumeClick, startVolumeDrag } = useVolumeHandlers({
+    setVolume,
+    setShowVolume,
+  });
+  const { handleMobileTap } = useMobileTap({ containerRef, videoRef, backward, forward });
+
+  useProgressResume({
+    videoRef,
+    src,
+    movieId,
+    serieId,
+    episodeNumber,
+    seasonId,
+    setPlaybackError,
+  });
+
+  useVolumeSync({ videoRef, setVolumeState, setIsMuted });
+
+  useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
-    showFeedback(video.paused ? 'play' : 'pause');
-    togglePlay();
-  }, [togglePlay, showFeedback, videoRef]);
+    video.playbackRate = preferredRate;
+    setPlaybackRateState(preferredRate);
+  }, [preferredRate, setPlaybackRateState]);
 
-  const forwardWithFeedback = useCallback(
-    (secs: number) => {
-      showFeedback('forward');
-      forward(secs);
-    },
-    [forward, showFeedback],
-  );
+  useCallback(() => {
+    onTimeUpdate?.(currentTime);
+  }, [currentTime, onTimeUpdate]);
 
-  const backwardWithFeedback = useCallback(
-    (secs: number) => {
-      showFeedback('backward');
-      backward(secs);
-    },
-    [backward, showFeedback],
-  );
-
-  const togglePiP = useCallback(async () => {
-    const video = videoRef.current;
-    if (!video) return;
-    try {
-      if (document.pictureInPictureElement) {
-        await document.exitPictureInPicture();
-      } else {
-        await video.requestPictureInPicture();
-      }
-    } catch {
-      // PiP not supported
-    }
-  }, [videoRef]);
-
-  const handleProgressSeek = useCallback(
-    (time: number) => {
-      seek(time);
-    },
-    [seek],
-  );
-
-  const handlePlayNext = useCallback(() => {
-    if (!hasNext || !playNext) return;
-    saveEpisodeProgress();
-    const wasFullscreen = isFullscreen;
-    playNext();
-    if (wasFullscreen) {
-      setTimeout(() => {
-        containerRef.current?.requestFullscreen().catch(() => {});
-      }, 100);
-    }
-  }, [hasNext, playNext, saveEpisodeProgress, isFullscreen]);
-
-  const handlePlayPrev = useCallback(() => {
-    if (!hasPrev || !playPrev) return;
-    saveEpisodeProgress();
-    const wasFullscreen = isFullscreen;
-    playPrev();
-    if (wasFullscreen) {
-      setTimeout(() => {
-        containerRef.current?.requestFullscreen().catch(() => {});
-      }, 100);
-    }
-  }, [hasPrev, playPrev, saveEpisodeProgress, isFullscreen]);
+  useCallback(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
+  }, [setIsFullscreen]);
 
   useKeyboardShortcuts({
     togglePlay: togglePlayWithFeedback,
@@ -437,171 +302,14 @@ export default function VideoPlayer({
     setVolume,
     volume,
     videoRef,
-    togglePiP,
+    togglePiP: undefined,
+    handleOpenInVlc: undefined,
   });
 
   const { handleSingleClick, handleDoubleClick } = useGestureHandlers({
     togglePlay: togglePlayWithFeedback,
     toggleFullscreen,
   });
-
-  const lastTapRef = useRef<{ time: number; x: number } | null>(null);
-  const mobileTapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const handleMobileTap = useCallback(
-    (e: React.TouchEvent) => {
-      const now = Date.now();
-      const touch = e.changedTouches[0];
-      if (!touch || !containerRef.current) return;
-
-      const rect = containerRef.current.getBoundingClientRect();
-      const x = touch.clientX - rect.left;
-      const isLeftHalf = x < rect.width / 2;
-
-      if (
-        lastTapRef.current &&
-        now - lastTapRef.current.time < PLAYER_CONSTANTS.DOUBLE_TAP_THRESHOLD
-      ) {
-        if (mobileTapTimerRef.current) {
-          clearTimeout(mobileTapTimerRef.current);
-          mobileTapTimerRef.current = null;
-        }
-        if (isLeftHalf) {
-          backwardWithFeedback(PLAYER_CONSTANTS.MOBILE_SEEK_OFFSET_SECONDS);
-        } else {
-          forwardWithFeedback(PLAYER_CONSTANTS.MOBILE_SEEK_OFFSET_SECONDS);
-        }
-        lastTapRef.current = null;
-      } else {
-        lastTapRef.current = { time: now, x };
-        mobileTapTimerRef.current = setTimeout(() => {
-          const video = videoRef.current;
-          if (video) {
-            if (video.paused) {
-              video.play().catch(() => {});
-            } else {
-              video.pause();
-            }
-          }
-          lastTapRef.current = null;
-          mobileTapTimerRef.current = null;
-        }, PLAYER_CONSTANTS.DOUBLE_TAP_THRESHOLD);
-      }
-    },
-    [containerRef, videoRef, backwardWithFeedback, forwardWithFeedback],
-  );
-
-  useEffect(() => {
-    setPlaybackError(null);
-    const video = videoRef.current;
-    if (!video) return;
-
-    if (movieId) {
-      const movieItem = movies.find((item) => item.id.toString() === movieId);
-      if (movieItem) {
-        const onLoaded = () => {
-          video.currentTime = movieItem.position;
-        };
-        video.addEventListener('loadedmetadata', onLoaded, { once: true });
-      }
-    } else if (serieId) {
-      const episodeProgress = getEpisodeProgress(
-        parseInt(serieId || '0'),
-        episodeNumber || 0,
-        seasonId || 0,
-      );
-      if (episodeProgress) {
-        const onLoaded = () => {
-          video.currentTime = episodeProgress.position;
-        };
-        video.addEventListener('loadedmetadata', onLoaded, { once: true });
-      }
-    }
-  }, [
-    src,
-    movieId,
-    serieId,
-    episodeNumber,
-    seasonId,
-    movies,
-    getEpisodeProgress,
-    setPlaybackError,
-  ]);
-
-  useEffect(() => {
-    const v = videoRef.current;
-    setVolumeState(storedVolume ?? 1);
-    setIsMuted(!!storedMuted);
-    if (v) {
-      v.volume = storedVolume ?? 1;
-      v.muted = !!storedMuted;
-    }
-  }, [storedVolume, storedMuted, setVolumeState, setIsMuted]);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.playbackRate = preferredRate;
-    setPlaybackRateState(preferredRate);
-  }, [preferredRate, setPlaybackRateState]);
-
-  useEffect(() => {
-    onTimeUpdate?.(currentTime);
-  }, [currentTime, onTimeUpdate]);
-
-  useEffect(() => {
-    const handler = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener('fullscreenchange', handler);
-    return () => document.removeEventListener('fullscreenchange', handler);
-  }, [setIsFullscreen]);
-
-  const handleProgressClick = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!progressRef.current || !duration) return;
-      const rect = progressRef.current.getBoundingClientRect();
-      const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-      seek(pct * duration);
-    },
-    [duration, seek],
-  );
-
-  const handleVolumeClick = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!volumeBarRef.current) return;
-      const rect = volumeBarRef.current.getBoundingClientRect();
-      const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-      setVolume(pct);
-    },
-    [setVolume],
-  );
-
-  const startVolumeDrag = useCallback(
-    (e: React.PointerEvent) => {
-      if (!volumeBarRef.current) return;
-      setShowVolume(true);
-      const el = volumeBarRef.current;
-
-      const setFromEvent = (clientX: number) => {
-        const rect = el.getBoundingClientRect();
-        const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-        setVolume(pct);
-      };
-
-      setFromEvent(e.clientX);
-      const onMove = (ev: PointerEvent) => setFromEvent(ev.clientX);
-      const onUp = (ev: PointerEvent) => {
-        setFromEvent(ev.clientX);
-        document.removeEventListener('pointermove', onMove);
-        document.removeEventListener('pointerup', onUp);
-      };
-
-      document.addEventListener('pointermove', onMove);
-      document.addEventListener('pointerup', onUp);
-    },
-    [setVolume, setShowVolume],
-  );
-
-  const displayVolume = isMuted ? 0 : volume;
 
   if (playbackError) {
     return <PlayerErrorState playbackError={playbackError} setPlaybackError={setPlaybackError} />;
@@ -648,7 +356,7 @@ export default function VideoPlayer({
           hasNext={hasNext}
           isMuted={isMuted}
           volume={volume}
-          displayVolume={displayVolume}
+          displayVolume={isMuted ? 0 : volume}
           aspectRatio={aspectRatio}
           showSettings={showSettings}
           playbackRate={playbackRate}
@@ -658,7 +366,7 @@ export default function VideoPlayer({
           handleSingleClick={handleSingleClick}
           handleDoubleClick={handleDoubleClick}
           handleProgressClick={handleProgressClick}
-          handleProgressSeek={handleProgressSeek}
+          handleProgressSeek={seek}
           handlePlayPrev={handlePlayPrev}
           handlePlayNext={handlePlayNext}
           togglePlay={togglePlayWithFeedback}
@@ -671,7 +379,7 @@ export default function VideoPlayer({
           setShowSettings={setShowSettings}
           changeRate={changeRate}
           toggleFullscreen={toggleFullscreen}
-          togglePiP={togglePiP}
+          togglePiP={undefined}
           src={src}
           isDesktopApp={isDesktopApp}
           isHlsStream={isHlsStream}
@@ -679,7 +387,9 @@ export default function VideoPlayer({
           currentQuality={currentQuality}
           onQualityChange={setQuality}
           onPauseVideo={() => videoRef.current?.pause()}
+          onOpenInVlc={handleOpenInVlc}
           onVlcPositionUpdate={handleVlcPositionUpdate}
+          vlcStatus={vlcStatus}
         />
       </div>
     </>

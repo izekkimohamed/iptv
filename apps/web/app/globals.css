@@ -42,6 +42,10 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  /* Custom spacing tokens */
+  --spacing-content: 85vw;
+  --spacing-section-gap: 5rem;
 }
 
 :root {

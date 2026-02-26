@@ -1,7 +1,6 @@
 'use client';
 
-import { invoke } from '@tauri-apps/api/core';
-import { Film, Home, LayoutGrid, Menu, Minus, Search, Settings, Trophy, Tv, X } from 'lucide-react';
+import { Menu, Search, Settings, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -18,21 +17,7 @@ import { useTauri } from '@/shared/hooks/useTauri';
 import { cn } from '@/shared/lib/utils';
 import { usePlaylistStore } from '@repo/store';
 
-const navItems = [
-  { label: 'Home', href: '/', icon: Home },
-  { label: 'Channels', href: '/channels', icon: Tv },
-  { label: 'Movies', href: '/movies', icon: Film },
-  { label: 'Series', href: '/series', icon: LayoutGrid },
-  { label: '365', href: '/365', icon: Trophy },
-];
-
-async function quitApp() {
-  await invoke('quit_app');
-}
-
-async function minimizeApp() {
-  await invoke('minimize_app');
-}
+import { DesktopNav, MobileNav, WindowControls, SearchBar } from './topnav';
 
 export default function TopNav() {
   const pathname = usePathname();
@@ -73,22 +58,7 @@ export default function TopNav() {
         <div className="flex h-full items-center justify-between px-4 lg:px-6">
           {/* Left Section - Window Controls (Desktop App) */}
           <div className="flex items-center gap-3">
-            {isDesktopApp && (
-              <div className="mr-2 hidden items-center gap-2 lg:flex">
-                <button
-                  onClick={quitApp}
-                  className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 transition-colors hover:bg-red-600"
-                >
-                  <X className="h-3 w-3 text-white" />
-                </button>
-                <button
-                  onClick={minimizeApp}
-                  className="flex h-5 w-5 items-center justify-center rounded-full bg-yellow-500 transition-colors hover:bg-yellow-600"
-                >
-                  <Minus className="h-3 w-3 text-white" />
-                </button>
-              </div>
-            )}
+            {isDesktopApp && <WindowControls />}
 
             {/* Logo */}
             <Link href="/" className="flex items-center gap-3">
@@ -108,23 +78,7 @@ export default function TopNav() {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden items-center gap-1 md:flex">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  'flex items-center gap-2 rounded-sm px-4 py-2 text-sm font-medium transition-colors',
-                  isActive(item.href)
-                    ? 'text-primary bg-primary/10'
-                    : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+          <DesktopNav isActive={isActive} />
 
           {/* Right Section */}
           <div className="flex items-center gap-2">
@@ -179,57 +133,13 @@ export default function TopNav() {
         </div>
 
         {/* Search Bar (Expandable) */}
-        {searchOpen && (
-          <div className="bg-background border-border/50 absolute top-16 right-0 left-0 border-b p-4">
-            <div className="mx-auto max-w-2xl">
-              <div className="relative">
-                <Search className="text-muted-foreground absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Search movies, series, channels..."
-                  autoFocus
-                  className="text-foreground placeholder:text-muted-foreground focus:border-primary border-input bg-background focus:ring-ring/20 w-full rounded-sm border py-3 pr-4 pl-10 focus:ring-2 focus:outline-none"
-                />
-              </div>
-            </div>
-          </div>
-        )}
+        {searchOpen && <SearchBar />}
       </header>
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
         <div className="bg-background fixed inset-0 top-16 z-40 md:hidden">
-          <nav className="flex flex-col p-4">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setMobileMenuOpen(false)}
-                className={cn(
-                  'flex items-center gap-3 rounded-sm px-4 py-3 text-base font-medium transition-colors',
-                  isActive(item.href)
-                    ? 'text-primary bg-primary/10'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-white/5',
-                )}
-              >
-                <item.icon className="h-5 w-5" />
-                {item.label}
-              </Link>
-            ))}
-            <Link
-              href="/settings"
-              onClick={() => setMobileMenuOpen(false)}
-              className={cn(
-                'flex items-center gap-3 rounded-sm px-4 py-3 text-base font-medium transition-colors',
-                isActive('/settings')
-                  ? 'text-primary bg-primary/10'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-white/5',
-              )}
-            >
-              <Settings className="h-5 w-5" />
-              Settings
-            </Link>
-          </nav>
+          <MobileNav isActive={isActive} onLinkClick={() => setMobileMenuOpen(false)} />
         </div>
       )}
     </>

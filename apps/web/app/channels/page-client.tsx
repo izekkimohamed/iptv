@@ -122,7 +122,7 @@ function ChannelsPageInner() {
   }
 
   return (
-    <Suspense fallback={<ChannelsContentSkeleton />}>
+    <>
       <ChannelsSidebar channels={channels} isLoading={isFetchingChannels} />
 
       {/* Player Area */}
@@ -189,7 +189,7 @@ function ChannelsPageInner() {
           )}
         </div>
       </div>
-    </Suspense>
+    </>
   );
 }
 

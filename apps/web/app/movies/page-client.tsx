@@ -19,8 +19,6 @@ function MoviesPageInner() {
   const selectedCategoryId = searchParams.get('categoryId');
   const movieId = searchParams.get('movieId');
 
-  const newMovies = useSearchParams().get('new');
-
   const { data: movies, isLoading: isFetchingMovies } = trpc.movies.getMovies.useQuery(
     {
       categoryId: parseInt(selectedCategoryId || '0'),
@@ -28,15 +26,6 @@ function MoviesPageInner() {
     },
     {
       enabled: !!selectedCategoryId,
-    },
-  );
-
-  const { data: newMoviesData, isLoading: loadingNewData } = trpc.new.getNewMovies.useQuery(
-    {
-      playlistId: playlist?.id || 0,
-    },
-    {
-      enabled: !!newMovies,
     },
   );
 
@@ -55,8 +44,6 @@ function MoviesPageInner() {
       enabled: !!movieId,
     },
   );
-
-  // Event handlers
 
   const handleMovieClick = (movieId: number) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -87,7 +74,7 @@ function MoviesPageInner() {
             goBack
           />
         )}
-        {!selectedCategoryId && !movieId && !newMovies && (
+        {!selectedCategoryId && !movieId && (
           <EmptyState
             icon={<Film className="h-12 w-12 text-muted-foreground/40" />}
             title="No Categories Found"
@@ -95,7 +82,7 @@ function MoviesPageInner() {
             fullScreen
           />
         )}
-        {(isFetchingMovies || isFetchingMovie || loadingNewData) && (
+        {(isFetchingMovies || isFetchingMovie) && (
           <div className="flex h-full items-center justify-center">
              <LoadingSpinner />
           </div>
@@ -112,7 +99,6 @@ function MoviesPageInner() {
           />
         )}
         {movies && !isFetchingMovies && !isFetchingMovie && !movieId && (
-
             <VirtualGrid
               className="h-full p-3"
               items={movies}
@@ -128,29 +114,8 @@ function MoviesPageInner() {
               )}
               gapClassName="gap-6"
             />
-
-        )}
-        {newMoviesData && !movies && !isFetchingMovies && !isFetchingMovie && !movieId && (
-
-            <VirtualGrid
-              className="h-full p-3"
-              items={newMoviesData}
-              renderItem={(movie) => (
-                <ItemsList
-                  image={movie.streamIcon}
-                  title={movie.name}
-                  rating={movie.rating}
-                  streamId={movie.streamId}
-                  onMovieClick={() => handleMovieClick(movie.streamId)}
-                  itemType="movie"
-                />
-              )}
-              gapClassName="gap-6"
-            />
-
         )}
       </div>
-
     </>
   );
 }

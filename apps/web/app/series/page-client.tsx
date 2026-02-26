@@ -17,12 +17,9 @@ import { usePlaylistStore } from '@repo/store';
 function SeriesPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  // const { selectedPlaylist } = usePlaylistStore();
 
   const selectedCategoryId = searchParams.get('categoryId');
   const serieId = searchParams.get('serieId');
-
-  const newSeries = useSearchParams().get('new');
   const selectedPlaylist = usePlaylistStore((state) => state.selectedPlaylist);
 
   const { data: categories, isLoading } = trpc.series.getSeriesCategories.useQuery({
@@ -35,15 +32,6 @@ function SeriesPageInner() {
     },
     {
       enabled: !!selectedCategoryId && !!selectedPlaylist,
-    },
-  );
-
-  const { data: newSeriesData, isLoading: loadingNewData } = trpc.new.getNewSeries.useQuery(
-    {
-      playlistId: selectedPlaylist?.id || 0,
-    },
-    {
-      enabled: !!newSeries,
     },
   );
 
@@ -81,7 +69,7 @@ function SeriesPageInner() {
             goBack
           />
         )}
-        {!selectedCategoryId && !serieId && !newSeries && (
+        {!selectedCategoryId && !serieId && (
           <EmptyState
             icon={<Tv className="text-muted-foreground/40 h-12 w-12" />}
             title="No Series Selected"
@@ -90,7 +78,7 @@ function SeriesPageInner() {
           />
         )}
 
-        {(isFetchingSeries || isFetchingSerie || loadingNewData) && (
+        {(isFetchingSeries || isFetchingSerie) && (
           <div className="flex h-full items-center justify-center">
             <LoadingSpinner />
           </div>
@@ -125,29 +113,6 @@ function SeriesPageInner() {
             gapClassName="gap-6"
           />
         )}
-
-        {newSeriesData &&
-          !series &&
-          !isFetchingSeries &&
-          !loadingNewData &&
-          !isFetchingSerie &&
-          !serieId && (
-            <VirtualGrid
-              className="h-full p-3"
-              items={newSeriesData}
-              renderItem={(serie) => (
-                <ItemsList
-                  image={serie.cover || ''}
-                  title={serie.name || ''}
-                  rating={serie.rating || ''}
-                  streamId={serie.seriesId}
-                  onMovieClick={() => handleserieClick(serie.seriesId)}
-                  itemType="series"
-                />
-              )}
-              gapClassName="gap-6"
-            />
-          )}
       </div>
     </div>
   );
