@@ -9,7 +9,7 @@ export function useProgressHandlers({ duration, seek }: UseProgressHandlersOptio
   const handleProgressClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       if (!duration) return;
-      const rect = (e.target as HTMLElement).getBoundingClientRect();
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
       const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
       seek(pct * duration);
     },

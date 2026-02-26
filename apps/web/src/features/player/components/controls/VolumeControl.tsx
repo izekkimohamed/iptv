@@ -36,11 +36,10 @@ const VolumeControlComponent = memo(function VolumeControl({
         return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
       };
 
-      const pct = getPct(e.clientX);
       onVolumeClick(e);
 
       const onMove = (ev: PointerEvent) => {
-        onVolumeClick({ clientX: ev.clientX } as React.MouseEvent<HTMLDivElement>);
+        onVolumeClick({ clientX: ev.clientX, currentTarget: ref } as React.MouseEvent<HTMLDivElement>);
       };
       const onUp = () => {
         document.removeEventListener('pointermove', onMove);

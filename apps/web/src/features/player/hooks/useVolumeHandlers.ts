@@ -8,7 +8,7 @@ interface UseVolumeHandlersOptions {
 export function useVolumeHandlers({ setVolume, setShowVolume }: UseVolumeHandlersOptions) {
   const handleVolumeClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
-      const rect = (e.target as HTMLElement).getBoundingClientRect();
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
       const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
       setVolume(pct);
     },
