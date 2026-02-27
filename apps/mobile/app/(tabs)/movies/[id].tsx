@@ -39,7 +39,7 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
-"use no memo";
+("use no memo");
 
 const { width, height } = Dimensions.get("window");
 const POSTER_WIDTH = width * 0.42;
@@ -106,7 +106,7 @@ export default function MovieDetailsScreen() {
     return (
       <View style={[styles.centered, { backgroundColor: theme.bg }]}>
         <View style={[styles.loadingBackdrop, { borderColor: theme.border }]}>
-          <ActivityIndicator size='large' color={theme.primary} />
+          <ActivityIndicator size="large" color={theme.primary} />
         </View>
       </View>
     );
@@ -218,7 +218,7 @@ export default function MovieDetailsScreen() {
                       { backgroundColor: theme.glassStrong },
                     ]}
                   />
-                  <Star size={12} color='#fbbf24' fill='#fbbf24' />
+                  <Star size={12} color="#fbbf24" fill="#fbbf24" />
                   <Text
                     style={[styles.ratingText, { color: theme.textPrimary }]}
                   >
@@ -267,14 +267,14 @@ export default function MovieDetailsScreen() {
                 )}
               </View>
 
-              {genres ?
+              {genres ? (
                 <Text
                   style={[styles.genreText, { color: theme.primary }]}
                   numberOfLines={1}
                 >
                   {genres}
                 </Text>
-              : null}
+              ) : null}
             </View>
           </Animated.View>
         </View>
@@ -396,13 +396,14 @@ export default function MovieDetailsScreen() {
                         },
                       ]}
                     >
-                      {hasImage ?
+                      {hasImage ? (
                         <Image
                           source={{ uri: member.profilePath }}
                           style={styles.castImg}
-                          contentFit='cover'
                         />
-                      : <User size={24} color={theme.textMuted} />}
+                      ) : (
+                        <User size={24} color={theme.textMuted} />
+                      )}
                     </View>
                     <Text
                       style={[styles.castName, { color: theme.textSecondary }]}

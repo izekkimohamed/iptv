@@ -1,6 +1,5 @@
 import { usePlayerStore } from '@repo/store';
-import { invoke } from '@tauri-apps/api/core';
-import React, { useCallback, useRef } from 'react';
+import { useCallback, useRef } from 'react';
 
 import { CustomControls } from './CustomControls';
 import { PlayerErrorState } from './PlayerErrorState';

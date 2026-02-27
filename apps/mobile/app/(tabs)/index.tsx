@@ -1,6 +1,6 @@
 import { FlashList } from "@shopify/flash-list";
 import { useRouter } from "expo-router";
-import { Database, Info, Play, Star, Tv } from "lucide-react-native";
+import { Database, Play, Star, Tv } from "lucide-react-native";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FlatList,
@@ -13,13 +13,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import Animated, {
-  FadeInDown,
-  useAnimatedStyle,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from "react-native-reanimated";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useSWR from "swr";
 
@@ -32,60 +26,21 @@ import { SkeletonCard } from "@/components/ui/Skeleton";
 import { trpc } from "@/lib/trpc";
 import { usePlaylistStore } from "@/store";
 import { usePlayerTheme } from "@/theme/playerTheme";
+import {
+  useWatchedMoviesStore,
+  useWatchedSeriesStore,
+} from "@/store/watched-store";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-// --- Skeleton Component ---
-const HomeSkeleton = ({ featuredWidth }: { featuredWidth: number }) => (
-  <View style={{ padding: 20 }}>
-    <SkeletonCard width={featuredWidth} height={340} borderRadius={24} />
-    <View style={{ flexDirection: "row", gap: 12, marginTop: 20 }}>
-      <SkeletonCard width={85} height={85} borderRadius={22} />
-      <SkeletonCard width={85} height={85} borderRadius={22} />
-      <SkeletonCard width={85} height={85} borderRadius={22} />
-    </View>
-  </View>
-);
-
-// --- Live Pulse Component ---
 const LiveIndicator = ({ color }: { color: string }) => {
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: withRepeat(
-      withSequence(
-        withTiming(0.4, { duration: 800 }),
-        withTiming(1, { duration: 800 }),
-      ),
-      -1,
-      true,
-    ),
-    transform: [
-      {
-        scale: withRepeat(
-          withSequence(
-            withTiming(1, { duration: 800 }),
-            withTiming(1.2, { duration: 800 }),
-          ),
-          -1,
-          true,
-        ),
-      },
-    ],
-  }));
-
-  return (
-    <View style={styles.liveIndicatorContainer}>
-      <Animated.View
-        style={[styles.dot, { backgroundColor: color }, animatedStyle]}
-      />
-    </View>
-  );
+  return <View style={[styles.liveDot, { backgroundColor: color }]} />;
 };
 
 export default function HomeScreen() {
   const router = useRouter();
   const theme = usePlayerTheme();
   const { width } = useWindowDimensions();
-  const FEATURED_WIDTH = width * 0.85;
   const currentDate = new Date();
   const [selectedGameId, setSelectedGameId] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -128,10 +83,36 @@ export default function HomeScreen() {
     [games],
   );
 
+  const { movies: watchedMovies } = useWatchedMoviesStore();
+  const { series: watchedSeries } = useWatchedSeriesStore();
+
+  const continueWatching = useMemo(() => {
+    return watchedMovies
+      .filter((m) => m.duration > 0 && m.position / m.duration < 0.95)
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+      .slice(0, 10);
+  }, [watchedMovies]);
+
+  const continueWatchingSeries = useMemo(() => {
+    return watchedSeries
+      .filter((s) => s.episodes.length > 0)
+      .sort((a, b) => {
+        const aLastEp = a.episodes[a.episodes.length - 1];
+        const bLastEp = b.episodes[b.episodes.length - 1];
+        return (bLastEp?.position || 0) - (aLastEp?.position || 0);
+      })
+      .slice(0, 10);
+  }, [watchedSeries]);
+
+  const recentlyPlayed = useMemo(() => {
+    return [...watchedMovies]
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+      .slice(0, 10);
+  }, [watchedMovies]);
+
   useEffect(() => {
     if (!playlists) return;
 
-    // 1. Identify items to REMOVE (in store but not in fetched data)
     storePlaylists.forEach((stored) => {
       const stillExists = playlists.find((p) => p.id === stored.id);
       if (!stillExists) {
@@ -139,23 +120,18 @@ export default function HomeScreen() {
       }
     });
 
-    // 2. Identify items to ADD or UPDATE
     playlists.forEach((fetched) => {
       const existing = storePlaylists.find((p) => p.id === fetched.id);
 
       if (!existing) {
-        // New item found
         addPlaylist(fetched);
       } else {
-        // Item exists, check if any fields changed (URL, Username, Status, etc.)
-        // We compare strings to detect deep changes efficiently
         if (JSON.stringify(existing) !== JSON.stringify(fetched)) {
           updatePlaylist(fetched.id, fetched);
         }
       }
     });
 
-    // 3. Auto-select first playlist if none is selected
     if (!selectedPlaylist && playlists.length > 0) {
       selectPlaylist(playlists[0]);
     }
@@ -184,55 +160,98 @@ export default function HomeScreen() {
             params: { movieId: item.id, playlistId: 26 },
           })
         }
-        style={[
-          styles.featuredCard,
-          {
-            borderColor: theme.border,
-          },
+        style={({ pressed }) => [
+          { width, height: 420 },
+          pressed && { opacity: 0.9 },
         ]}
       >
         <Image
-          source={{ uri: item.backdropUrl || item.posterUrl }}
-          style={styles.featuredImage}
+          source={{ uri: item.backdropUrl || item.posterUrl || undefined }}
+          style={styles.heroImage}
         />
-        <View style={styles.featuredGradient} />
-        <View style={styles.featuredContent}>
-          <Text style={styles.featuredTitle} numberOfLines={1}>
-            {item.title || item.name}
-          </Text>
-          <View style={styles.featuredRow}>
-            <View style={[styles.badge, { backgroundColor: theme.primary }]}>
-              <Text style={styles.badgeText}>Trending</Text>
-            </View>
-            <Text style={styles.featuredSub} numberOfLines={1}>
-              {item.overview || "New Release"}
+        <View style={styles.heroOverlay} />
+
+        <View style={styles.heroContent}>
+          <View style={[styles.heroBadge, { backgroundColor: theme.primary }]}>
+            <Star
+              size={12}
+              color={theme.primaryForeground}
+              fill={theme.primaryForeground}
+            />
+            <Text
+              style={[styles.heroBadgeText, { color: theme.primaryForeground }]}
+            >
+              {item.voteAverage?.toFixed(1) || "NEW"}
             </Text>
           </View>
-          <View style={styles.buttonRow}>
-            <View style={[styles.playButton, { backgroundColor: "#fff" }]}>
-              <Play size={14} color='#000' fill='#000' />
-              <Text style={styles.playButtonText}>Play</Text>
-            </View>
-            <View
+
+          <Text style={styles.heroTitle} numberOfLines={2}>
+            {item.title || item.name}
+          </Text>
+
+          <Text style={styles.heroSubtitle} numberOfLines={2}>
+            {item.overview || "Watch now"}
+          </Text>
+
+          <View style={styles.heroActions}>
+            <Pressable
               style={[
-                styles.infoButton,
-                { backgroundColor: "rgba(255,255,255,0.2)" },
+                styles.heroPlayButton,
+                { backgroundColor: theme.primary },
               ]}
+              onPress={() =>
+                router.push({
+                  pathname: "/movies/tmdb",
+                  params: { movieId: item.id, playlistId: 26 },
+                })
+              }
             >
-              <Info size={14} color='#fff' />
-            </View>
+              <Play
+                size={20}
+                color={theme.primaryForeground}
+                fill={theme.primaryForeground}
+              />
+              <Text
+                style={[
+                  styles.heroPlayText,
+                  { color: theme.primaryForeground },
+                ]}
+              >
+                Play
+              </Text>
+            </Pressable>
+
+            <Pressable
+              style={[
+                styles.heroInfoButton,
+                {
+                  backgroundColor: theme.glassLight,
+                  borderColor: theme.border,
+                },
+              ]}
+              onPress={() =>
+                router.push({
+                  pathname: "/movies/tmdb",
+                  params: { movieId: item.id, playlistId: 26 },
+                })
+              }
+            >
+              <Star size={20} color={theme.textPrimary} />
+            </Pressable>
           </View>
         </View>
+
+        <View style={styles.heroGradient} />
       </Pressable>
     ),
-    [router, theme.border, theme.primary],
+    [router, theme],
   );
 
   const renderChannel = useCallback(
-    ({ item }: { item: any }) => (
+    ({ item, index }: { item: any; index: number }) => (
       <Animated.View
-        entering={FadeInDown}
-        style={{ width: 120, marginRight: 12, alignItems: "center" }}
+        entering={FadeInDown.delay((index % 6) * 50).springify()}
+        style={styles.channelCardWrapper}
       >
         <Pressable
           onPress={() =>
@@ -242,42 +261,146 @@ export default function HomeScreen() {
             })
           }
           style={({ pressed }) => [
-            styles.channelCardEnhanced,
+            styles.channelCard,
             {
-              backgroundColor: "rgba(255,255,255,0.05)",
-              borderColor: pressed ? theme.primary : "rgba(255,255,255,0.05)",
+              backgroundColor: theme.surfaceSecondary,
+              borderColor: pressed ? theme.primary : theme.border,
             },
-            pressed && { opacity: 0.7, transform: [{ scale: 0.98 }] },
+            pressed && { transform: [{ scale: 0.96 }] },
           ]}
         >
-          <View style={styles.liveBadge}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveBadgeText}>LIVE</Text>
-          </View>
-          {item.streamIcon ?
+          {item.streamIcon ? (
             <Image
               source={{ uri: item.streamIcon }}
-              style={{ width: "100%", height: "100%", padding: 20 }}
+              style={styles.channelImage}
             />
-            : <View
-              style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-            >
-              <Tv size={32} color={theme.textPrimary} />
+          ) : (
+            <View style={styles.channelPlaceholder}>
+              <Tv size={28} color={theme.textMuted} />
             </View>
-          }
+          )}
+          <View style={styles.channelOverlay}>
+            <View style={styles.liveBadge}>
+              <LiveIndicator color={theme.accentError} />
+              <Text style={styles.liveBadgeText}>LIVE</Text>
+            </View>
+          </View>
         </Pressable>
         <Text
+          style={[styles.channelTitle, { color: theme.textPrimary }]}
           numberOfLines={1}
-          style={[
-            styles.channelTitle,
-            { color: theme.textPrimary, marginTop: 4, fontWeight: "600" },
-          ]}
         >
           {item.name}
         </Text>
       </Animated.View>
     ),
-    [router, theme.primary, theme.textPrimary],
+    [router, theme],
+  );
+
+  const renderContinueWatchingItem = useCallback(
+    ({ item }: { item: any }) => {
+      const progress = item.duration > 0 ? item.position / item.duration : 0;
+      return (
+        <Pressable
+          onPress={() =>
+            router.push({
+              pathname: "/movies/tmdb",
+              params: { movieId: item.id, playlistId: item.playlistId },
+            })
+          }
+          style={({ pressed }) => [
+            styles.continueCard,
+            pressed && { opacity: 0.9 },
+          ]}
+        >
+          <Image
+            source={{ uri: item.poster || item.backdropUrl || undefined }}
+            style={styles.continueImage}
+          />
+          <View style={styles.continueOverlay}>
+            <View style={styles.progressBar}>
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: `${progress * 100}%`,
+                    backgroundColor: theme.primary,
+                  },
+                ]}
+              />
+            </View>
+          </View>
+          <Text style={styles.continueTitle} numberOfLines={1}>
+            {item.title}
+          </Text>
+        </Pressable>
+      );
+    },
+    [router, theme],
+  );
+
+  const renderRecentlyPlayedItem = useCallback(
+    ({ item }: { item: any }) => (
+      <Pressable
+        onPress={() =>
+          router.push({
+            pathname: "/movies/tmdb",
+            params: { movieId: item.id, playlistId: item.playlistId },
+          })
+        }
+        style={({ pressed }) => [
+          styles.continueCard,
+          pressed && { opacity: 0.9 },
+        ]}
+      >
+        <Image
+          source={{ uri: item.poster || item.backdropUrl || undefined }}
+          style={styles.continueImage}
+        />
+        <Text style={styles.continueTitle} numberOfLines={1}>
+          {item.title}
+        </Text>
+      </Pressable>
+    ),
+    [router],
+  );
+
+  const renderSeriesItem = useCallback(
+    ({ item }: { item: any }) => (
+      <Pressable
+        onPress={() =>
+          router.push({
+            pathname: "/series",
+            params: { id: item.id },
+          })
+        }
+        style={({ pressed }) => [
+          styles.seriesCard,
+          pressed && { opacity: 0.9 },
+        ]}
+      >
+        <Image
+          source={{ uri: item.posterUrl || undefined }}
+          style={styles.seriesImage}
+        />
+        <View style={[styles.seriesBadge, { backgroundColor: theme.primary }]}>
+          <Star
+            size={10}
+            color={theme.primaryForeground}
+            fill={theme.primaryForeground}
+          />
+          <Text
+            style={[styles.seriesRating, { color: theme.primaryForeground }]}
+          >
+            {item.voteAverage?.toFixed(1)}
+          </Text>
+        </View>
+        <Text style={styles.seriesTitle} numberOfLines={2}>
+          {item.name}
+        </Text>
+      </Pressable>
+    ),
+    [router, theme],
   );
 
   if (!selectedPlaylist) {
@@ -291,16 +414,26 @@ export default function HomeScreen() {
               { backgroundColor: theme.surfaceSecondary },
             ]}
           >
-            <Database size={40} color={theme.textMuted} />
+            <Database size={48} color={theme.textMuted} />
           </View>
           <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>
             No Playlist Found
+          </Text>
+          <Text style={[styles.emptySub, { color: theme.textMuted }]}>
+            Add a playlist to start watching
           </Text>
           <Pressable
             style={[styles.actionButton, { backgroundColor: theme.primary }]}
             onPress={() => router.push("/playlists/manage")}
           >
-            <Text style={styles.actionButtonText}>Add Playlist</Text>
+            <Text
+              style={[
+                styles.actionButtonText,
+                { color: theme.primaryForeground },
+              ]}
+            >
+              Add Playlist
+            </Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -322,90 +455,148 @@ export default function HomeScreen() {
             tintColor={theme.primary}
           />
         }
+        contentContainerStyle={styles.scrollContent}
       >
-        {isLoading ?
-          <HomeSkeleton featuredWidth={FEATURED_WIDTH} />
-          : <>
-            {/* Hero Carousel */}
-            <View style={styles.featuredSection}>
+        {isLoading ? (
+          <View style={styles.skeletonContainer}>
+            <SkeletonCard width={width - 40} height={200} borderRadius={16} />
+            <View style={styles.skeletonChannels}>
+              {[1, 2, 3, 4].map((i) => (
+                <SkeletonCard
+                  key={i}
+                  width={100}
+                  height={100}
+                  borderRadius={12}
+                />
+              ))}
+            </View>
+          </View>
+        ) : (
+          <>
+            {/* Hero Carousel - Scrollable with paging */}
+            <View style={[styles.featuredSection, { width }]}>
               <FlashList
                 horizontal
+                pagingEnabled
                 data={homeData?.movies || []}
                 renderItem={renderFeaturedItem}
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.featuredList}
-                snapToInterval={FEATURED_WIDTH + 16}
-                decelerationRate='fast'
+                snapToInterval={width}
+                decelerationRate="fast"
               />
             </View>
 
-            {/* Favorite Channels */}
-            {favoriteChannels && favoriteChannels.length > 0 && (
+            {/* Continue Watching */}
+            {(continueWatching.length > 0 ||
+              continueWatchingSeries.length > 0) && (
               <View style={styles.section}>
-                <Pressable onPress={() => router.push("/(tabs)/channels")}>
-                  <View style={styles.sectionHeaderContainer}>
-                    <View style={styles.sectionHeaderLeft}>
-                      <View style={styles.sectionKickerRow}>
-                        <View
-                          style={[
-                            styles.kickerIconBox,
-                            { backgroundColor: "rgba(255,255,255,0.1)" },
-                          ]}
-                        >
-                          <Star
-                            size={12}
-                            color={theme.primary}
-                            fill={theme.primary}
-                          />
-                        </View>
-                        <Text
-                          style={[styles.kickerText, { color: theme.primary }]}
-                        >
-                          YOUR SELECTION
-                        </Text>
-                      </View>
-                      <Text
-                        style={[
-                          styles.sectionTitleLarge,
-                          { color: theme.textPrimary },
-                        ]}
-                      >
-                        Favorite{" "}
-                        <Text
-                          style={{ color: theme.primary, fontStyle: "italic" }}
-                        >
-                          Channels
-                        </Text>
-                      </Text>
-                    </View>
-                    <View style={styles.sectionHeaderRight}>
-                      <Text
-                        style={[styles.countText, { color: theme.textPrimary }]}
-                      >
-                        {favoriteChannels.length}
-                      </Text>
-                      <Text style={styles.countLabel}>Total Channels</Text>
-                    </View>
+                <View style={styles.sectionHeader}>
+                  <View>
+                    <Text
+                      style={[styles.sectionKicker, { color: theme.primary }]}
+                    >
+                      PICK UP WHERE YOU LEFT OFF
+                    </Text>
+                    <Text
+                      style={[
+                        styles.sectionTitle,
+                        { color: theme.textPrimary },
+                      ]}
+                    >
+                      Continue Watching
+                    </Text>
                   </View>
-                </Pressable>
+                </View>
                 <FlatList
                   horizontal
-                  data={favoriteChannels}
-                  renderItem={renderChannel}
+                  data={[...continueWatching, ...continueWatchingSeries].slice(
+                    0,
+                    10,
+                  )}
+                  renderItem={renderContinueWatchingItem}
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.horizontalList}
                 />
               </View>
             )}
 
-            {/* Live Matches */}
+            {/* Trending Series */}
+            {homeData?.series && homeData.series.length > 0 && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <View>
+                    <Text
+                      style={[styles.sectionKicker, { color: theme.primary }]}
+                    >
+                      POPULAR
+                    </Text>
+                    <Text
+                      style={[
+                        styles.sectionTitle,
+                        { color: theme.textPrimary },
+                      ]}
+                    >
+                      Trending Series
+                    </Text>
+                  </View>
+                  <Pressable onPress={() => router.push("/(tabs)/series")}>
+                    <Text style={[styles.seeAll, { color: theme.primary }]}>
+                      See All
+                    </Text>
+                  </Pressable>
+                </View>
+                <FlatList
+                  horizontal
+                  data={homeData.series.slice(0, 10)}
+                  renderItem={renderSeriesItem}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.horizontalList}
+                />
+              </View>
+            )}
+
+            {/* Recently Played */}
+            {recentlyPlayed.length > 0 && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <View>
+                    <Text
+                      style={[styles.sectionKicker, { color: theme.primary }]}
+                    >
+                      BACK IN TIME
+                    </Text>
+                    <Text
+                      style={[
+                        styles.sectionTitle,
+                        { color: theme.textPrimary },
+                      ]}
+                    >
+                      Recently Played
+                    </Text>
+                  </View>
+                </View>
+                <FlatList
+                  horizontal
+                  data={recentlyPlayed.slice(0, 10)}
+                  renderItem={renderRecentlyPlayedItem}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.horizontalList}
+                />
+              </View>
+            )}
+
+            {/* Live Scores Section */}
             {liveMatches.length > 0 && (
               <View style={styles.section}>
-                <View style={styles.liveTitleRow}>
-                  <LiveIndicator color={theme.primary} />
-                  <Text style={[styles.liveText, { color: theme.primary }]}>
-                    LIVE SCORES
-                  </Text>
+                <View style={styles.sectionHeader}>
+                  <View style={styles.liveIndicator}>
+                    <LiveIndicator color={theme.accentError} />
+                    <Text
+                      style={[styles.liveText, { color: theme.accentError }]}
+                    >
+                      LIVE NOW
+                    </Text>
+                  </View>
                 </View>
                 <FlashList
                   horizontal
@@ -418,8 +609,43 @@ export default function HomeScreen() {
                 />
               </View>
             )}
+
+            {/* Favorite Channels */}
+            {favoriteChannels && favoriteChannels.length > 0 && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <View>
+                    <Text
+                      style={[styles.sectionKicker, { color: theme.primary }]}
+                    >
+                      YOUR SELECTION
+                    </Text>
+                    <Text
+                      style={[
+                        styles.sectionTitle,
+                        { color: theme.textPrimary },
+                      ]}
+                    >
+                      Favorite Channels
+                    </Text>
+                  </View>
+                  <Pressable onPress={() => router.push("/(tabs)/channels")}>
+                    <Text style={[styles.seeAll, { color: theme.primary }]}>
+                      See All
+                    </Text>
+                  </Pressable>
+                </View>
+                <FlatList
+                  horizontal
+                  data={favoriteChannels}
+                  renderItem={renderChannel}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.horizontalList}
+                />
+              </View>
+            )}
           </>
-        }
+        )}
       </ScrollView>
       <MatchDetailsModal
         gameId={selectedGameId}
@@ -431,88 +657,275 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingBottom: 60 },
-  section: { marginVertical: 12 },
-  horizontalList: { paddingHorizontal: 20, paddingBottom: 10 },
+  container: { flex: 1 },
+  scrollContent: { paddingBottom: 100 },
+  skeletonContainer: { padding: 20, gap: 20 },
+  skeletonChannels: { flexDirection: "row", gap: 12, marginTop: 10 },
 
-  // Featured Hero
-  featuredSection: { marginTop: 10 },
-  featuredList: { paddingHorizontal: 20 },
-  featuredCard: {
-    width: FEATURED_WIDTH,
-    height: 340,
-    borderRadius: 24,
+  // Hero / Featured
+  featuredSection: { marginTop: 8 },
+  featuredList: { paddingHorizontal: 0 },
+  heroContainer: {
+    width: "100%",
+    height: 420,
+    position: "relative",
+  },
+  heroImage: {
+    width: "100%",
+    height: "100%",
+  },
+  heroOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.3)",
+  },
+  heroGradient: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 200,
+    backgroundColor: "transparent",
+  },
+  heroContent: {
+    position: "absolute",
+    bottom: 60,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+  },
+  heroBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    alignSelf: "flex-start",
+    marginBottom: 12,
+  },
+  heroBadgeText: { fontSize: 12, fontWeight: "700" },
+  heroTitle: {
+    color: "#fff",
+    fontSize: 28,
+    fontWeight: "800",
+    marginBottom: 8,
+    textShadowColor: "rgba(0,0,0,0.8)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  heroSubtitle: {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 14,
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  heroActions: { flexDirection: "row", gap: 12 },
+  heroPlayButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    borderRadius: 12,
+    gap: 8,
+  },
+  heroPlayText: { fontWeight: "700", fontSize: 16 },
+  heroInfoButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
     borderWidth: 1,
+  },
+  trendingCard: {
+    width: 140,
+    height: 200,
+    borderRadius: 16,
     overflow: "hidden",
-    marginRight: 16,
-    elevation: 5,
+    marginRight: 12,
+  },
+  trendingImage: {
+    width: "100%",
+    height: "100%",
+  },
+  trendingOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 10,
+  },
+  trendingTitle: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  featuredCardWrapper: { width: 280, marginRight: 16 },
+  featuredCard: {
+    width: 280,
+    height: 180,
+    borderRadius: 16,
+    overflow: "hidden",
   },
   featuredImage: { width: "100%", height: "100%" },
-  featuredGradient: { ...StyleSheet.absoluteFillObject },
+  featuredGradient: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "transparent",
+  },
   featuredContent: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 20,
+    padding: 16,
+    backgroundColor: "rgba(0,0,0,0.7)",
   },
-  featuredTitle: {
-    color: "#fff",
-    fontSize: 24,
-    fontWeight: "900",
-    marginBottom: 4,
-  },
-  featuredRow: {
+  featuredBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    alignSelf: "flex-start",
+    marginBottom: 8,
+  },
+  featuredBadgeText: { fontSize: 10, fontWeight: "700" },
+  featuredTitle: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "800",
+    marginBottom: 4,
+  },
+  featuredSub: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 12,
     marginBottom: 12,
   },
-  featuredSub: { color: "rgba(255,255,255,0.7)", fontSize: 12, flex: 1 },
-  badge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
-  badgeText: { fontSize: 10, fontWeight: "800", color: "#000" },
-  buttonRow: { flexDirection: "row", gap: 10 },
+  featuredActions: { flexDirection: "row", gap: 10 },
   playButton: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 8,
     paddingHorizontal: 20,
-    borderRadius: 12,
-    gap: 8,
+    borderRadius: 10,
+    gap: 6,
   },
-  playButtonText: { color: "#000", fontWeight: "800", fontSize: 14 },
+  playButtonText: { fontWeight: "700", fontSize: 14 },
   infoButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 1,
   },
 
-  // Channels
-  channelTitle: {
-    fontSize: 11,
-    fontWeight: "700",
-    textAlign: "center",
-    width: "100%",
+  // Sections
+  section: { marginTop: 24 },
+  horizontalList: { paddingHorizontal: 20 },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  sectionKicker: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 2,
+    marginBottom: 4,
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+  },
+  seeAll: {
+    fontSize: 14,
+    fontWeight: "600",
   },
 
-  // Live Section
-  liveTitleRow: {
+  // Live
+  liveIndicator: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 20,
-    marginBottom: 12,
+    gap: 8,
   },
-  liveText: { fontSize: 14, fontWeight: "900", letterSpacing: 1 },
-  liveIndicatorContainer: {
-    width: 12,
-    height: 12,
+  liveText: { fontSize: 14, fontWeight: "800", letterSpacing: 1 },
+  liveDot: { width: 8, height: 8, borderRadius: 4 },
+
+  // Channels
+  channelCardWrapper: { width: 100, marginRight: 12, alignItems: "center" },
+  channelCard: {
+    width: 100,
+    height: 100,
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  channelImage: { width: "100%", height: "100%" },
+  channelPlaceholder: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  dot: { width: 6, height: 6, borderRadius: 3 },
+  channelOverlay: {
+    position: "absolute",
+    top: 6,
+    left: 6,
+  },
+  liveBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  liveBadgeText: {
+    color: "#fff",
+    fontSize: 8,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+  },
+  channelTitle: {
+    fontSize: 11,
+    fontWeight: "600",
+    marginTop: 8,
+    textAlign: "center",
+  },
+
+  // Quick Actions
+  quickActions: {
+    flexDirection: "row",
+    paddingHorizontal: 20,
+    gap: 12,
+    marginTop: 24,
+    marginBottom: 20,
+  },
+  quickAction: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 8,
+  },
+  quickActionIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  quickActionText: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
 
   // Empty State
   emptyState: {
@@ -522,113 +935,94 @@ const styles = StyleSheet.create({
     padding: 40,
   },
   emptyIconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 24,
   },
-  emptyTitle: { fontSize: 22, fontWeight: "800", marginBottom: 20 },
+  emptyTitle: { fontSize: 24, fontWeight: "800", marginBottom: 8 },
+  emptySub: { fontSize: 14, marginBottom: 24 },
   actionButton: {
     paddingVertical: 14,
-    paddingHorizontal: 30,
-    borderRadius: 16,
+    paddingHorizontal: 32,
+    borderRadius: 14,
   },
   actionButtonText: { fontWeight: "800", fontSize: 16 },
 
-  // New Header Styles
-  sectionHeaderContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    paddingHorizontal: 20,
-    marginBottom: 20,
-    paddingBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.05)",
+  // Continue Watching
+  continueCard: {
+    width: 140,
+    height: 200,
+    borderRadius: 12,
+    overflow: "hidden",
+    marginRight: 12,
   },
-  sectionHeaderLeft: {
-    gap: 6,
+  continueImage: {
+    width: "100%",
+    height: "100%",
   },
-  sectionKickerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
+  continueOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 8,
   },
-  kickerIconBox: {
-    width: 24,
-    height: 24,
-    borderRadius: 4,
-    justifyContent: "center",
-    alignItems: "center",
+  progressBar: {
+    height: 4,
+    backgroundColor: "rgba(255,255,255,0.3)",
+    borderRadius: 2,
+    overflow: "hidden",
   },
-  kickerText: {
-    fontSize: 10,
-    fontWeight: "900",
-    textTransform: "uppercase",
-    letterSpacing: 2,
+  progressFill: {
+    height: "100%",
+    borderRadius: 2,
   },
-  sectionTitleLarge: {
-    fontSize: 28,
-    fontWeight: "900",
-    letterSpacing: -1,
-    lineHeight: 32,
-  },
-  sectionHeaderRight: {
-    alignItems: "flex-end",
-    gap: 2,
-  },
-  countText: {
-    fontSize: 20,
-    fontWeight: "900",
-    fontVariant: ["tabular-nums"],
-  },
-  countLabel: {
-    fontSize: 9,
-    fontWeight: "800",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    color: "rgba(255,255,255,0.4)",
+  continueTitle: {
+    position: "absolute",
+    bottom: 8,
+    left: 8,
+    right: 8,
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
+    textShadowColor: "rgba(0,0,0,0.8)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 
-  // Enhanced Channel Card
-  channelCardEnhanced: {
-    width: 120,
-    height: 120,
-    borderRadius: 4,
-    borderWidth: 1,
-    overflow: "hidden",
-    marginBottom: 8,
+  // Series Card
+  seriesCard: {
+    width: 130,
+    marginRight: 12,
   },
-  liveBadge: {
+  seriesImage: {
+    width: 130,
+    height: 180,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  seriesBadge: {
     position: "absolute",
     top: 8,
-    left: 8,
+    right: 8,
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#ef4444",
     paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 2,
-    zIndex: 10,
-    shadowColor: "#ef4444",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 5,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
-  liveBadgeText: {
-    color: "white",
-    fontSize: 8,
-    fontWeight: "900",
-    letterSpacing: 1,
+  seriesRating: {
+    fontSize: 10,
+    fontWeight: "700",
   },
-  liveDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "white",
+  seriesTitle: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 8,
   },
 });

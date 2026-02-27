@@ -17,6 +17,3 @@ export const PLAYER_CONSTANTS = {
 
 export const WATCHED_THRESHOLD = 95;
 export const GOAL_POPUP_DURATION = 8000;
-
-export const VOLUME_KEYBOARD_STEP = 0.1;
-export const SEEK_KEYBOARD_STEP = 5;

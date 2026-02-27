@@ -26,6 +26,7 @@ interface PlaylistState {
   updatePlaylist: (id: number, updates: Partial<Playlist>) => void;
   removePlaylist: (id: number) => void;
   selectPlaylist: (playlist: Playlist | null) => void;
+  clearPlaylists: () => void;
 }
 
 export const usePlaylistStore = create<PlaylistState>()(
@@ -47,12 +48,12 @@ export const usePlaylistStore = create<PlaylistState>()(
       updatePlaylist: (id, updates) =>
         set((state) => {
           const updatedPlaylists = state.playlists.map((p) =>
-            p.id === id ? { ...p, ...updates } : p
+            p.id === id ? { ...p, ...updates } : p,
           );
           const updatedSelected =
-            state.selectedPlaylist?.id === id ?
-              { ...state.selectedPlaylist, ...updates }
-            : state.selectedPlaylist;
+            state.selectedPlaylist?.id === id
+              ? { ...state.selectedPlaylist, ...updates }
+              : state.selectedPlaylist;
 
           return {
             playlists: updatedPlaylists,
@@ -67,14 +68,18 @@ export const usePlaylistStore = create<PlaylistState>()(
 
       removePlaylist: (id) =>
         set((state) => ({
-          playlists: state.playlists.filter((playlist) => Number(playlist.id) !== Number(id)),
+          playlists: state.playlists.filter(
+            (playlist) => Number(playlist.id) !== Number(id),
+          ),
           selectedPlaylist:
             state.selectedPlaylist?.id === id ? null : state.selectedPlaylist,
         })),
+
+      clearPlaylists: () => set({ playlists: [], selectedPlaylist: null }),
     }),
     {
       name: "playlist-storage",
       storage: createJSONStorage(() => AsyncStorage),
-    }
-  )
+    },
+  ),
 );

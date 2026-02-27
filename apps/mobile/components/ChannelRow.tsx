@@ -13,7 +13,7 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 
-"use no memo";
+("use no memo");
 
 interface ChannelRowProps {
   channel: any;
@@ -23,7 +23,9 @@ export const ChannelRow = ({ channel }: ChannelRowProps) => {
   const router = useRouter();
   const theme = usePlayerTheme();
   const utils = trpc.useUtils();
-  const [currentTime, setCurrentTime] = useState(() => Math.floor(Date.now() / 1000));
+  const [currentTime, setCurrentTime] = useState(() =>
+    Math.floor(Date.now() / 1000),
+  );
 
   // Fix: useSharedValue should only be accessed via useAnimatedStyle
   const heartScale = useSharedValue(1);
@@ -117,13 +119,11 @@ export const ChannelRow = ({ channel }: ChannelRowProps) => {
           },
         ]}
       >
-        {channel.streamIcon ?
-          <Image
-            source={{ uri: channel.streamIcon }}
-            style={styles.logo}
-            contentFit='contain'
-          />
-        : <Tv size={20} color={theme.textMuted} />}
+        {channel.streamIcon ? (
+          <Image source={{ uri: channel.streamIcon }} style={styles.logo} />
+        ) : (
+          <Tv size={20} color={theme.textMuted} />
+        )}
       </View>
 
       <View style={styles.infoContainer}>
@@ -134,7 +134,7 @@ export const ChannelRow = ({ channel }: ChannelRowProps) => {
           {channel.name}
         </Text>
 
-        {programInfo ?
+        {programInfo ? (
           <View style={styles.epgWrapper}>
             <Text
               style={[styles.programTitle, { color: theme.textSecondary }]}
@@ -167,10 +167,11 @@ export const ChannelRow = ({ channel }: ChannelRowProps) => {
               </Text>
             </View>
           </View>
-        : <Text style={[styles.noEpg, { color: theme.textMuted }]}>
+        ) : (
+          <Text style={[styles.noEpg, { color: theme.textMuted }]}>
             No Information Available
           </Text>
-        }
+        )}
       </View>
 
       <Pressable

@@ -22,7 +22,6 @@ import useSWR from "swr";
 import MatchDetailsModal from "./Details";
 import MatchCard from "./MatchCard";
 
-// --- Types ---
 export interface Competitor {
   id: number;
   name: string;
@@ -31,7 +30,7 @@ export interface Competitor {
 
 export interface Game {
   id: number;
-  statusGroup: number; // 2=Scheduled, 3=Live, 4=Finished
+  statusGroup: number;
   statusText: string;
   gameTime: number;
   startTime: string;
@@ -41,9 +40,8 @@ export interface Game {
   awayCompetitor: Competitor;
 }
 
-// --- Utils ---
 export const formatDateForAPI = (date: Date): string => {
-  return date.toLocaleDateString("en-GB"); // Returns DD/MM/YYYY
+  return date.toLocaleDateString("en-GB");
 };
 
 export const formatDisplayDate = (date: Date): string => {
@@ -56,7 +54,6 @@ export const formatDisplayDate = (date: Date): string => {
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-// --- Main Screen ---
 export default function LiveScoresScreen() {
   const theme = usePlayerTheme();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -138,8 +135,18 @@ export default function LiveScoresScreen() {
               {formatDisplayDate(currentDate)}
             </Text>
             {new Date().toDateString() !== currentDate.toDateString() && (
-              <Pressable onPress={handleGoToToday} style={styles.todayBtn}>
-                <Text style={styles.todayBtnText}>Return Today</Text>
+              <Pressable
+                onPress={handleGoToToday}
+                style={[styles.todayBtn, { backgroundColor: theme.primary }]}
+              >
+                <Text
+                  style={[
+                    styles.todayBtnText,
+                    { color: theme.primaryForeground },
+                  ]}
+                >
+                  Today
+                </Text>
               </Pressable>
             )}
           </View>
@@ -157,7 +164,7 @@ export default function LiveScoresScreen() {
           <Pressable onPress={handlePrevDay} style={styles.navBtn}>
             <ChevronLeft size={20} color={theme.textSecondary} />
           </Pressable>
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: theme.border }]} />
           <Pressable onPress={handleNextDay} style={styles.navBtn}>
             <ChevronRight size={20} color={theme.textSecondary} />
           </Pressable>
@@ -177,13 +184,13 @@ export default function LiveScoresScreen() {
           />
         }
       >
-        {isLoading && games.length === 0 ?
+        {isLoading && games.length === 0 ? (
           <ActivityIndicator
-            size='large'
+            size="large"
             color={theme.primary}
             style={{ marginTop: 50 }}
           />
-        : games.length === 0 && !error ?
+        ) : games.length === 0 && !error ? (
           <View style={styles.emptyContainer}>
             <RefreshCcw
               size={48}
@@ -197,7 +204,8 @@ export default function LiveScoresScreen() {
               Try changing the date
             </Text>
           </View>
-        : <>
+        ) : (
+          <>
             {/* Live Section */}
             {liveMatches.length > 0 && (
               <View style={styles.section}>
@@ -259,7 +267,7 @@ export default function LiveScoresScreen() {
               );
             })}
           </>
-        }
+        )}
       </ScrollView>
 
       <MatchDetailsModal
@@ -274,7 +282,6 @@ export default function LiveScoresScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, paddingBottom: 50 },
 
-  // Header
   header: {
     paddingHorizontal: 20,
     paddingBottom: 16,
@@ -306,38 +313,33 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   todayBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   todayBtnText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: "700",
-    color: "#fff",
   },
 
-  // Navigation
   navContainer: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderRadius: 20,
-    height: 36,
+    borderRadius: 16,
+    height: 40,
   },
   navBtn: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
     justifyContent: "center",
     alignItems: "center",
   },
   divider: {
     width: 1,
     height: 20,
-    backgroundColor: "rgba(255,255,255,0.1)",
   },
 
-  // Content
   scrollContent: { paddingBottom: 40 },
   emptyContainer: {
     alignItems: "center",
@@ -345,7 +347,6 @@ const styles = StyleSheet.create({
     marginTop: 100,
   },
 
-  // Sections
   section: { marginTop: 24 },
   sectionHeader: {
     flexDirection: "row",
@@ -373,7 +374,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  // Competition Header
   compHeader: {
     flexDirection: "row",
     alignItems: "center",

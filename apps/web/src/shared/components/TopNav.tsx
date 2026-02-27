@@ -1,6 +1,6 @@
 'use client';
 
-import { Menu, Search, Settings, X } from 'lucide-react';
+import { Menu, Settings, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -17,13 +17,12 @@ import { useTauri } from '@/shared/hooks/useTauri';
 import { cn } from '@/shared/lib/utils';
 import { usePlaylistStore } from '@repo/store';
 
-import { DesktopNav, MobileNav, WindowControls, SearchBar } from './topnav';
+import { DesktopNav, MobileNav, WindowControls } from './topnav';
 
 export default function TopNav() {
   const pathname = usePathname();
   const { selectedPlaylist, selectPlaylist, playlists: storePlaylists } = usePlaylistStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [time, setTime] = useState<string>('');
   const { isDesktopApp } = useTauri();
 
@@ -87,13 +86,7 @@ export default function TopNav() {
               <span className="text-muted-foreground mr-2 hidden text-sm lg:block">{time}</span>
             )}
 
-            {/* Search */}
-            <button
-              onClick={() => setSearchOpen(!searchOpen)}
-              className="text-muted-foreground hover:text-foreground flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-white/5"
-            >
-              <Search className="h-5 w-5" />
-            </button>
+
 
             {/* Playlist Selector */}
             <Select value={selectedPlaylist?.id?.toString()} onValueChange={handlePlaylistSelect}>
@@ -132,8 +125,7 @@ export default function TopNav() {
           </div>
         </div>
 
-        {/* Search Bar (Expandable) */}
-        {searchOpen && <SearchBar />}
+
       </header>
 
       {/* Mobile Menu */}

@@ -1,4 +1,5 @@
 import { usePlayerTheme } from "@/theme/playerTheme";
+import { useThemeStore } from "@/store/theme-store";
 import {
   AlertCircle,
   MapPin,
@@ -47,13 +48,14 @@ const MatchDetailsModal = ({
   onClose: () => void;
 }) => {
   const theme = usePlayerTheme();
+  const { themeMode } = useThemeStore();
 
   const { data: match, isLoading } = useSWR(
-    gameId ?
-      `${process.env.EXPO_PUBLIC_API_URL}/match-details?id=${gameId}`
-    : null,
+    gameId
+      ? `${process.env.EXPO_PUBLIC_API_URL}/match-details?id=${gameId}`
+      : null,
     fetcher,
-    { refreshInterval: 30000 }
+    { refreshInterval: 30000 },
   );
 
   if (!visible) return null;
@@ -92,26 +94,41 @@ const MatchDetailsModal = ({
       minute: "2-digit",
     }) || "";
 
+  const borderColor =
+    themeMode === "light" ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)";
+  const closeButtonBg =
+    themeMode === "light" ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.1)";
+
   return (
     <Modal
-      animationType='slide'
+      animationType="slide"
       transparent
       visible={visible}
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
-        <View style={[styles.modalContent, { backgroundColor: "#0f0f0f" }]}>
-          <View style={styles.modalHandle} />
+      <View style={[styles.modalOverlay, { backgroundColor: borderColor }]}>
+        <View
+          style={[
+            styles.modalContent,
+            { backgroundColor: theme.surfacePrimary },
+          ]}
+        >
+          <View
+            style={[styles.modalHandle, { backgroundColor: theme.border }]}
+          />
 
-          <Pressable onPress={onClose} style={styles.closeButton}>
-            <X color='#fff' size={24} />
+          <Pressable
+            onPress={onClose}
+            style={[styles.closeButton, { backgroundColor: closeButtonBg }]}
+          >
+            <X color={theme.textPrimary} size={24} />
           </Pressable>
 
-          {isLoading ?
+          {isLoading ? (
             <View style={styles.modalLoading}>
-              <ActivityIndicator size='large' color={theme.primary} />
+              <ActivityIndicator size="large" color={theme.primary} />
             </View>
-          : match ?
+          ) : match ? (
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={styles.headerTop}>
                 <Text
@@ -233,9 +250,9 @@ const MatchDetailsModal = ({
                         <View
                           style={[
                             styles.eventContent,
-                            isHome ?
-                              { alignItems: "flex-end", paddingRight: 40 }
-                            : { alignItems: "flex-start", paddingLeft: 40 },
+                            isHome
+                              ? { alignItems: "flex-end", paddingRight: 40 }
+                              : { alignItems: "flex-start", paddingLeft: 40 },
                           ]}
                         >
                           <View
@@ -286,7 +303,7 @@ const MatchDetailsModal = ({
                 </View>
               </View>
             </ScrollView>
-          : null}
+          ) : null}
         </View>
       </View>
     </Modal>
@@ -298,7 +315,7 @@ export default MatchDetailsModal;
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.85)",
+    backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "flex-end",
   },
   modalContent: {
@@ -310,7 +327,6 @@ const styles = StyleSheet.create({
   modalHandle: {
     width: 40,
     height: 4,
-    backgroundColor: "rgba(255,255,255,0.2)",
     alignSelf: "center",
     marginTop: 12,
     borderRadius: 2,
@@ -321,7 +337,6 @@ const styles = StyleSheet.create({
     right: 20,
     zIndex: 10,
     padding: 8,
-    backgroundColor: "rgba(255,255,255,0.1)",
     borderRadius: 20,
   },
   modalLoading: { flex: 1, justifyContent: "center", alignItems: "center" },
@@ -340,7 +355,6 @@ const styles = StyleSheet.create({
     padding: 30,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.05)",
   },
   modalTeam: { alignItems: "center", width: 90, gap: 8 },
   modalLogo: { width: 55, height: 55, resizeMode: "contain" },
@@ -351,7 +365,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
-    backgroundColor: "rgba(255,255,255,0.05)",
     marginTop: 4,
   },
   modalStatus: { fontSize: 12, fontWeight: "800", textTransform: "uppercase" },
@@ -387,7 +400,6 @@ const styles = StyleSheet.create({
     left: "50%",
     width: 1,
     marginLeft: -0.5,
-    opacity: 0.3,
   },
   eventRow: { alignItems: "center", marginBottom: 25, width: "100%" },
   eventTimeBubble: {

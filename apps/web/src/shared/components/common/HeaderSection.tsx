@@ -1,5 +1,3 @@
-import { useMemo } from 'react';
-
 import { BackButton } from './BackButton';
 import { MovieActionButtons } from './MovieActionButtons';
 import { MovieMetadata } from './MovieMetadata';

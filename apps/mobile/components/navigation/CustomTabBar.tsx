@@ -18,18 +18,15 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-"use no memo";
-
 const { width } = Dimensions.get("window");
-const MARGIN = 20;
+const MARGIN = 16;
 const TAB_BAR_WIDTH = width - MARGIN * 2;
-const PADDING_HORIZONTAL = 8; // Internal padding of the bar
+const PADDING_HORIZONTAL = 12;
 
 export function CustomTabBar({ state, navigation }: any) {
   const { bottom } = useSafeAreaInsets();
   const theme = usePlayerTheme();
 
-  // Calculate the width of each individual tab section
   const availableWidth = TAB_BAR_WIDTH - PADDING_HORIZONTAL * 2;
   const tabWidth = availableWidth / state.routes.length;
 
@@ -37,7 +34,6 @@ export function CustomTabBar({ state, navigation }: any) {
   const scaleX = useSharedValue(1);
 
   useEffect(() => {
-    // Precise calculation to ensure centering
     translateX.value = withSpring(state.index * tabWidth, {
       stiffness: 300,
       damping: 28,
@@ -58,18 +54,17 @@ export function CustomTabBar({ state, navigation }: any) {
         style={[
           styles.barWrapper,
           {
-            backgroundColor: "rgba(10, 10, 15, 0.94)", // Slightly more transparent for glass effect
-            borderColor: `${theme.primary}20`,
+            backgroundColor: theme.surfacePrimary,
+            borderColor: theme.border,
           },
         ]}
       >
         <View style={styles.content}>
-          {/* Precise Sliding Pill */}
           <Animated.View
             style={[
               styles.activeIndicator,
               {
-                width: tabWidth, // Pill takes full tab width for perfect centering
+                width: tabWidth,
                 backgroundColor: theme.primary,
               },
               activePillStyle,
@@ -107,40 +102,66 @@ export function CustomTabBar({ state, navigation }: any) {
 }
 
 const TabItem = ({ routeName, isFocused, onPress, theme }: any) => {
-  const iconScale = useSharedValue(1);
+  const scale = useSharedValue(1);
 
   useEffect(() => {
-    iconScale.value = withSpring(isFocused ? 1.1 : 1, { stiffness: 300 });
-  }, [iconScale, isFocused]);
+    scale.value = withSpring(isFocused ? 1.15 : 1, { stiffness: 300 });
+  }, [scale, isFocused]);
 
-  const animatedIconStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: iconScale.value }],
-    opacity: withTiming(isFocused ? 1 : 0.6, { duration: 150 }),
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: withTiming(isFocused ? 1 : 0.5, { duration: 150 }),
   }));
-  const pressAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: withSpring(isFocused ? 0.95 : 1, { stiffness: 400 }) },
-    ],
-  }));
+
   const getIcon = () => {
-    const iconColor = isFocused ? "#FFF" : theme.textMuted;
-    const props = { size: 22, color: iconColor, strokeWidth: 2.2 };
+    const props = { size: 22, strokeWidth: 2.2 };
 
     switch (routeName) {
       case "index":
-        return <Home {...props} />;
+        return (
+          <Home
+            {...props}
+            color={isFocused ? theme.primaryForeground : theme.textMuted}
+          />
+        );
       case "movies":
-        return <PlaySquare {...props} />;
+        return (
+          <PlaySquare
+            {...props}
+            color={isFocused ? theme.primaryForeground : theme.textMuted}
+          />
+        );
       case "series":
-        return <Film {...props} />;
+        return (
+          <Film
+            {...props}
+            color={isFocused ? theme.primaryForeground : theme.textMuted}
+          />
+        );
       case "channels":
-        return <Tv {...props} />;
+        return (
+          <Tv
+            {...props}
+            color={isFocused ? theme.primaryForeground : theme.textMuted}
+          />
+        );
       case "365":
-        return <Volleyball {...props} />;
+        return (
+          <Volleyball
+            {...props}
+            color={isFocused ? theme.primaryForeground : theme.textMuted}
+          />
+        );
       default:
-        return <Home {...props} />;
+        return (
+          <Home
+            {...props}
+            color={isFocused ? theme.primaryForeground : theme.textMuted}
+          />
+        );
     }
   };
+
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onPress();
@@ -148,16 +169,12 @@ const TabItem = ({ routeName, isFocused, onPress, theme }: any) => {
 
   return (
     <Pressable onPress={handlePress} style={styles.tabItem}>
-      {/* Add subtle scale animation on press */}
-      <Animated.View style={[animatedIconStyle, pressAnimatedStyle]}>
-        {getIcon()}
-      </Animated.View>
+      <Animated.View style={animatedStyle}>{getIcon()}</Animated.View>
 
-      {/* Add label underneath icon when focused */}
       {isFocused && (
         <Animated.Text
-          entering={FadeIn.delay(100)} // Delay label fade-in for better timing with icon animation
-          style={[styles.tabLabel, { color: theme.textPrimary }]}
+          entering={FadeIn.delay(100)}
+          style={[styles.tabLabel, { color: theme.primaryForeground }]}
         >
           {getLabel(routeName)}
         </Animated.Text>
@@ -165,6 +182,7 @@ const TabItem = ({ routeName, isFocused, onPress, theme }: any) => {
     </Pressable>
   );
 };
+
 const getLabel = (route: string) => {
   const labels: Record<string, string> = {
     index: "Home",
@@ -175,6 +193,7 @@ const getLabel = (route: string) => {
   };
   return labels[route] || route;
 };
+
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
@@ -184,18 +203,18 @@ const styles = StyleSheet.create({
   },
   barWrapper: {
     width: TAB_BAR_WIDTH,
-    height: 60,
-    borderRadius: 30,
+    height: 64,
+    borderRadius: 20,
     borderWidth: 1,
     ...Platform.select({
       ios: {
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.2,
-        shadowRadius: 10,
+        shadowOpacity: 0.25,
+        shadowRadius: 12,
       },
       android: {
-        elevation: 6,
+        elevation: 8,
       },
     }),
   },
@@ -210,13 +229,13 @@ const styles = StyleSheet.create({
     height: "100%",
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 2, // Keeps icons above the pill
+    zIndex: 2,
   },
   activeIndicator: {
     position: "absolute",
-    left: PADDING_HORIZONTAL, // Start at the padding offset
-    height: 44,
-    borderRadius: 22,
+    left: PADDING_HORIZONTAL,
+    height: 48,
+    borderRadius: 16,
     zIndex: 1,
   },
   tabLabel: {

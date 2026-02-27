@@ -1,5 +1,6 @@
 import { trpc } from "@/lib/trpc";
 import { usePlaylistStore } from "@/store";
+import { useSearchHistoryStore } from "@/store/search-history-store";
 import { usePlayerTheme } from "@/theme/playerTheme";
 import { cleanName } from "@repo/utils";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -11,7 +12,7 @@ import {
   SearchX,
   Tv,
 } from "lucide-react-native";
-import React from "react";
+import React, { useEffect } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -29,6 +30,13 @@ export default function SearchScreen() {
   const theme = usePlayerTheme();
   const { q } = useLocalSearchParams<{ q: string }>();
   const selectPlaylist = usePlaylistStore((state) => state.selectedPlaylist);
+  const addSearch = useSearchHistoryStore((state) => state.addSearch);
+
+  useEffect(() => {
+    if (q) {
+      addSearch(q);
+    }
+  }, [q]);
 
   // Fetch data
   const { data, isLoading } = trpc.home.globalSearch.useQuery({
@@ -52,7 +60,7 @@ export default function SearchScreen() {
     },
     {
       title: "TV Series",
-      icon: <Clapperboard size={18} color='#ec4899' />, // specific pink or theme.secondary
+      icon: <Clapperboard size={18} color="#ec4899" />, // specific pink or theme.secondary
       data: data?.series || [],
       type: "series",
     },
@@ -187,7 +195,7 @@ export default function SearchScreen() {
       </View>
 
       {/* Content */}
-      {isLoading ?
+      {isLoading ? (
         <View style={styles.center}>
           <View
             style={[
@@ -198,10 +206,10 @@ export default function SearchScreen() {
               },
             ]}
           >
-            <ActivityIndicator size='large' color={theme.primary} />
+            <ActivityIndicator size="large" color={theme.primary} />
           </View>
         </View>
-      : sections.length === 0 ?
+      ) : sections.length === 0 ? (
         <View style={styles.center}>
           <View
             style={[
@@ -218,7 +226,8 @@ export default function SearchScreen() {
             Try searching for something else
           </Text>
         </View>
-      : <SectionList
+      ) : (
+        <SectionList
           sections={sections}
           keyExtractor={(item, index) =>
             `${item.streamId || item.seriesId}-${index}`
@@ -244,7 +253,7 @@ export default function SearchScreen() {
           ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
           SectionSeparatorComponent={() => <View style={{ height: 24 }} />}
         />
-      }
+      )}
     </SafeAreaView>
   );
 }

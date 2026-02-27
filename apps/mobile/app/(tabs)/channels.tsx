@@ -1,14 +1,28 @@
 import { ChannelRow } from "@/components/ChannelRow";
-import Header from "@/components/Header";
 import { trpc } from "@/lib/trpc";
 import { usePlaylistStore } from "@/store";
 import { usePlayerTheme } from "@/theme/playerTheme";
 import { FlashList, FlashListRef } from "@shopify/flash-list";
-import * as Haptics from "expo-haptics";
-import { Search, Tv, X } from "lucide-react-native";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrowDownAZ,
+  ArrowUpAZ,
+  Clock,
+  Heart,
+  Search,
+  SlidersHorizontal,
+  Tv,
+  X,
+} from "lucide-react-native";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
+  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -16,16 +30,8 @@ import {
   TextInput,
   View,
 } from "react-native";
-import Animated, {
-  FadeIn,
-  FadeInDown,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from "react-native-reanimated";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-"use no memo";
 
 export default function ChannelsScreen() {
   const theme = usePlayerTheme();
@@ -34,14 +40,51 @@ export default function ChannelsScreen() {
 
   const [selectedCatId, setSelectedCatId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showCategoryDrawer, setShowCategoryDrawer] = useState(false);
+  const [showSortModal, setShowSortModal] = useState(false);
+  const [sortBy, setSortBy] = useState<
+    "default" | "az" | "za" | "favorites" | "recent"
+  >("default");
 
-  // 1. Fetch Categories
+  type SortOption = {
+    id: "default" | "az" | "za" | "favorites" | "recent";
+    label: string;
+    icon: React.ReactNode;
+  };
+
+  const sortOptions: SortOption[] = [
+    {
+      id: "default",
+      label: "Default",
+      icon: <Tv size={18} color={theme.textMuted} />,
+    },
+    {
+      id: "az",
+      label: "A-Z",
+      icon: <ArrowDownAZ size={18} color={theme.textMuted} />,
+    },
+    {
+      id: "za",
+      label: "Z-A",
+      icon: <ArrowUpAZ size={18} color={theme.textMuted} />,
+    },
+    {
+      id: "favorites",
+      label: "Favorites",
+      icon: <Heart size={18} color={theme.textMuted} />,
+    },
+    {
+      id: "recent",
+      label: "Recently Watched",
+      icon: <Clock size={18} color={theme.textMuted} />,
+    },
+  ];
+
   const { data: categories, isLoading: loadingCats } =
     trpc.channels.getCategories.useQuery({
       playlistId: selectPlaylist?.id ?? 0,
     });
 
-  // 2. Fetch Channels
   const { data: channels, isLoading: loadingChannels } =
     trpc.channels.getChannels.useQuery(
       {
@@ -53,7 +96,6 @@ export default function ChannelsScreen() {
 
   useEffect(() => {
     if (categories?.length && !selectedCatId) {
-      // Defer state update to avoid cascading renders
       const timeoutId = setTimeout(() => {
         setSelectedCatId(categories[0].categoryId);
       }, 0);
@@ -68,46 +110,44 @@ export default function ChannelsScreen() {
     );
   }, [categories, searchQuery]);
 
-  const scrollToCategory = (index: number) => {
-    categoryListRef.current?.scrollToIndex({
-      index,
-      animated: true,
-      viewPosition: 0.5, // Centers the pill
-    });
-  };
+  const selectedCategory = categories?.find(
+    (c) => c.categoryId === selectedCatId,
+  );
+
+  const sortedChannels = useMemo(() => {
+    if (!channels) return [];
+    let sorted = [...channels];
+
+    switch (sortBy) {
+      case "az":
+        sorted.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case "za":
+        sorted.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      case "favorites":
+        sorted.sort((a, b) => (b.isFavorite ? 1 : 0) - (a.isFavorite ? 1 : 0));
+        break;
+    }
+    return sorted;
+  }, [channels, sortBy]);
 
   const renderChannelItem = useCallback(
     ({ item, index }: { item: any; index: number }) => (
-      <Animated.View entering={FadeInDown.delay(Math.min(index * 20, 300))}>
+      <Animated.View entering={FadeInDown.delay(Math.min(index * 10, 200))}>
         <ChannelRow channel={item} />
       </Animated.View>
     ),
     [],
   );
 
-  const renderCategoryItem = useCallback(
-    ({ item, index }: { item: any; index: number }) => {
-      const isActive = selectedCatId === item.categoryId;
-      return (
-        <CategoryPill
-          item={item}
-          isActive={isActive}
-          onPress={() => {
-            setSelectedCatId(item.categoryId);
-            scrollToCategory(index);
-          }}
-        />
-      );
-    },
-    [selectedCatId],
-  );
-
   return (
-    <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      <Header />
-
-      {/* 1. Integrated Search & Stats Header */}
-      <View style={styles.headerStack}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.bg }]}
+      edges={["top", "bottom"]}
+    >
+      {/* Search & Filter Header */}
+      <View style={[styles.headerStack, { backgroundColor: theme.bg }]}>
         <View
           style={[
             styles.searchWrapper,
@@ -117,10 +157,10 @@ export default function ChannelsScreen() {
             },
           ]}
         >
-          <Search size={18} color={theme.primary} />
+          <Search size={18} color={theme.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: theme.textPrimary }]}
-            placeholder='Search channels...'
+            placeholder="Search channels..."
             placeholderTextColor={theme.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -131,43 +171,71 @@ export default function ChannelsScreen() {
             </Pressable>
           )}
         </View>
+        <Pressable
+          onPress={() => setShowSortModal(true)}
+          style={[
+            styles.filterButton,
+            {
+              backgroundColor: theme.surfaceSecondary,
+              borderColor: theme.border,
+            },
+          ]}
+        >
+          <SlidersHorizontal size={18} color={theme.textPrimary} />
+        </Pressable>
+        <Pressable
+          onPress={() => setShowCategoryDrawer(true)}
+          style={[
+            styles.filterButton,
+            {
+              backgroundColor: theme.surfaceSecondary,
+              borderColor: theme.border,
+            },
+          ]}
+        >
+          <Tv size={18} color={theme.textPrimary} />
+        </Pressable>
       </View>
 
-      {/* Categories Horizontal Scroll */}
-      <View style={[styles.catWrapper, { borderBottomColor: theme.border }]}>
-        {loadingCats ?
-          <ActivityIndicator
-            size='small'
-            color={theme.primary}
-            style={styles.loader}
-          />
-          : <FlashList
-            ref={categoryListRef}
-            horizontal
-            data={filteredCategories}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.catContent}
-            renderItem={renderCategoryItem}
-          />
-        }
+      {/* Selected Category Chip */}
+      <View
+        style={[
+          styles.selectedCategoryBar,
+          { borderBottomColor: theme.border },
+        ]}
+      >
+        <View style={[styles.categoryChip, { backgroundColor: theme.primary }]}>
+          <Text
+            style={[
+              styles.categoryChipText,
+              { color: theme.primaryForeground },
+            ]}
+          >
+            {selectedCategory?.categoryName || "All Channels"}
+          </Text>
+        </View>
+        <Text style={[styles.channelCount, { color: theme.textMuted }]}>
+          {sortedChannels.length || 0} channels
+        </Text>
       </View>
 
       <SafeAreaView style={styles.listContainer} edges={["bottom"]}>
-        {loadingChannels ?
+        {loadingChannels ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size='large' color={theme.primary} />
+            <ActivityIndicator size="large" color={theme.primary} />
             <Text style={[styles.loadingText, { color: theme.textMuted }]}>
               Loading Streams...
             </Text>
           </View>
-          : <FlashList
-            data={channels}
+        ) : (
+          <FlashList
+            data={sortedChannels}
             renderItem={renderChannelItem}
             keyExtractor={(item) => item.streamId.toString()}
             contentContainerStyle={styles.listContent}
             ListEmptyComponent={
               <Animated.View entering={FadeIn} style={styles.emptyContainer}>
-                <Tv size={64} color={theme.border} />
+                <Tv size={64} color={theme.textMuted} />
                 <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>
                   No Channels Found
                 </Text>
@@ -177,83 +245,188 @@ export default function ChannelsScreen() {
               </Animated.View>
             }
           />
-        }
+        )}
       </SafeAreaView>
-    </View>
-  );
-}
 
-// Sub-component for the Pill to handle its own animation state
-const CategoryPill = ({ item, isActive, onPress, count }: any) => {
-  const theme = usePlayerTheme();
-  const scale = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  return (
-    <Pressable
-      onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        onPress();
-      }}
-      onPressIn={() => (scale.value = withSpring(0.95))}
-      onPressOut={() => (scale.value = withSpring(1))}
-    >
-      <Animated.View
-        style={[
-          styles.pill,
-          animatedStyle,
-          {
-            backgroundColor: isActive ? theme.primary : theme.surfaceSecondary,
-            borderColor: isActive ? theme.primary : theme.border,
-          },
-        ]}
+      {/* Sort Modal */}
+      <Modal
+        visible={showSortModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowSortModal(false)}
       >
-        <Text
-          style={[
-            styles.pillText,
-            {
-              color: isActive ? "#000" : theme.textSecondary,
-              fontWeight: isActive ? "700" : "500",
-            },
-          ]}
-        >
-          {item.categoryName}
-        </Text>
-
-        {/* Add count badge */}
-        {count && (
-          <View
+        <View style={styles.modalOverlay}>
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setShowSortModal(false)}
+          />
+          <Animated.View
+            entering={FadeInDown.springify()}
             style={[
-              styles.countBadge,
-              {
-                backgroundColor:
-                  isActive ? "rgba(0,0,0,0.2)" : theme.glassLight,
-              },
+              styles.drawerContent,
+              { backgroundColor: theme.surfacePrimary },
             ]}
           >
-            <Text
+            <View
+              style={[styles.drawerHandle, { backgroundColor: theme.border }]}
+            />
+
+            <View style={styles.drawerHeader}>
+              <Text style={[styles.drawerTitle, { color: theme.textPrimary }]}>
+                Sort Channels
+              </Text>
+            </View>
+
+            <View style={styles.sortOptionsContainer}>
+              {sortOptions.map((option) => (
+                <Pressable
+                  key={option.id}
+                  onPress={() => {
+                    setSortBy(option.id);
+                    setShowSortModal(false);
+                  }}
+                  style={[
+                    styles.sortOption,
+                    {
+                      backgroundColor:
+                        sortBy === option.id
+                          ? theme.primary
+                          : theme.surfaceSecondary,
+                      borderColor:
+                        sortBy === option.id ? theme.primary : theme.border,
+                    },
+                  ]}
+                >
+                  {option.icon}
+                  <Text
+                    style={[
+                      styles.sortOptionText,
+                      {
+                        color:
+                          sortBy === option.id
+                            ? theme.primaryForeground
+                            : theme.textPrimary,
+                      },
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
+
+      {/* Category Drawer Modal */}
+      <Modal
+        visible={showCategoryDrawer}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowCategoryDrawer(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setShowCategoryDrawer(false)}
+          />
+          <Animated.View
+            entering={FadeInDown.springify()}
+            style={[
+              styles.drawerContent,
+              { backgroundColor: theme.surfacePrimary },
+            ]}
+          >
+            <View
+              style={[styles.drawerHandle, { backgroundColor: theme.border }]}
+            />
+
+            <View style={styles.drawerHeader}>
+              <Text style={[styles.drawerTitle, { color: theme.textPrimary }]}>
+                Categories
+              </Text>
+              <Text style={[styles.drawerSubtitle, { color: theme.textMuted }]}>
+                {categories?.length || 0} categories
+              </Text>
+            </View>
+
+            {/* Search in drawer */}
+            <View
               style={[
-                styles.countText,
-                { color: isActive ? "#000" : theme.textMuted },
+                styles.drawerSearch,
+                { backgroundColor: theme.surfaceSecondary },
               ]}
             >
-              {count}
-            </Text>
-          </View>
-        )}
-      </Animated.View>
-    </Pressable>
+              <Search size={16} color={theme.textMuted} />
+              <TextInput
+                style={[styles.drawerSearchInput, { color: theme.textPrimary }]}
+                placeholder="Search categories..."
+                placeholderTextColor={theme.textMuted}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+            </View>
+
+            <View style={styles.categoryListContainer}>
+              <FlashList
+                data={filteredCategories}
+                renderItem={({ item: category }) => (
+                  <View>
+                    <Pressable
+                      onPress={() => {
+                        setSelectedCatId(category.categoryId);
+                        setShowCategoryDrawer(false);
+                        setSearchQuery("");
+                      }}
+                      style={[
+                        styles.categoryItem,
+                        {
+                          backgroundColor:
+                            selectedCatId === category.categoryId
+                              ? theme.primary
+                              : theme.surfaceSecondary,
+                          borderColor:
+                            selectedCatId === category.categoryId
+                              ? theme.primary
+                              : theme.border,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.categoryItemText,
+                          {
+                            color:
+                              selectedCatId === category.categoryId
+                                ? theme.primaryForeground
+                                : theme.textPrimary,
+                            fontWeight:
+                              selectedCatId === category.categoryId
+                                ? "700"
+                                : "500",
+                          },
+                        ]}
+                      >
+                        {category.categoryName}
+                      </Text>
+                    </Pressable>
+                  </View>
+                )}
+                keyExtractor={(item) => item.categoryId.toString()}
+              />
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
+    </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   searchSection: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 20,
   },
   searchBar: {
     flexDirection: "row",
@@ -265,28 +438,87 @@ const styles = StyleSheet.create({
     gap: 12,
   },
 
-  catWrapper: {
-    paddingBottom: 12,
+  simpleHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
   },
-  catContent: {
-    paddingHorizontal: 16,
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
-  catPill: {
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 25,
-    marginRight: 8,
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "800",
+    letterSpacing: -0.5,
+  },
+
+  headerStack: {
+    flexDirection: "row",
+    padding: 12,
+    gap: 12,
+    alignItems: "center",
+  },
+  searchWrapper: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    height: 48,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    gap: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: { elevation: 2 },
+    }),
+  },
+  searchInput: { flex: 1, fontSize: 15, fontWeight: "500" },
+  listContainer: { flex: 1, paddingBottom: 20 },
+  filterButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
     borderWidth: 1,
   },
-  catText: {
-    fontSize: 14,
+
+  selectedCategoryBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  categoryChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  categoryChipText: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  channelCount: {
+    fontSize: 12,
+    fontWeight: "600",
   },
 
   listContent: {
     paddingHorizontal: 12,
     paddingTop: 8,
-    paddingBottom: 20,
+    paddingBottom: 50,
   },
   loadingContainer: {
     flex: 1,
@@ -314,87 +546,89 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: "center",
   },
-  loader: {
-    paddingVertical: 10,
-    marginLeft: 20,
-  },
 
-  headerStack: {
-    padding: 12,
-    gap: 12,
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
   },
-  searchWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    height: 52,
-    borderRadius: 16,
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  drawerContent: {
+    height: "65%",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 34,
+  },
+  categoryListContainer: {
+    flex: 1,
     paddingHorizontal: 16,
-    borderWidth: 1,
-    gap: 12,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: { elevation: 2 },
-    }),
   },
-  searchInput: { flex: 1, fontSize: 16, fontWeight: "500" },
-  statsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 4,
+  drawerHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: "center",
+    marginTop: 12,
+    marginBottom: 8,
   },
-  liveIndicator: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
+  drawerHeader: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.1)",
   },
-  statsText: {
-    fontSize: 12,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+  drawerTitle: {
+    fontSize: 20,
+    fontWeight: "800",
   },
-  catContainer: {
-    paddingVertical: 14,
+  drawerSubtitle: {
+    fontSize: 13,
     marginTop: 4,
   },
-  catScroll: { paddingHorizontal: 16 },
-  pill: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 14,
-    marginRight: 10,
-    borderWidth: 1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-  },
-  pillText: { fontSize: 14 },
-  listContainer: { flex: 1 },
-  listPadding: { paddingHorizontal: 16, paddingBottom: 30 },
-  loadingState: { flex: 1, justifyContent: "center" },
-  emptyContent: {
-    flex: 1,
+  drawerSearch: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    marginTop: 80,
+    marginHorizontal: 20,
+    marginVertical: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    gap: 10,
+  },
+  drawerSearchInput: {
+    flex: 1,
+    fontSize: 14,
+  },
+  categoryList: {
+    padding: 16,
+    paddingTop: 4,
+  },
+  categoryItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+  },
+  categoryItemText: {
+    fontSize: 15,
+  },
+  sortOptionsContainer: {
+    padding: 20,
     gap: 12,
   },
-  emptyText: { fontSize: 14, fontWeight: "500" },
-  countBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 10,
-    marginLeft: 6,
-    minWidth: 20,
+  sortOption: {
+    flexDirection: "row",
     alignItems: "center",
+    gap: 12,
+    padding: 16,
+    borderRadius: 14,
+    borderWidth: 1,
   },
-  countText: {
-    fontSize: 10,
-    fontWeight: "800",
-    fontVariant: ["tabular-nums"],
+  sortOptionText: {
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

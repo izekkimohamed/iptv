@@ -4,11 +4,12 @@ import { usePlayerTheme } from "@/theme/playerTheme";
 import { cleanName } from "@repo/utils";
 import { FlashList } from "@shopify/flash-list";
 import { useRouter } from "expo-router";
-import { Tv } from "lucide-react-native";
+import { Film, Tv } from "lucide-react-native";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  Modal,
   Pressable,
   StyleSheet,
   Text,
@@ -18,7 +19,7 @@ import {
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const COLUMN_COUNT = 3;
+const COLUMN_COUNT = 2;
 const SPACING = 12;
 
 export default function SeriesScreen() {
@@ -29,14 +30,13 @@ export default function SeriesScreen() {
   const selectPlaylist = usePlaylistStore((state) => state.selectedPlaylist);
 
   const [selectedCatId, setSelectedCatId] = useState<number | null>(null);
+  const [showCategoryDrawer, setShowCategoryDrawer] = useState(false);
 
-  // 1. Fetch Categories
   const { data: categories, isLoading: loadingCats } =
     trpc.series.getSeriesCategories.useQuery({
       playlistId: selectPlaylist?.id ?? 0,
     });
 
-  // 2. Fetch Series
   const { data: series, isLoading: loadingSeries } =
     trpc.series.getseries.useQuery(
       { playlistId: selectPlaylist?.id ?? 0, categoryId: selectedCatId ?? 0 },
@@ -45,7 +45,6 @@ export default function SeriesScreen() {
 
   useEffect(() => {
     if (categories?.length && !selectedCatId) {
-      // Defer state update to avoid cascading renders
       const timeoutId = setTimeout(() => {
         setSelectedCatId(categories[0].categoryId);
       }, 0);
@@ -53,16 +52,20 @@ export default function SeriesScreen() {
     }
   }, [categories, selectedCatId]);
 
+  const selectedCategory = categories?.find(
+    (c) => c.categoryId === selectedCatId,
+  );
+
   const renderSeriesItem = useCallback(
     ({ item, index }: { item: any; index: number }) => (
       <Animated.View
-        entering={FadeInDown.delay((index % 9) * 50).springify()}
+        entering={FadeInDown.delay((index % 6) * 50).springify()}
         style={[styles.gridItemWrapper, { width: ITEM_WIDTH }]}
       >
         <Pressable
           style={({ pressed }) => [
             styles.seriesCard,
-            pressed && { opacity: 0.7, transform: [{ scale: 0.96 }] },
+            pressed && { opacity: 0.8, transform: [{ scale: 0.96 }] },
           ]}
           onPress={() =>
             router.push({
@@ -80,71 +83,40 @@ export default function SeriesScreen() {
             <Image
               source={{ uri: item.cover || "" }}
               style={[styles.poster, { borderColor: theme.border }]}
-              contentFit='cover'
-              transition={500}
-              placeholder='L6PZfSi_.AyE_3t7t7R**0o#DgR4'
-              placeholderContentFit='cover'
             />
-            {/* Subtle gradient for depth */}
-            <View style={StyleSheet.absoluteFill}>
+            <View style={styles.posterOverlay}>
               <View
-                style={[
-                  styles.posterGradient,
-                  { backgroundColor: "rgba(0,0,0,0.4)" },
-                ]}
-              />
+                style={[styles.seasonBadge, { backgroundColor: theme.primary }]}
+              >
+                <Tv size={10} color={theme.primaryForeground} />
+                <Text
+                  style={[
+                    styles.seasonText,
+                    { color: theme.primaryForeground },
+                  ]}
+                >
+                  {item.seasonCount || ""}
+                </Text>
+              </View>
             </View>
           </View>
           <Text
-            style={[styles.seriesTitle, { color: theme.textSecondary }]}
-            numberOfLines={1}
+            style={[styles.seriesTitle, { color: theme.textPrimary }]}
+            numberOfLines={2}
           >
             {cleanName(item.name)}
           </Text>
         </Pressable>
       </Animated.View>
     ),
-    [ITEM_WIDTH, router, theme.surfaceSecondary, theme.border, theme.textSecondary],
-  );
-
-  const renderCategoryItem = useCallback(
-    ({ item }: { item: any }) => {
-      const isSelected = selectedCatId === item.categoryId;
-      return (
-        <Pressable
-          style={[
-            styles.catChip,
-            {
-              backgroundColor:
-                isSelected ? theme.primary : theme.surfaceSecondary,
-              borderColor: isSelected ? theme.primary : theme.border,
-            },
-          ]}
-          onPress={() => setSelectedCatId(item.categoryId)}
-        >
-          <Text
-            style={[
-              styles.catChipText,
-              {
-                color: isSelected ? "#000" : theme.textSecondary,
-                fontWeight: isSelected ? "700" : "500",
-              },
-            ]}
-            numberOfLines={1}
-          >
-            {item.categoryName}
-          </Text>
-        </Pressable>
-      );
-    },
-    [selectedCatId, theme.primary, theme.surfaceSecondary, theme.border, theme.textSecondary],
+    [ITEM_WIDTH, router, theme],
   );
 
   if (loadingCats) {
     return (
       <View style={[styles.container, { backgroundColor: theme.bg }]}>
         <View style={styles.centerBox}>
-          <ActivityIndicator size='large' color={theme.primary} />
+          <ActivityIndicator size="large" color={theme.primary} />
         </View>
       </View>
     );
@@ -153,27 +125,42 @@ export default function SeriesScreen() {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.bg }]}
-      edges={["bottom"]}
+      edges={["top"]}
     >
-      {/* Categories Horizontal Scroll */}
-      <View style={styles.categoriesContainer}>
-        <FlashList
-          horizontal
-          data={categories}
-          keyExtractor={(item) => item.id.toString()}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoriesContent}
-          renderItem={renderCategoryItem}
-        />
+      {/* Header */}
+      <View style={[styles.header, { borderBottomColor: theme.border }]}>
+        <View style={styles.headerLeft}>
+          <Tv size={24} color={theme.primary} />
+          <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>
+            Series
+          </Text>
+        </View>
+        <Pressable
+          onPress={() => setShowCategoryDrawer(true)}
+          style={[
+            styles.categoryButton,
+            {
+              backgroundColor: theme.surfaceSecondary,
+              borderColor: theme.border,
+            },
+          ]}
+        >
+          <Text
+            style={[styles.categoryButtonText, { color: theme.textPrimary }]}
+            numberOfLines={1}
+          >
+            {selectedCategory?.categoryName || "All"}
+          </Text>
+        </Pressable>
       </View>
 
       {/* Series Grid */}
       <View style={styles.mainContent}>
-        {loadingSeries ?
+        {loadingSeries ? (
           <View style={styles.centerBox}>
-            <ActivityIndicator size='large' color={theme.primary} />
+            <ActivityIndicator size="large" color={theme.primary} />
           </View>
-        : series && series.length > 0 ?
+        ) : series && series.length > 0 ? (
           <FlashList
             data={series}
             numColumns={COLUMN_COUNT}
@@ -182,14 +169,15 @@ export default function SeriesScreen() {
             renderItem={renderSeriesItem}
             showsVerticalScrollIndicator={false}
           />
-        : <Animated.View entering={FadeIn} style={styles.emptyState}>
+        ) : (
+          <Animated.View entering={FadeIn} style={styles.emptyState}>
             <View
               style={[
                 styles.emptyIconCircle,
-                { backgroundColor: `${theme.primary}15` },
+                { backgroundColor: theme.surfaceSecondary },
               ]}
             >
-              <Tv size={48} color={theme.primary} />
+              <Film size={48} color={theme.textMuted} />
             </View>
             <Text style={[styles.emptyText, { color: theme.textPrimary }]}>
               No series found
@@ -198,112 +186,175 @@ export default function SeriesScreen() {
               Try selecting a different category
             </Text>
           </Animated.View>
-        }
+        )}
       </View>
+
+      {/* Category Drawer Modal */}
+      <Modal
+        visible={showCategoryDrawer}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowCategoryDrawer(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setShowCategoryDrawer(false)}
+          />
+          <Animated.View
+            entering={FadeInDown.springify()}
+            style={[
+              styles.drawerContent,
+              { backgroundColor: theme.surfacePrimary },
+            ]}
+          >
+            <View
+              style={[styles.drawerHandle, { backgroundColor: theme.border }]}
+            />
+
+            <View style={styles.drawerHeader}>
+              <Text style={[styles.drawerTitle, { color: theme.textPrimary }]}>
+                Categories
+              </Text>
+              <Text style={[styles.drawerSubtitle, { color: theme.textMuted }]}>
+                {categories?.length || 0} categories
+              </Text>
+            </View>
+
+            <View style={styles.categoryListContainer}>
+              <FlashList
+                data={categories}
+                renderItem={({ item: category }) => (
+                  <View>
+                    <Pressable
+                      onPress={() => {
+                        setSelectedCatId(category.categoryId);
+                        setShowCategoryDrawer(false);
+                      }}
+                      style={[
+                        styles.categoryItem,
+                        {
+                          backgroundColor:
+                            selectedCatId === category.categoryId
+                              ? theme.primary
+                              : theme.surfaceSecondary,
+                          borderColor:
+                            selectedCatId === category.categoryId
+                              ? theme.primary
+                              : theme.border,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.categoryItemText,
+                          {
+                            color:
+                              selectedCatId === category.categoryId
+                                ? theme.primaryForeground
+                                : theme.textPrimary,
+                            fontWeight:
+                              selectedCatId === category.categoryId
+                                ? "700"
+                                : "500",
+                          },
+                        ]}
+                      >
+                        {category.categoryName}
+                      </Text>
+                    </Pressable>
+                  </View>
+                )}
+                keyExtractor={(item) => item.categoryId.toString()}
+              />
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  centerBox: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  container: { flex: 1 },
+  centerBox: { flex: 1, justifyContent: "center", alignItems: "center" },
 
-  // Header
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: 10,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: "800",
     letterSpacing: -0.5,
   },
-  searchBtn: {
-    padding: 10,
-    borderRadius: 50,
-  },
-
-  // Categories
-  categoriesContainer: {
-    height: 50,
-    marginBottom: 8,
-  },
-  categoriesContent: {
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-  },
-  catChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
-    borderWidth: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  catChipText: {
-    fontSize: 13,
-    letterSpacing: 0.2,
-  },
-
-  // Grid
-  mainContent: {
+  categoryButton: {
     flex: 1,
+    maxWidth: 180,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginLeft: 16,
   },
+  categoryButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+
+  mainContent: { flex: 1 },
   gridContent: {
     padding: SPACING,
     paddingBottom: 40,
   },
   gridItemWrapper: {
-    marginRight: SPACING,
-    marginBottom: 20,
+    marginBottom: 16,
   },
-  seriesCard: {
-    width: "100%",
-    gap: 8,
-  },
+  seriesCard: { width: "100%", gap: 8 },
   posterContainer: {
     width: "100%",
     aspectRatio: 2 / 3,
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 5,
     position: "relative",
   },
   poster: {
     width: "100%",
     height: "100%",
-    borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 16,
   },
-  posterGradient: {
+  posterOverlay: {
     position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: "30%",
+    bottom: 8,
+    right: 8,
+  },
+  seasonBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  seasonText: {
+    fontSize: 10,
+    fontWeight: "700",
   },
   seriesTitle: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "600",
-    textAlign: "center",
     paddingHorizontal: 2,
   },
 
-  // Empty State
   emptyState: {
     flex: 1,
     justifyContent: "center",
@@ -316,13 +367,61 @@ const styles = StyleSheet.create({
     borderRadius: 45,
     justifyContent: "center",
     alignItems: "center",
+  },
+  emptyText: { fontSize: 18, fontWeight: "700" },
+  emptySub: { fontSize: 14 },
+
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  drawerContent: {
+    height: "60%",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 34,
+  },
+  categoryListContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  drawerHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: "center",
+    marginTop: 12,
     marginBottom: 8,
   },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: "700",
+  drawerHeader: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.1)",
   },
-  emptySub: {
-    fontSize: 14,
+  drawerTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+  },
+  drawerSubtitle: {
+    fontSize: 13,
+    marginTop: 4,
+  },
+  categoryList: {
+    padding: 16,
+  },
+  categoryItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+  },
+  categoryItemText: {
+    fontSize: 15,
   },
 });

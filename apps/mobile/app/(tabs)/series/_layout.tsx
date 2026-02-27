@@ -1,20 +1,18 @@
-// app/(tabs)/movies/_layout.tsx
-import Header from "@/components/Header";
+// app/(tabs)/series/_layout.tsx
 import { Stack } from "expo-router";
 
-export default function MoviesLayout() {
+export default function SeriesLayout() {
   return (
     <Stack
       screenOptions={{
-        headerShown: true,
-        header: () => <Header />, // Hide header for all screens in movies
+        headerShown: false,
       }}
     >
-      <Stack.Screen name='index' />
+      <Stack.Screen name="index" />
       <Stack.Screen
-        name='[id]'
+        name="[id]"
         options={{
-          headerShown: false, // Explicitly hide for [id] screen
+          headerShown: false,
         }}
       />
     </Stack>

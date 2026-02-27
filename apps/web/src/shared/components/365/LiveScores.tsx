@@ -14,15 +14,12 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export default function LiveScores() {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [isOnline, setIsOnline] = useState(true);
 
   const { data, error, isLoading, mutate } = useSWR<Game[]>(
     `${process.env.NEXT_PUBLIC_API_URL}/live-matches?date=${formatDateForAPI(currentDate)}`,
     fetcher,
     {
       refreshInterval: currentDate.getDay() === new Date().getDay() ? 60000 : 0,
-      onError: () => setIsOnline(false),
-      onSuccess: () => setIsOnline(true),
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
     },
@@ -44,22 +41,6 @@ export default function LiveScores() {
       {} as Record<string, Game[]>,
     );
   }, [games]);
-
-  const handlePrevDay = useCallback(() => {
-    const prev = new Date(currentDate);
-    prev.setDate(prev.getDate() - 1);
-    setCurrentDate(prev);
-  }, [currentDate]);
-
-  const handleNextDay = useCallback(() => {
-    const next = new Date(currentDate);
-    next.setDate(next.getDate() + 1);
-    setCurrentDate(next);
-  }, [currentDate]);
-
-  const handleGoToToday = useCallback(() => {
-    setCurrentDate(new Date());
-  }, []);
 
   const handleRefresh = useCallback(() => {
     mutate();
