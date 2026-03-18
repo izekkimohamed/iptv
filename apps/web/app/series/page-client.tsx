@@ -5,13 +5,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Tv } from 'lucide-react';
 import { Suspense } from 'react';
 
+import SeriesDetails from '@/features/series/components/SeriesDetails';
 import CategoriesSidebar from '@/shared/components/common/CategoriesSidebar';
+import VirtualGrid from '@/shared/components/common/VirtualGrid';
 import ItemsList from '@/shared/components/iptv/ItemsList';
 import EmptyState from '@/shared/components/ui/EmptyState';
 import LoadingSpinner from '@/shared/components/ui/LoadingSpinner';
-import SeriesDetails from '@/features/series/components/SeriesDetails';
 import { trpc } from '@/shared/lib/trpc';
-import VirtualGrid from '@/shared/components/common/VirtualGrid';
 import { usePlaylistStore } from '@repo/store';
 
 function SeriesPageInner() {
@@ -25,15 +25,27 @@ function SeriesPageInner() {
   const { data: categories, isLoading } = trpc.series.getSeriesCategories.useQuery({
     playlistId: selectedPlaylist?.id || 0,
   });
-  const { data: series, isLoading: isFetchingSeries } = trpc.series.getseries.useQuery(
+
+
+  const {
+    data: infiniteMovies,
+    isLoading: isFetchingSeries,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = trpc.series.getseries.useInfiniteQuery(
     {
       categoryId: parseInt(selectedCategoryId || '0'),
       playlistId: selectedPlaylist?.id || 0,
+      limit: 20,
     },
     {
-      enabled: !!selectedCategoryId && !!selectedPlaylist,
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+      enabled: !!selectedCategoryId,
     },
   );
+
+  const series = infiniteMovies?.pages.flatMap((page) => page.items) || [];
 
   const {
     data: serie,
@@ -110,8 +122,19 @@ function SeriesPageInner() {
                 itemType="series"
               />
             )}
+            onScroll={(e) => {
+              const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+              if (scrollHeight - scrollTop <= clientHeight * 1.5 && hasNextPage && !isFetchingNextPage) {
+                fetchNextPage();
+              }
+            }}
             gapClassName="gap-6"
           />
+        )}
+        {isFetchingNextPage && (
+          <div className="flex justify-center p-4">
+            <LoadingSpinner />
+          </div>
         )}
       </div>
     </div>

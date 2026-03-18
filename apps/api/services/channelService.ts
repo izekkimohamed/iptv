@@ -2,7 +2,55 @@ import { batchInsert } from "@/trpc/common";
 import { getDb } from "@/trpc/db";
 import { channels } from "@/trpc/schema";
 import { Xtream } from "@iptv/xtream-api";
-import { eq } from "drizzle-orm";
+import { and, asc, desc, eq, gt } from "drizzle-orm";
+
+export async function getChannelsFromDb(input: {
+  playlistId: number;
+  categoryId?: number;
+  favorites?: boolean;
+  cursor?: number | null;
+  limit?: number;
+}) {
+  const db = getDb();
+  const limit = input.limit ?? 50;
+  const cursor = input.cursor;
+
+  const whereConditions = [eq(channels.playlistId, input.playlistId)];
+
+  if (input.categoryId) {
+    whereConditions.push(eq(channels.categoryId, input.categoryId));
+  }
+
+  if (input.favorites) {
+    whereConditions.push(eq(channels.isFavorite, true));
+  }
+
+  if (cursor) {
+    whereConditions.push(gt(channels.id, cursor));
+  }
+
+  const result = await db
+    .select()
+    .from(channels)
+    .where(and(...whereConditions))
+    .orderBy(asc(channels.id)) // Use ID for cursor-based pagination
+    .limit(limit + 1);
+
+  let nextCursor: typeof cursor | undefined = undefined;
+  if (result.length > limit) {
+    const nextItem = result.pop();
+    nextCursor = nextItem?.id;
+  }
+
+  return {
+    items: result.map((c) => ({
+      ...c,
+      streamIcon: c.streamIcon ?? undefined,
+      isFavorite: c.isFavorite ?? undefined,
+    })),
+    nextCursor,
+  };
+}
 
 export async function fetchAndPrepareChannels(
   playlistId: number,

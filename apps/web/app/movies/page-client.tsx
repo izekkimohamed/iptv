@@ -1,14 +1,14 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 
+import MovieDetails from '@/features/movies/components/MovieDetails';
+import VirtualGrid from '@/shared/components/common/VirtualGrid';
 import ItemsList from '@/shared/components/iptv/ItemsList';
 import EmptyState from '@/shared/components/ui/EmptyState';
 import LoadingSpinner from '@/shared/components/ui/LoadingSpinner';
-import MovieDetails from '@/features/movies/components/MovieDetails';
 import { trpc } from '@/shared/lib/trpc';
-import VirtualGrid from '@/shared/components/common/VirtualGrid';
 import { usePlaylistStore } from '@repo/store';
 import { Film } from 'lucide-react';
 
@@ -19,15 +19,29 @@ function MoviesPageInner() {
   const selectedCategoryId = searchParams.get('categoryId');
   const movieId = searchParams.get('movieId');
 
-  const { data: movies, isLoading: isFetchingMovies } = trpc.movies.getMovies.useQuery(
+  const {
+    data: infiniteMovies,
+    isLoading: isFetchingMovies,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = trpc.movies.getMovies.useInfiniteQuery(
     {
       categoryId: parseInt(selectedCategoryId || '0'),
       playlistId: playlist?.id || 0,
+      limit: 20,
     },
     {
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
       enabled: !!selectedCategoryId,
     },
   );
+
+  const moviesItems = infiniteMovies?.pages.flatMap((page) => page.items) || [];
+
+  useEffect(() => {
+    console.log(moviesItems);
+  }, [moviesItems]);
 
   const {
     data: movie,
@@ -84,7 +98,7 @@ function MoviesPageInner() {
         )}
         {(isFetchingMovies || isFetchingMovie) && (
           <div className="flex h-full items-center justify-center">
-             <LoadingSpinner />
+            <LoadingSpinner />
           </div>
         )}
         {movieId && movie && (
@@ -98,22 +112,33 @@ function MoviesPageInner() {
             tmdb={movie.tmdb}
           />
         )}
-        {movies && !isFetchingMovies && !isFetchingMovie && !movieId && (
-            <VirtualGrid
-              className="h-full p-3"
-              items={movies}
-              renderItem={(movie) => (
-                <ItemsList
-                  image={movie.streamIcon}
-                  title={movie.name}
-                  rating={movie.rating}
-                  streamId={movie.streamId}
-                  onMovieClick={() => handleMovieClick(movie.streamId)}
-                  itemType="movie"
-                />
-              )}
-              gapClassName="gap-6"
-            />
+        {moviesItems.length > 0 && !isFetchingMovie && !movieId && (
+          <VirtualGrid
+            className="h-full p-3"
+            items={moviesItems}
+            renderItem={(movie) => (
+              <ItemsList
+                image={movie.streamIcon || ''}
+                title={movie.name}
+                rating={movie.rating || ''}
+                streamId={movie.streamId}
+                onMovieClick={() => handleMovieClick(movie.streamId)}
+                itemType="movie"
+              />
+            )}
+            gapClassName="gap-6"
+            onScroll={(e) => {
+              const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+              if (scrollHeight - scrollTop <= clientHeight * 1.5 && hasNextPage && !isFetchingNextPage) {
+                fetchNextPage();
+              }
+            }}
+          />
+        )}
+        {isFetchingNextPage && (
+          <div className="flex justify-center p-4">
+            <LoadingSpinner />
+          </div>
         )}
       </div>
     </>

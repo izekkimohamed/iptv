@@ -32,14 +32,27 @@ function ChannelsPageInner() {
   // Data queries
   const { selectedPlaylist: playlist } = usePlaylistStore();
 
-  const { data: channels, isLoading: isFetchingChannels } = trpc.channels.getChannels.useQuery(
+  const {
+    data: infiniteChannels,
+    isLoading: isFetchingChannels,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = trpc.channels.getChannels.useInfiniteQuery(
     {
       categoryId: parseInt(selectedCategoryId || '0'),
       playlistId: playlist?.id || 0,
+      limit: 50,
     },
     {
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
       enabled: !!selectedCategoryId && !!playlist,
     },
+  );
+
+  const channels = useMemo(
+    () => infiniteChannels?.pages.flatMap((page) => page.items) || [],
+    [infiniteChannels],
   );
 
   const utils = trpc.useUtils();
@@ -71,10 +84,10 @@ function ChannelsPageInner() {
   }, [channels, selectedChannelId]);
 
   const hasPrev = selectedIndex > 0;
-  const hasNext = !!channels && selectedIndex >= 0 && selectedIndex < channels.length - 1;
+  const hasNext = selectedIndex >= 0 && selectedIndex < channels.length - 1;
 
   const playPrevChannel = () => {
-    if (!channels || selectedIndex < 0) return;
+    if (selectedIndex < 0) return;
     const prevIndex = selectedIndex - 1;
     if (prevIndex < 0) return;
     const target = channels[prevIndex];
@@ -84,16 +97,25 @@ function ChannelsPageInner() {
   };
 
   const playNextChannel = () => {
-    if (!channels || selectedIndex < 0) return;
+    if (selectedIndex < 0) return;
     const nextIndex = selectedIndex + 1;
-    if (nextIndex >= channels.length) return;
+    if (nextIndex >= channels.length) {
+      if (hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+      return;
+    }
     const target = channels[nextIndex];
     const params = new URLSearchParams(searchParams.toString());
     params.set('channelId', target.id.toString());
     router.push(`?${params.toString()}`);
   };
 
-  const selectedChannel = channels?.find((chan) => chan.id.toString() === selectedChannelId);
+  const selectedChannel = useMemo(
+    () => channels.find((chan) => chan.id.toString() === selectedChannelId),
+    [channels, selectedChannelId],
+  );
+
   // Update player when selectedChannel changes
   useEffect(() => {
     if (selectedChannel) {
@@ -123,7 +145,13 @@ function ChannelsPageInner() {
 
   return (
     <>
-      <ChannelsSidebar channels={channels} isLoading={isFetchingChannels} />
+      <ChannelsSidebar
+        channels={channels}
+        isLoading={isFetchingChannels}
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        fetchNextPage={fetchNextPage}
+      />
 
       {/* Player Area */}
       <div className="bg-background/50 flex flex-1 flex-col overflow-hidden backdrop-blur-3xl">

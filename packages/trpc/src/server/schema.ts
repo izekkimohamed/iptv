@@ -184,10 +184,10 @@ export const zodChannelsSchema = z.object({
   name: z.string(),
   streamType: z.string(),
   streamId: z.number(),
-  streamIcon: z.string().optional(),
+  streamIcon: z.string().optional().nullable(),
   categoryId: z.number(),
   playlistId: z.number(),
-  isFavorite: z.boolean().default(false),
+  isFavorite: z.boolean().default(false).nullable(),
   url: z.string(),
 });
 export const zodChannelsList = z.array(zodChannelsSchema);
@@ -197,12 +197,12 @@ export const zodMovieSchema = z.object({
   streamId: z.number(),
   name: z.string(),
   streamType: z.string(),
-  streamIcon: z.string(),
-  rating: z.string(),
-  added: z.string(),
+  streamIcon: z.string().nullable(),
+  rating: z.string().nullable(),
+  added: z.string().nullable(),
   categoryId: z.number(),
   playlistId: z.number(),
-  containerExtension: z.string(),
+  containerExtension: z.string().nullable(),
   url: z.string(),
 });
 export const zodMoviesList = z.array(zodMovieSchema);
@@ -226,3 +226,15 @@ export const zodSerieSchema = z.object({
   playlistId: z.number(),
 });
 export const zodseriesList = z.array(zodSerieSchema);
+
+export const paginationInputSchema = z.object({
+  cursor: z.number().nullish(),
+  limit: z.number().min(1).max(100).default(50),
+});
+
+export function createPaginatedResponseSchema<T extends z.ZodTypeAny>(itemSchema: T) {
+  return z.object({
+    items: z.array(itemSchema),
+    nextCursor: z.number().nullish(),
+  });
+}

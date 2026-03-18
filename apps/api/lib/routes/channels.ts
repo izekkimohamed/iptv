@@ -5,13 +5,14 @@ import {
 } from "@/services/categoryService";
 import {
   fetchAndPrepareChannels,
+  getChannelsFromDb,
   insertChannels,
   toggleChannelFavorite,
 } from "@/services/channelService";
 import { getDb } from "@/trpc/db";
 import {
   categories,
-  channels,
+  paginationInputSchema,
   zodCategoriesSchema,
   zodChannelsSchema,
 } from "@/trpc/schema";
@@ -27,56 +28,16 @@ export const channelsRouter = t.router({
         playlistId: z.number(),
         categoryId: z.number().optional(),
         favorites: z.boolean().optional(),
+        cursor: z.number().nullish(),
+        limit: z.number().min(1).max(100).default(50),
       }),
     )
-    .output(z.array(zodChannelsSchema))
+    .output(z.object({
+      items: z.array(zodChannelsSchema),
+      nextCursor: z.number().nullish(),
+    }))
     .query(async ({ input }) => {
-      const db = getDb();
-
-      let query = db
-        .select()
-        .from(channels)
-        .where(eq(channels.playlistId, input.playlistId));
-
-      if (input.categoryId) {
-        query = db
-          .select()
-          .from(channels)
-          .where(
-            and(
-              eq(channels.playlistId, input.playlistId),
-              eq(channels.categoryId, input.categoryId),
-            ),
-          );
-      } else if (input.favorites) {
-        query = db
-          .select()
-          .from(channels)
-          .where(
-            and(
-              eq(channels.playlistId, input.playlistId),
-              eq(channels.isFavorite, true),
-            ),
-          );
-      }
-
-      // Sort by favorites first, then by created date
-      const result = await query.orderBy((c) => [
-        desc(c.isFavorite),
-        asc(c.createdAt),
-      ]);
-
-      return result.map((c) => ({
-        id: c.id,
-        name: c.name,
-        streamType: c.streamType,
-        streamId: c.streamId,
-        categoryId: c.categoryId,
-        playlistId: c.playlistId,
-        url: c.url,
-        streamIcon: c.streamIcon ?? undefined,
-        isFavorite: c.isFavorite ?? undefined,
-      }));
+      return await getChannelsFromDb(input);
     }),
 
   getCategories: publicProcedure

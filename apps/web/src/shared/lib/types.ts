@@ -3,10 +3,10 @@ export interface Channel {
   name: string;
   streamType: string;
   streamId: number;
-  streamIcon?: string;
+  streamIcon?: string | null | undefined;
   categoryId: number;
   playlistId?: number;
-  isFavorite: boolean;
+  isFavorite: boolean | null ;
   url: string;
 }
 

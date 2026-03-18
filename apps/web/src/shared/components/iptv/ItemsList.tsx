@@ -30,10 +30,10 @@ function ItemsList(props: ItemsListProps) {
   const progressPct =
     itemType === 'movie'
       ? (() => {
-          const item = getMovieProgress(streamId, selectedPlaylist?.id || 0);
-          if (!item || !item.duration) return 0;
-          return Math.min(item.position / item.duration, 1);
-        })()
+        const item = getMovieProgress(streamId, selectedPlaylist?.id || 0);
+        if (!item || !item.duration) return 0;
+        return Math.min(item.position / item.duration, 1);
+      })()
       : itemType === 'series'
         ? Math.min(getSeriesProgress(streamId, selectedPlaylist?.id || 0) || 0, 1)
         : 0;
@@ -42,7 +42,7 @@ function ItemsList(props: ItemsListProps) {
     <div
       key={streamId}
       onClick={onMovieClick}
-      className="group relative aspect-[2/3] w-full cursor-pointer overflow-hidden rounded-sm border border-white/5 bg-white/5 transition-all duration-500 hover:border-primary/50 hover:shadow-[0_0_40px_rgba(var(--primary),0.2)]"
+      className="group relative aspect-2/3 w-full cursor-pointer overflow-hidden rounded-sm border border-white/5 bg-white/5 transition-all duration-500 hover:border-primary/50 hover:shadow-[0_0_40px_rgba(var(--primary),0.2)]"
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
@@ -79,27 +79,27 @@ function ItemsList(props: ItemsListProps) {
       </div>
 
       {/* Cinematic Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+      <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/20 to-transparent" />
 
       {/* Hover Play Button */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-         <div className="h-16 w-16 translate-y-4 rounded-full bg-primary opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
-            <div className="flex h-full w-full items-center justify-center">
-               <Play className="ml-1 h-8 w-8 fill-primary-foreground text-primary-foreground" />
-            </div>
-         </div>
+        <div className="h-16 w-16 translate-y-4 rounded-full bg-primary opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
+          <div className="flex h-full w-full items-center justify-center">
+            <Play className="ml-1 h-8 w-8 fill-primary-foreground text-primary-foreground" />
+          </div>
+        </div>
       </div>
 
       {/* Content Info */}
-      <div className="absolute inset-x-0 bottom-0 p-4 pt-10 bg-gradient-to-t from-black via-black/40 to-transparent">
+      <div className="absolute inset-x-0 bottom-0 p-4 pt-10 bg-linear-to-t from-black via-black/40 to-transparent">
         <h3 className="line-clamp-2 text-base font-bold text-white drop-shadow-md transition-colors group-hover:text-primary">
           {cleanName(title)}
         </h3>
 
         <div className="mt-2.5 flex items-center justify-between">
           <div className="flex items-center gap-1.5 rounded-sm bg-black/40 px-2 py-1 text-[10px] font-black text-amber-400 backdrop-blur-md border border-white/5 shadow-lg">
-             <Star className="h-3 w-3 fill-current" />
-             {ratingValue}
+            <Star className="h-3 w-3 fill-current" />
+            {ratingValue}
           </div>
 
           {progressPct >= 0.9 && (

@@ -3,7 +3,45 @@ import { getDb } from "@/trpc/db";
 import { series } from "@/trpc/schema";
 import { cleanName } from "@/utils/cleanName";
 import type { Xtream } from "@iptv/xtream-api";
-import { eq } from "drizzle-orm";
+import { and, asc, eq, gt } from "drizzle-orm";
+
+export async function getSeriesFromDb(input: {
+  playlistId: number;
+  categoryId: number;
+  cursor?: number | null;
+  limit?: number;
+}) {
+  const db = getDb();
+  const limit = input.limit ?? 50;
+  const cursor = input.cursor;
+
+  const whereConditions = [
+    eq(series.playlistId, input.playlistId),
+    eq(series.categoryId, input.categoryId),
+  ];
+
+  if (cursor) {
+    whereConditions.push(gt(series.id, cursor));
+  }
+
+  const result = await db
+    .select()
+    .from(series)
+    .where(and(...whereConditions))
+    .orderBy(asc(series.id))
+    .limit(limit + 1);
+
+  let nextCursor: typeof cursor | undefined = undefined;
+  if (result.length > limit) {
+    const nextItem = result.pop();
+    nextCursor = nextItem?.id;
+  }
+
+  return {
+    items: result,
+    nextCursor,
+  };
+}
 
 export async function fetchAndPrepareSeries(
   playlistId: number,

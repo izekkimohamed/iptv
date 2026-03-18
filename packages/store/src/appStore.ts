@@ -22,7 +22,6 @@ interface PlaylistState {
   startPlaylistCreation: () => void;
   finishPlaylistCreation: () => void;
   addPlaylist: (playlist: Playlist) => void;
-  // --- Updated: Added updatePlaylist ---
   updatePlaylist: (id: number, updates: Partial<Playlist>) => void;
   removePlaylist: (id: number) => void;
   selectPlaylist: (playlist: Playlist | null) => void;
@@ -44,15 +43,12 @@ export const usePlaylistStore = create<PlaylistState>()(
           playlists: [...state.playlists, playlist],
         })),
 
-      // --- IMPLEMENTATION: Update Logic ---
       updatePlaylist: (id, updates) =>
         set((state) => {
           const updatedPlaylists = state.playlists.map((p) =>
             p.id === id ? { ...p, ...updates } : p
           );
 
-          // If the updated playlist is the one currently selected,
-          // we update the selection state as well.
           const updatedSelected =
             state.selectedPlaylist?.id === id ?
               { ...state.selectedPlaylist, ...updates }
@@ -72,7 +68,6 @@ export const usePlaylistStore = create<PlaylistState>()(
       removePlaylist: (id) =>
         set((state) => ({
           playlists: state.playlists.filter((playlist) => playlist.id !== id),
-          // Clear selection if the removed item was selected
           selectedPlaylist:
             state.selectedPlaylist?.id === id ? null : state.selectedPlaylist,
         })),

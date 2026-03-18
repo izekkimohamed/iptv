@@ -10,8 +10,8 @@ import { usePlaylistStore } from '@repo/store';
 
 function FavoriteChannels() {
   const { selectedPlaylist: playlist } = usePlaylistStore();
-  
-  const { data: favoriteChannels } = trpc.channels.getChannels.useQuery(
+
+  const { data: favoriteChannelsData } = trpc.channels.getChannels.useQuery(
     {
       favorites: true,
       playlistId: playlist?.id || 0,
@@ -21,7 +21,9 @@ function FavoriteChannels() {
     },
   );
 
-  if (!favoriteChannels || favoriteChannels.length === 0) return null;
+  const favoriteChannels = favoriteChannelsData?.items || [];
+
+  if (favoriteChannels.length === 0) return null;
 
   return (
     <section className="animate-in fade-in slide-in-from-bottom-6 fill-mode-both space-y-6 delay-100 duration-1000">

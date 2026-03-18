@@ -6,6 +6,7 @@ import {
 import {
   fetchAndPrepareMovies,
   getMovieDetails,
+  getMoviesFromDb,
   getTmdbMovieMatches,
   insertMovies,
 } from "@/services/movieService";
@@ -13,7 +14,7 @@ import { getTmdbInfo } from "@/trpc/common";
 import { getDb } from "@/trpc/db";
 import {
   categories,
-  movies,
+  paginationInputSchema,
   zodCategoriesSchema,
   zodMovieSchema,
 } from "@/trpc/schema";
@@ -28,21 +29,18 @@ export const moviesRouter = t.router({
       z.object({
         playlistId: z.number(),
         categoryId: z.number(),
+        cursor: z.number().nullish(),
+        limit: z.number().min(1).max(100).default(50),
       })
     )
-    .output(z.array(zodMovieSchema))
+    .output(
+      z.object({
+        items: z.array(zodMovieSchema),
+        nextCursor: z.number().nullish(),
+      })
+    )
     .query(async ({ input }) => {
-      const db = getDb();
-      return await db
-        .select()
-        .from(movies)
-        .where(
-          and(
-            eq(movies.playlistId, input.playlistId),
-            eq(movies.categoryId, input.categoryId)
-          )
-        )
-        .orderBy(asc(movies.id));
+      return await getMoviesFromDb(input);
     }),
 
   getMovie: publicProcedure

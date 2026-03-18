@@ -1,8 +1,15 @@
 'use client';
-import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useMemo } from 'react';
 
+import ChannelInfoPanel from '@/shared/components/channels/ChannelInfoPanel';
+import ChannelsSidebar from '@/shared/components/channels/ChannelsSidebar';
+import PlayerHeader from '@/shared/components/iptv/PlayerHeader';
+import EmptyState from '@/shared/components/ui/EmptyState';
+import LoadingSpinner from '@/shared/components/ui/LoadingSpinner';
+import { trpc } from '@/shared/lib/trpc';
+import { usePlayerStore, usePlaylistStore } from '@repo/store';
 import { Tv } from 'lucide-react';
 
 const VideoPlayer = dynamic(() => import('@/features/player/components/VideoPlayer'), {
@@ -13,13 +20,6 @@ const VideoPlayer = dynamic(() => import('@/features/player/components/VideoPlay
     </div>
   ),
 });
-import ChannelInfoPanel from '@/shared/components/channels/ChannelInfoPanel';
-import ChannelsSidebar from '@/shared/components/channels/ChannelsSidebar';
-import PlayerHeader from '@/shared/components/iptv/PlayerHeader';
-import EmptyState from '@/shared/components/ui/EmptyState';
-import LoadingSpinner from '@/shared/components/ui/LoadingSpinner';
-import { trpc } from '@/shared/lib/trpc';
-import { usePlayerStore, usePlaylistStore } from '@repo/store';
 
 function ChannelsContentInner() {
   const router = useRouter();
@@ -31,13 +31,17 @@ function ChannelsContentInner() {
   const { setMedia, src, poster, title } = usePlayerStore();
   const { selectedPlaylist: playlist } = usePlaylistStore();
 
-  const { data: channels, isLoading: isFetchingChannels } = trpc.channels.getChannels.useQuery(
+  const { data: infiniteChannels, isLoading: isFetchingChannels, fetchNextPage, hasNextPage, isFetchingNextPage } = trpc.channels.getChannels.useInfiniteQuery(
     {
       categoryId: parseInt(selectedCategoryId || '0'),
       playlistId: playlist?.id || 0,
     },
-    { enabled: !!selectedCategoryId && !!playlist },
+    {
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+      enabled: !!selectedCategoryId && !!playlist,
+    },
   );
+  const channels = infiniteChannels?.pages.flatMap((page) => page.items) || [];
 
   const selectedIndex = useMemo(() => {
     if (!channels || !selectedChannelId) return -1;

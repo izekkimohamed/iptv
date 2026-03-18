@@ -6,10 +6,16 @@ import {
 import {
   fetchAndPrepareSeries,
   getSeriesDetails,
+  getSeriesFromDb,
   insertSeries,
 } from "@/services/seriesService";
 import { getDb } from "@/trpc/db";
-import { categories, series, zodSerieSchema } from "@/trpc/schema";
+import {
+  categories,
+  paginationInputSchema,
+  zodCategoriesSchema,
+  zodSerieSchema,
+} from "@/trpc/schema";
 import { createXtreamClient } from "@/utils/xtream";
 import { and, asc, eq } from "drizzle-orm";
 import { z } from "zod";
@@ -21,21 +27,18 @@ export const seriesRouter = t.router({
       z.object({
         playlistId: z.number(),
         categoryId: z.number(),
+        cursor: z.number().nullish(),
+        limit: z.number().min(1).max(100).default(50),
       })
     )
-    .output(z.array(zodSerieSchema))
+    .output(
+      z.object({
+        items: z.array(zodSerieSchema),
+        nextCursor: z.number().nullish(),
+      })
+    )
     .query(async ({ input }) => {
-      const db = getDb();
-      return await db
-        .select()
-        .from(series)
-        .where(
-          and(
-            eq(series.playlistId, input.playlistId),
-            eq(series.categoryId, input.categoryId)
-          )
-        )
-        .orderBy(asc(series.id));
+      return await getSeriesFromDb(input);
     }),
 
   getSerie: publicProcedure

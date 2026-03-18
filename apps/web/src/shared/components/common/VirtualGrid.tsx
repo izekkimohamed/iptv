@@ -80,6 +80,7 @@ type VirtualGridProps<T> = {
   estimateItemHeight?: number;
   className?: string;
   itemKey?: (item: T, index: number) => string | number;
+  onScroll?: (event: React.UIEvent<HTMLDivElement>) => void;
 };
 
 export default function VirtualGrid<T>({
@@ -90,6 +91,7 @@ export default function VirtualGrid<T>({
   estimateItemHeight = 200,
   className,
   itemKey,
+  onScroll,
 }: VirtualGridProps<T>) {
   const parentRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState<number>(0);
@@ -143,6 +145,7 @@ export default function VirtualGrid<T>({
   return (
     <div
       ref={parentRef}
+      onScroll={onScroll}
       className={cn('h-full overflow-y-auto', className)}
       style={{ contain: 'strict' }}
     >

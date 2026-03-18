@@ -17,9 +17,18 @@ import LoadingSpinner from '../ui/LoadingSpinner';
 interface ChannelsSidebarProps {
   channels?: Channel[];
   isLoading: boolean;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
+  fetchNextPage?: () => void;
 }
 
-function ChannelsSidebarContent({ channels, isLoading }: ChannelsSidebarProps) {
+function ChannelsSidebarContent({
+  channels,
+  isLoading,
+  hasNextPage,
+  isFetchingNextPage,
+  fetchNextPage,
+}: ChannelsSidebarProps) {
   const selectedCategoryId = useSearchParams().get('categoryId');
   const selectedChannelId = useSearchParams().get('channelId');
   const listRef = React.useRef<HTMLDivElement | null>(null);
@@ -85,7 +94,21 @@ function ChannelsSidebarContent({ channels, isLoading }: ChannelsSidebarProps) {
       </div>
 
       {/* Scroll Area */}
-      <div className="scrollbar-hide flex-1 overflow-y-auto p-2" ref={listRef}>
+      <div
+        className="scrollbar-hide flex-1 overflow-y-auto p-2"
+        ref={listRef}
+        onScroll={(e) => {
+          const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+          if (
+            scrollHeight - scrollTop <= clientHeight * 1.5 &&
+            hasNextPage &&
+            !isFetchingNextPage &&
+            fetchNextPage
+          ) {
+            fetchNextPage();
+          }
+        }}
+      >
         {!selectedCategoryId && !newChannels ? (
           <div className="flex h-full flex-col items-center justify-center space-y-4 text-center">
             <Search className="text-muted-foreground/40 h-12 w-12" />
@@ -183,6 +206,11 @@ function ChannelsSidebarContent({ channels, isLoading }: ChannelsSidebarProps) {
                 </Link>
               );
             })}
+            {isFetchingNextPage && (
+              <div className="flex justify-center p-4">
+                <LoadingSpinner />
+              </div>
+            )}
           </div>
         )}
       </div>
