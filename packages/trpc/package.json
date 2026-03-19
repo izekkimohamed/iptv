@@ -4,7 +4,7 @@
   "private": "true",
   "exports": {
     "./router": "./src/server/server.ts",
-    "./client": "./src/client/index.ts"
+    "./client": "./src/client/router.ts"
   },
   "dependencies": {
     "@iptv/xtream-api": "^1.3.1",

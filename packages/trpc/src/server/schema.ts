@@ -238,3 +238,9 @@ export function createPaginatedResponseSchema<T extends z.ZodTypeAny>(itemSchema
     nextCursor: z.number().nullish(),
   });
 }
+
+export type Playlist = z.infer<typeof zodPlaylistsSchema>;
+export type Category = z.infer<typeof zodCategoriesSchema>;
+export type Channel = z.infer<typeof zodChannelsSchema>;
+export type Movie = z.infer<typeof zodMovieSchema>;
+export type Serie = z.infer<typeof zodSerieSchema>;
