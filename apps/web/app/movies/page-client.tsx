@@ -29,7 +29,7 @@ function MoviesPageInner() {
     {
       categoryId: parseInt(selectedCategoryId || '0'),
       playlistId: playlist?.id || 0,
-      limit: 20,
+      limit: 50
     },
     {
       getNextPageParam: (lastPage) => lastPage.nextCursor,

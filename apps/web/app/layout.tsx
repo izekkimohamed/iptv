@@ -42,7 +42,12 @@ export default function RootLayout({
 
   useEffect(() => {
     if (isDesktopApp) {
-      invoke('close_splashscreen');
+      const timeout = setTimeout(() => {
+        invoke('close_splashscreen').catch((e) =>
+          console.error('[Tauri] close_splashscreen failed:', e),
+        );
+      }, 2000);
+      return () => clearTimeout(timeout);
     }
   }, [isDesktopApp]);
 

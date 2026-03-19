@@ -121,7 +121,7 @@ pub fn run() {
             }
 
             // ✅ Correct API in Tauri v2
-            let main_window = app.get_webview_window("main").unwrap();
+            let main_window = app.get_webview_window("main").expect("main window not found");
 
             // Force fullscreen on startup
             main_window.set_fullscreen(true).unwrap();

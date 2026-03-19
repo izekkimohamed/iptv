@@ -37,7 +37,7 @@ function SeriesPageInner() {
     {
       categoryId: parseInt(selectedCategoryId || '0'),
       playlistId: selectedPlaylist?.id || 0,
-      limit: 20,
+      limit: 50
     },
     {
       getNextPageParam: (lastPage) => lastPage.nextCursor,

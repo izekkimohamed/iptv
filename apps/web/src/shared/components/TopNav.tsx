@@ -86,8 +86,6 @@ export default function TopNav() {
               <span className="text-muted-foreground mr-2 hidden text-sm lg:block">{time}</span>
             )}
 
-
-
             {/* Playlist Selector */}
             <Select value={selectedPlaylist?.id?.toString()} onValueChange={handlePlaylistSelect}>
               <SelectTrigger className="bg-background text-foreground border-border w-35 text-sm">
@@ -95,7 +93,7 @@ export default function TopNav() {
               </SelectTrigger>
               <SelectContent>
                 {storePlaylists?.map((playlist) => (
-                  <SelectItem key={playlist.id} value={playlist.id.toString()}>
+                  <SelectItem key={playlist.id} value={playlist.id?.toString() ?? ''}>
                     {playlist.username}
                   </SelectItem>
                 ))}
@@ -124,8 +122,6 @@ export default function TopNav() {
             </button>
           </div>
         </div>
-
-
       </header>
 
       {/* Mobile Menu */}

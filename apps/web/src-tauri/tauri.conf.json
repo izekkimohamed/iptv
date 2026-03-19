@@ -12,6 +12,7 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "fullscreen": true,
         "resizable": true,
         "decorations": false,
@@ -23,9 +24,11 @@
         "width": 1920,
         "height": 1080,
         "decorations": false,
+        "resizable": true,
         "fullscreen": true,
         "url": "splashscreen.html",
-        "label": "splashscreen"
+        "label": "splashscreen",
+        "center": true
       }
     ],
     "security": {
