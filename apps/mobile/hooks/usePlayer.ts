@@ -2,10 +2,15 @@ import { useEvent } from "expo";
 import { router } from "expo-router";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { useVideoPlayer, VideoContentFit, VideoPlayerStatus } from "expo-video";
-import { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { StatusBar } from "react-native";
 
-export function usePlayer(url?: string, mediaType?: "live" | "vod") {
+export function usePlayer(
+  url?: string,
+  mediaType?: "live" | "vod",
+  onProgress?: (position: number, duration: number) => void,
+  resumePosition?: number,
+) {
   const [status, setStatus] = useState<VideoPlayerStatus>();
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [volume, setVolume] = useState(1);
@@ -31,7 +36,19 @@ export function usePlayer(url?: string, mediaType?: "live" | "vod") {
     player.play();
   });
 
+  const hasResumed = useRef(false);
+  const lastSavedRef = useRef(0);
   const timeUpdate = useEvent(player, "timeUpdate");
+
+  useEffect(() => {
+    if (!onProgress || !timeUpdate) return;
+    const pos = timeUpdate.currentTime;
+    const dur = player?.duration ?? 0;
+    if (dur > 0 && pos - lastSavedRef.current >= 5) {
+      lastSavedRef.current = pos;
+      onProgress(pos, dur);
+    }
+  }, [timeUpdate]);
   const { isPlaying } = useEvent(player, "playingChange", {
     isPlaying: player.playing,
   });
@@ -64,6 +81,10 @@ export function usePlayer(url?: string, mediaType?: "live" | "vod") {
           if (status === "readyToPlay") {
             setShowControls(true);
             player.play();
+            if (resumePosition && resumePosition > 0 && !hasResumed.current) {
+              hasResumed.current = true;
+              player.seekBy(resumePosition);
+            }
           }
           setStatus(status);
         }

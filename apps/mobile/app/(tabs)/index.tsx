@@ -1,6 +1,6 @@
 import { FlashList } from "@shopify/flash-list";
 import { useRouter } from "expo-router";
-import { Database, Play, Star, Tv } from "lucide-react-native";
+import { Clock, Database, Play, Star, Tv, X } from "lucide-react-native";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FlatList,
@@ -21,15 +21,14 @@ import MatchDetailsModal from "@/components/365/Details";
 import { formatDateForAPI, Game } from "@/components/365/LiveScores";
 import MatchCard from "@/components/365/MatchCard";
 import Header from "@/components/Header";
-
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import { trpc } from "@/lib/trpc";
 import { usePlaylistStore } from "@/store";
-import { usePlayerTheme } from "@/theme/playerTheme";
 import {
   useWatchedMoviesStore,
   useWatchedSeriesStore,
 } from "@/store/watched-store";
+import { usePlayerTheme } from "@/theme/playerTheme";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -83,32 +82,27 @@ export default function HomeScreen() {
     [games],
   );
 
-  const { movies: watchedMovies } = useWatchedMoviesStore();
-  const { series: watchedSeries } = useWatchedSeriesStore();
+  const { movies: watchedMovies, removeItem: removeMovie } = useWatchedMoviesStore();
+  const { series: watchedSeries, removeItem: removeSeriesItem } = useWatchedSeriesStore();
+  const playlistId = selectedPlaylist?.id ?? 0;
 
-  const continueWatching = useMemo(() => {
-    return watchedMovies
-      .filter((m) => m.duration > 0 && m.position / m.duration < 0.95)
+  const continueWatchingMovies = useMemo(() =>
+    watchedMovies
+      .filter((m) => m.playlistId === playlistId)
       .sort((a, b) => b.updatedAt - a.updatedAt)
-      .slice(0, 10);
-  }, [watchedMovies]);
+      .slice(0, 10),
+    [watchedMovies, playlistId]);
 
-  const continueWatchingSeries = useMemo(() => {
-    return watchedSeries
-      .filter((s) => s.episodes.length > 0)
+  const continueWatchingSeries = useMemo(() =>
+    watchedSeries
+      .filter((s) => s.playlistId === playlistId && s.episodes.length > 0)
       .sort((a, b) => {
-        const aLastEp = a.episodes[a.episodes.length - 1];
-        const bLastEp = b.episodes[b.episodes.length - 1];
-        return (bLastEp?.position || 0) - (aLastEp?.position || 0);
+        const aLast = a.episodes[a.episodes.length - 1];
+        const bLast = b.episodes[b.episodes.length - 1];
+        return (bLast?.position ?? 0) - (aLast?.position ?? 0);
       })
-      .slice(0, 10);
-  }, [watchedSeries]);
-
-  const recentlyPlayed = useMemo(() => {
-    return [...watchedMovies]
-      .sort((a, b) => b.updatedAt - a.updatedAt)
-      .slice(0, 10);
-  }, [watchedMovies]);
+      .slice(0, 10),
+    [watchedSeries, playlistId]);
 
   useEffect(() => {
     if (!playlists) return;
@@ -157,7 +151,7 @@ export default function HomeScreen() {
         onPress={() =>
           router.push({
             pathname: "/movies/tmdb",
-            params: { movieId: item.id, playlistId: 26 },
+            params: { movieId: item.id, playlistId: selectedPlaylist?.id },
           })
         }
         style={({ pressed }) => [
@@ -202,7 +196,7 @@ export default function HomeScreen() {
               onPress={() =>
                 router.push({
                   pathname: "/movies/tmdb",
-                  params: { movieId: item.id, playlistId: 26 },
+                  params: { movieId: item.id, playlistId: selectedPlaylist?.id },
                 })
               }
             >
@@ -232,7 +226,7 @@ export default function HomeScreen() {
               onPress={() =>
                 router.push({
                   pathname: "/movies/tmdb",
-                  params: { movieId: item.id, playlistId: 26 },
+                  params: { movieId: item.id, playlistId: selectedPlaylist?.id },
                 })
               }
             >
@@ -244,7 +238,7 @@ export default function HomeScreen() {
         <View style={styles.heroGradient} />
       </Pressable>
     ),
-    [router, theme],
+    [router, theme, selectedPlaylist?.id],
   );
 
   const renderChannel = useCallback(
@@ -297,110 +291,77 @@ export default function HomeScreen() {
     [router, theme],
   );
 
-  const renderContinueWatchingItem = useCallback(
+  const renderContinueMovieItem = useCallback(
     ({ item }: { item: any }) => {
       const progress = item.duration > 0 ? item.position / item.duration : 0;
       return (
-        <Pressable
-          onPress={() =>
-            router.push({
-              pathname: "/movies/tmdb",
-              params: { movieId: item.id, playlistId: item.playlistId },
-            })
-          }
-          style={({ pressed }) => [
-            styles.continueCard,
-            pressed && { opacity: 0.9 },
-          ]}
-        >
-          <Image
-            source={{ uri: item.poster || item.backdropUrl || undefined }}
-            style={styles.continueImage}
-          />
-          <View style={styles.continueOverlay}>
-            <View style={styles.progressBar}>
-              <View
-                style={[
-                  styles.progressFill,
-                  {
-                    width: `${progress * 100}%`,
-                    backgroundColor: theme.primary,
-                  },
-                ]}
-              />
+        <View style={styles.continueCardWrapper}>
+          <Pressable
+            onPress={() => router.push({
+              pathname: "/(tabs)/movies/[id]",
+              params: { id: item.streamId, url: item.src },
+            })}
+            style={({ pressed }) => [styles.continueCard, { backgroundColor: theme.surfaceSecondary, borderColor: theme.border }, pressed && { opacity: 0.9 }]}
+          >
+            <Image source={{ uri: item.poster || undefined }} style={styles.continueImage} />
+            <View style={styles.continueOverlay}>
+              <View style={[styles.progressPill, { backgroundColor: "rgba(0,0,0,0.6)" }]}>
+                <Text style={styles.progressPillText}>{Math.round(progress * 100)}%</Text>
+              </View>
             </View>
-          </View>
-          <Text style={styles.continueTitle} numberOfLines={1}>
-            {item.title}
-          </Text>
-        </Pressable>
+            <View style={styles.continueBottom}>
+              <Text style={[styles.continueTitle, { color: theme.textPrimary }]} numberOfLines={1}>{item.title}</Text>
+              <View style={styles.progressBar}>
+                <View style={[styles.progressFill, { width: `${progress * 100}%`, backgroundColor: theme.primary }]} />
+              </View>
+            </View>
+          </Pressable>
+          <Pressable
+            onPress={() => removeMovie(item.id, item.playlistId)}
+            style={[styles.removeBtn, { backgroundColor: theme.surfacePrimary, borderColor: theme.border }]}
+          >
+            <X size={12} color={theme.textMuted} />
+          </Pressable>
+        </View>
       );
     },
-    [router, theme],
+    [router, theme, removeMovie],
   );
 
-  const renderRecentlyPlayedItem = useCallback(
-    ({ item }: { item: any }) => (
-      <Pressable
-        onPress={() =>
-          router.push({
-            pathname: "/movies/tmdb",
-            params: { movieId: item.id, playlistId: item.playlistId },
-          })
-        }
-        style={({ pressed }) => [
-          styles.continueCard,
-          pressed && { opacity: 0.9 },
-        ]}
-      >
-        <Image
-          source={{ uri: item.poster || item.backdropUrl || undefined }}
-          style={styles.continueImage}
-        />
-        <Text style={styles.continueTitle} numberOfLines={1}>
-          {item.title}
-        </Text>
-      </Pressable>
-    ),
-    [router],
-  );
-
-  const renderSeriesItem = useCallback(
-    ({ item }: { item: any }) => (
-      <Pressable
-        onPress={() =>
-          router.push({
-            pathname: "/series",
-            params: { id: item.id },
-          })
-        }
-        style={({ pressed }) => [
-          styles.seriesCard,
-          pressed && { opacity: 0.9 },
-        ]}
-      >
-        <Image
-          source={{ uri: item.posterUrl || undefined }}
-          style={styles.seriesImage}
-        />
-        <View style={[styles.seriesBadge, { backgroundColor: theme.primary }]}>
-          <Star
-            size={10}
-            color={theme.primaryForeground}
-            fill={theme.primaryForeground}
-          />
-          <Text
-            style={[styles.seriesRating, { color: theme.primaryForeground }]}
+  const renderContinueSeriesItem = useCallback(
+    ({ item }: { item: any }) => {
+      const lastEp = item.episodes[item.episodes.length - 1];
+      if (!lastEp) return null;
+      const progress = lastEp.duration > 0 ? lastEp.position / lastEp.duration : 0;
+      return (
+        <View style={styles.continueCardWrapper}>
+          <Pressable
+            onPress={() => router.push({ pathname: "/series/[id]", params: { id: item.id } })}
+            style={({ pressed }) => [styles.continueCard, { backgroundColor: theme.surfaceSecondary, borderColor: theme.border }, pressed && { opacity: 0.9 }]}
           >
-            {item.voteAverage?.toFixed(1)}
-          </Text>
+            <Image source={{ uri: item.poster || undefined }} style={styles.continueImage} />
+            <View style={styles.continueOverlay}>
+              <View style={[styles.episodePill, { backgroundColor: `${theme.primary}33`, borderColor: `${theme.primary}66` }]}>
+                <Text style={[styles.episodePillText, { color: theme.primary }]}>S{lastEp.seasonId} E{lastEp.episodeNumber}</Text>
+              </View>
+            </View>
+            <View style={styles.continueBottom}>
+              <Text style={[styles.continueTitle, { color: theme.textPrimary }]} numberOfLines={1}>{item.title}</Text>
+              <View style={styles.progressBar}>
+                <View style={[styles.progressFill, { width: `${progress * 100}%`, backgroundColor: theme.primary }]} />
+              </View>
+            </View>
+          </Pressable>
+          <Pressable
+            onPress={() => removeSeriesItem(item.id)}
+            style={[styles.removeBtn, { backgroundColor: theme.surfacePrimary, borderColor: theme.border }]}
+          >
+            <X size={12} color={theme.textMuted} />
+          </Pressable>
         </View>
-        <Text style={styles.seriesTitle} numberOfLines={2}>
-          {item.name}
-        </Text>
-      </Pressable>
-    ),
-    [router, theme],
+      );
+    },
+    [router, theme, removeSeriesItem],
   );
 
   if (!selectedPlaylist) {
@@ -486,99 +447,69 @@ export default function HomeScreen() {
               />
             </View>
 
-            {/* Continue Watching */}
-            {(continueWatching.length > 0 ||
-              continueWatchingSeries.length > 0) && (
+            {/* Favorite Channels */}
+            {favoriteChannels && favoriteChannels.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <View>
-                    <Text
-                      style={[styles.sectionKicker, { color: theme.primary }]}
-                    >
-                      PICK UP WHERE YOU LEFT OFF
-                    </Text>
-                    <Text
-                      style={[
-                        styles.sectionTitle,
-                        { color: theme.textPrimary },
-                      ]}
-                    >
-                      Continue Watching
-                    </Text>
+                    <Text style={[styles.sectionKicker, { color: theme.primary }]}>YOUR SELECTION</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Favorite Channels</Text>
                   </View>
-                </View>
-                <FlatList
-                  horizontal
-                  data={[...continueWatching, ...continueWatchingSeries].slice(
-                    0,
-                    10,
-                  )}
-                  renderItem={renderContinueWatchingItem}
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.horizontalList}
-                />
-              </View>
-            )}
-
-            {/* Trending Series */}
-            {homeData?.series && homeData.series.length > 0 && (
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <View>
-                    <Text
-                      style={[styles.sectionKicker, { color: theme.primary }]}
-                    >
-                      POPULAR
-                    </Text>
-                    <Text
-                      style={[
-                        styles.sectionTitle,
-                        { color: theme.textPrimary },
-                      ]}
-                    >
-                      Trending Series
-                    </Text>
-                  </View>
-                  <Pressable onPress={() => router.push("/(tabs)/series")}>
-                    <Text style={[styles.seeAll, { color: theme.primary }]}>
-                      See All
-                    </Text>
+                  <Pressable onPress={() => router.push("/(tabs)/channels")}>
+                    <Text style={[styles.seeAll, { color: theme.primary }]}>See All</Text>
                   </Pressable>
                 </View>
                 <FlatList
                   horizontal
-                  data={homeData.series.slice(0, 10)}
-                  renderItem={renderSeriesItem}
+                  data={favoriteChannels}
+                  renderItem={renderChannel}
+                  keyExtractor={(item) => item.streamId.toString()}
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.horizontalList}
                 />
               </View>
             )}
 
-            {/* Recently Played */}
-            {recentlyPlayed.length > 0 && (
+            {/* Continue Watching Movies */}
+            {continueWatchingMovies && continueWatchingMovies.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <View>
-                    <Text
-                      style={[styles.sectionKicker, { color: theme.primary }]}
-                    >
-                      BACK IN TIME
-                    </Text>
-                    <Text
-                      style={[
-                        styles.sectionTitle,
-                        { color: theme.textPrimary },
-                      ]}
-                    >
-                      Recently Played
-                    </Text>
+                  <View style={styles.sectionTitleRow}>
+                    <Clock size={16} color={theme.primary} />
+                    <View>
+                      <Text style={[styles.sectionKicker, { color: theme.primary }]}>PICK UP WHERE YOU LEFT OFF</Text>
+                      <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Continue Watching</Text>
+                    </View>
                   </View>
                 </View>
                 <FlatList
                   horizontal
-                  data={recentlyPlayed.slice(0, 10)}
-                  renderItem={renderRecentlyPlayedItem}
+                  data={continueWatchingMovies}
+                  renderItem={renderContinueMovieItem}
+                  keyExtractor={(item) => `movie-${item.id}`}
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.horizontalList}
+                />
+              </View>
+            )}
+
+            {/* Keep Watching Series */}
+            {continueWatchingSeries && continueWatchingSeries.length > 0 && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <View style={styles.sectionTitleRow}>
+                    <Tv size={16} color={theme.primary} />
+                    <View>
+                      <Text style={[styles.sectionKicker, { color: theme.primary }]}>RESUME SERIES</Text>
+                      <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Keep Watching</Text>
+                    </View>
+                  </View>
+                </View>
+                <FlatList
+                  horizontal
+                  data={continueWatchingSeries}
+                  renderItem={renderContinueSeriesItem}
+                  keyExtractor={(item) => `series-${item.id}`}
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.horizontalList}
                 />
@@ -591,54 +522,13 @@ export default function HomeScreen() {
                 <View style={styles.sectionHeader}>
                   <View style={styles.liveIndicator}>
                     <LiveIndicator color={theme.accentError} />
-                    <Text
-                      style={[styles.liveText, { color: theme.accentError }]}
-                    >
-                      LIVE NOW
-                    </Text>
+                    <Text style={[styles.liveText, { color: theme.accentError }]}>LIVE NOW</Text>
                   </View>
                 </View>
                 <FlashList
                   horizontal
                   data={liveMatches}
-                  renderItem={({ item }) => (
-                    <MatchCard game={item} onPress={setSelectedGameId} />
-                  )}
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.horizontalList}
-                />
-              </View>
-            )}
-
-            {/* Favorite Channels */}
-            {favoriteChannels && favoriteChannels.length > 0 && (
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <View>
-                    <Text
-                      style={[styles.sectionKicker, { color: theme.primary }]}
-                    >
-                      YOUR SELECTION
-                    </Text>
-                    <Text
-                      style={[
-                        styles.sectionTitle,
-                        { color: theme.textPrimary },
-                      ]}
-                    >
-                      Favorite Channels
-                    </Text>
-                  </View>
-                  <Pressable onPress={() => router.push("/(tabs)/channels")}>
-                    <Text style={[styles.seeAll, { color: theme.primary }]}>
-                      See All
-                    </Text>
-                  </Pressable>
-                </View>
-                <FlatList
-                  horizontal
-                  data={favoriteChannels}
-                  renderItem={renderChannel}
+                  renderItem={({ item }) => <MatchCard game={item} onPress={setSelectedGameId} />}
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.horizontalList}
                 />
@@ -951,28 +841,63 @@ const styles = StyleSheet.create({
   },
   actionButtonText: { fontWeight: "800", fontSize: 16 },
 
+  sectionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
   // Continue Watching
+  continueCardWrapper: {
+    marginRight: 12,
+    position: "relative",
+  },
   continueCard: {
-    width: 140,
-    height: 200,
+    width: 160,
     borderRadius: 12,
     overflow: "hidden",
-    marginRight: 12,
+    borderWidth: 1,
   },
   continueImage: {
     width: "100%",
-    height: "100%",
+    aspectRatio: 2 / 3,
   },
   continueOverlay: {
     position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 8,
+    top: 8,
+    left: 8,
+  },
+  progressPill: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  progressPillText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  episodePill: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  episodePillText: {
+    fontSize: 10,
+    fontWeight: "800",
+  },
+  continueBottom: {
+    padding: 10,
+    gap: 6,
+  },
+  continueTitle: {
+    fontSize: 12,
+    fontWeight: "600",
   },
   progressBar: {
-    height: 4,
-    backgroundColor: "rgba(255,255,255,0.3)",
+    height: 3,
+    backgroundColor: "rgba(255,255,255,0.15)",
     borderRadius: 2,
     overflow: "hidden",
   },
@@ -980,49 +905,16 @@ const styles = StyleSheet.create({
     height: "100%",
     borderRadius: 2,
   },
-  continueTitle: {
+  removeBtn: {
     position: "absolute",
-    bottom: 8,
-    left: 8,
-    right: 8,
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
-    textShadowColor: "rgba(0,0,0,0.8)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-
-  // Series Card
-  seriesCard: {
-    width: 130,
-    marginRight: 12,
-  },
-  seriesImage: {
-    width: 130,
-    height: 180,
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-  seriesBadge: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    flexDirection: "row",
+    top: -8,
+    right: -8,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1,
+    justifyContent: "center",
     alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  seriesRating: {
-    fontSize: 10,
-    fontWeight: "700",
-  },
-  seriesTitle: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
-    marginTop: 8,
+    zIndex: 10,
   },
 });

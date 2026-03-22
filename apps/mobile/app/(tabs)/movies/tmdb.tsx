@@ -131,13 +131,18 @@ export default function MovieDetailsScreen() {
       params: {
         url: item.url,
         title: item.name,
-        overview: item.info?.description,
+        mediaType: "vod",
+        movieId: String(item.id),
+        streamId: String(item.streamId),
+        categoryId: String(item.categoryId),
+        playlistId: String(playlistId ?? ""),
+        poster: item.streamIcon ?? movie.tmdb.poster ?? "",
       },
     });
   };
 
-  const rating = 0; // Replace with actual rating if available
-  const runtime = movie.tmdb.runtime || 0;
+  const rating = movie.tmdb.voteAverage ?? 0;
+  const runtime = movie.tmdb.runtime ?? 0;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
@@ -220,6 +225,9 @@ export default function MovieDetailsScreen() {
                     style={[styles.ratingText, { color: theme.textPrimary }]}
                   >
                     {rating.toFixed(1)}
+                    {movie.tmdb.voteCount != null && (
+                      <Text style={{ fontSize: 10, opacity: 0.6 }}> ({movie.tmdb.voteCount.toLocaleString()})</Text>
+                    )}
                   </Text>
                 </View>
               )}

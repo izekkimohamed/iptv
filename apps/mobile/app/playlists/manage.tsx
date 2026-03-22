@@ -3,240 +3,255 @@ import { usePlaylistStore } from "@/store";
 import { usePlayerTheme } from "@/theme/playerTheme";
 import { FlashList } from "@shopify/flash-list";
 import { useRouter } from "expo-router";
-import { Loader, Plus, Server, Trash2, User } from "lucide-react-native";
-import React from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
-import Animated, { FadeIn, FadeInDown, Layout } from "react-native-reanimated";
+import {
+  CheckCircle2,
+  ChevronLeft,
+  Plus,
+  RefreshCw,
+  Server,
+  Trash2,
+  User,
+} from "lucide-react-native";
+import React, { useState } from "react";
+import {
+  Alert,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  ActivityIndicator,
+} from "react-native";
+import Animated, { FadeInDown, Layout } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-export default function PlaylistsSelectScreen() {
+function formatExpiry(expDate: string): { label: string; urgent: boolean } {
+  if (!expDate || expDate === "Unlimited") return { label: "Unlimited", urgent: false };
+  const ts = Number(expDate);
+  const date = isNaN(ts) ? new Date(expDate) : new Date(ts * 1000);
+  if (isNaN(date.getTime())) return { label: expDate, urgent: false };
+  const days = Math.ceil((date.getTime() - Date.now()) / 86_400_000);
+  if (days < 0) return { label: "Expired", urgent: true };
+  if (days === 0) return { label: "Expires today", urgent: true };
+  if (days <= 7) return { label: `${days}d left`, urgent: true };
+  if (days <= 30) return { label: `${days}d left`, urgent: false };
+  return {
+    label: date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }),
+    urgent: false,
+  };
+}
+
+function formatUpdatedAt(iso: string): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (isNaN(date.getTime())) return "";
+  const diff = Date.now() - date.getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+
+export default function PlaylistsManageScreen() {
   const router = useRouter();
   const theme = usePlayerTheme();
-
-  const { playlists, removePlaylist, selectPlaylist, selectedPlaylist } =
-    usePlaylistStore();
+  const { playlists, removePlaylist, selectPlaylist, selectedPlaylist, updatePlaylist } = usePlaylistStore();
   const utils = trpc.useUtils();
-  const { mutate: deletePlaylist, isPending } =
+
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
+
+  const { mutate: deletePlaylist, isPending: isDeleting } =
     trpc.playlists.deletePlaylist.useMutation({
-      onSuccess: async (data, variables) => {
-        await utils.playlists.getPlaylists.invalidate();
+      onSuccess: (_, variables) => {
         removePlaylist(variables.playlistId);
-        if (playlists.length) {
-          selectPlaylist(playlists[0]);
+        if (selectedPlaylist?.id === variables.playlistId && playlists.length > 1) {
+          const next = playlists.find((p) => p.id !== variables.playlistId);
+          if (next) selectPlaylist(next);
         }
+        utils.playlists.getPlaylists.invalidate();
       },
     });
 
+  const { mutate: syncPlaylist } = trpc.playlists.updatePlaylists.useMutation({
+    onSuccess: (data, variables) => {
+      updatePlaylist(variables.playlistId, { updatedAt: new Date().toISOString() });
+      setUpdatingId(null);
+    },
+    onError: () => setUpdatingId(null),
+  });
+
   const handleDelete = (playlistId: number) => {
     Alert.alert(
-      "Disconnect Server",
-      "Are you sure you want to remove this playlist? content will be removed from your library.",
+      "Remove Playlist",
+      "This will remove the playlist and all its content from your library.",
       [
         { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          onPress: () => {
-            deletePlaylist({ playlistId });
-          },
-          style: "destructive",
-        },
+        { text: "Remove", style: "destructive", onPress: () => deletePlaylist({ playlistId }) },
       ],
     );
   };
 
-  const handleSelect = (playlist: any) => {
-    selectPlaylist(playlist);
-    router.replace("/(tabs)/channels");
+  const handleSync = (playlistId: number) => {
+    setUpdatingId(playlistId);
+    syncPlaylist({ playlistId });
   };
 
-  // --- RENDER: LIST VIEW ---
+  const handleSelect = (playlist: any) => {
+    selectPlaylist(playlist);
+    router.back();
+  };
+
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: theme.bg }]}
-      edges={["top"]}
-    >
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]} edges={["top"]}>
       {/* Header */}
-      <View style={[styles.listHeader, { borderBottomColor: theme.border }]}>
-        <View>
-          <Text style={[styles.title, { color: theme.textPrimary }]}>
-            Your Library
-          </Text>
-          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            {playlists.length} {playlists.length === 1 ? "Server" : "Servers"}{" "}
-            Connected
+      <View style={[styles.header, { borderBottomColor: theme.border }]}>
+        <Pressable style={styles.backBtn} onPress={() => router.back()}>
+          <ChevronLeft size={24} color={theme.textPrimary} strokeWidth={2.5} />
+        </Pressable>
+        <View style={styles.headerText}>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>Playlists</Text>
+          <Text style={[styles.subtitle, { color: theme.textMuted }]}>
+            {playlists.length} {playlists.length === 1 ? "server" : "servers"} connected
           </Text>
         </View>
         <Pressable
           style={[styles.addBtn, { backgroundColor: theme.primary }]}
           onPress={() => router.push("/playlists")}
-          disabled={isPending}
         >
-          <Plus size={24} color='#000' />
+          <Plus size={20} color={theme.primaryForeground} strokeWidth={2.5} />
         </Pressable>
       </View>
 
-      {/* List */}
       <FlashList
         data={playlists}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        scrollEnabled={!isPending}
+        estimatedItemSize={140}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <View
-              style={[
-                styles.emptyIcon,
-                { backgroundColor: theme.surfaceSecondary },
-              ]}
-            >
-              <Server size={40} color={theme.textMuted} />
+          <View style={styles.empty}>
+            <View style={[styles.emptyIcon, { backgroundColor: theme.surfaceSecondary }]}>
+              <Server size={36} color={theme.textMuted} />
             </View>
-            <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>
-              No Playlists Found
+            <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>No playlists yet</Text>
+            <Text style={[styles.emptyBody, { color: theme.textMuted }]}>
+              Add your first Xtream Codes server to get started.
             </Text>
-            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-              Connect your first Xtream Codes server to start watching.
-            </Text>
+            <Pressable
+              style={[styles.emptyBtn, { backgroundColor: theme.primary }]}
+              onPress={() => router.push("/playlists")}
+            >
+              <Plus size={16} color={theme.primaryForeground} />
+              <Text style={[styles.emptyBtnText, { color: theme.primaryForeground }]}>Add Playlist</Text>
+            </Pressable>
           </View>
         }
         renderItem={({ item, index }) => {
-          const isSelected = item.id === selectedPlaylist?.id;
+          const isActive = item.id === selectedPlaylist?.id;
+          const isSyncing = updatingId === item.id;
+          const expiry = item.expDate ? formatExpiry(item.expDate) : null;
+          const updatedAt = item.updatedAt ? formatUpdatedAt(item.updatedAt) : null;
+
           return (
             <Animated.View
-              entering={FadeInDown.delay(index * 100)}
+              entering={FadeInDown.delay(index * 60).springify()}
               layout={Layout.springify()}
               style={[
                 styles.card,
                 {
-                  backgroundColor:
-                    isSelected ? `${theme.primary}08` : theme.surfaceSecondary,
-                  borderColor: isSelected ? theme.primary : theme.border,
-                  opacity: isPending ? 0.6 : 1,
+                  backgroundColor: isActive ? `${theme.primary}0D` : theme.surfacePrimary,
+                  borderColor: isActive ? theme.primary : theme.border,
                 },
               ]}
             >
+              {/* Main row — tap to select */}
               <Pressable
-                style={styles.cardContent}
+                style={({ pressed }) => [styles.cardMain, pressed && { opacity: 0.8 }]}
                 onPress={() => handleSelect(item)}
-                disabled={isPending}
               >
-                {/* Icon */}
-                <View
-                  style={[
-                    styles.cardIcon,
-                    {
-                      backgroundColor:
-                        isSelected ? theme.primary : theme.surfacePrimary,
-                      borderColor: isSelected ? theme.primary : theme.border,
-                    },
-                  ]}
-                >
-                  <Server
-                    size={20}
-                    color={isSelected ? "#000" : theme.textMuted}
-                  />
+                <View style={[styles.serverIcon, {
+                  backgroundColor: isActive ? theme.primary : theme.surfaceSecondary,
+                }]}>
+                  <Server size={18} color={isActive ? theme.primaryForeground : theme.textMuted} />
                 </View>
 
-                {/* Info */}
                 <View style={styles.cardInfo}>
-                  <Text
-                    style={[styles.cardTitle, { color: theme.textPrimary }]}
-                    numberOfLines={1}
-                  >
+                  <Text style={[styles.cardUrl, { color: theme.textPrimary }]} numberOfLines={1}>
                     {item.baseUrl.replace(/^https?:\/\//, "")}
                   </Text>
                   <View style={styles.cardMeta}>
-                    <User
-                      size={12}
-                      color={isSelected ? theme.primary : theme.textSecondary}
-                    />
-                    <Text
-                      style={[styles.cardUser, { color: theme.textSecondary }]}
-                    >
-                      {item.username}
-                    </Text>
+                    <User size={11} color={theme.textMuted} />
+                    <Text style={[styles.cardMetaText, { color: theme.textMuted }]}>{item.username}</Text>
+                    {expiry && (
+                      <>
+                        <Text style={[styles.cardMetaText, { color: theme.border }]}>·</Text>
+                        <Text style={[styles.cardMetaText, {
+                          color: expiry.urgent ? theme.accentError : theme.textMuted,
+                          fontWeight: expiry.urgent ? "700" : "500",
+                        }]}>
+                          {expiry.label}
+                        </Text>
+                      </>
+                    )}
                   </View>
                 </View>
 
-                {/* Status Indicator */}
-                {isSelected && (
-                  <View
-                    style={[
-                      styles.activeBadge,
-                      { backgroundColor: `${theme.accentSuccess}20` },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.activeText,
-                        { color: theme.accentSuccess },
-                      ]}
-                    >
-                      Active
-                    </Text>
-                  </View>
+                {isActive && (
+                  <CheckCircle2 size={20} color={theme.primary} fill={`${theme.primary}20`} />
                 )}
               </Pressable>
 
-              {/* Actions Divider */}
-              <View
-                style={[styles.cardDivider, { backgroundColor: theme.border }]}
-              />
-
-              {/* Footer Actions */}
-              <View style={styles.cardFooter}>
-                <Text style={[styles.lastActive, { color: theme.textMuted }]}>
-                  ID: #{item.id}
-                </Text>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.deleteAction,
-                    pressed && !isPending && { opacity: 0.7 },
-                    isPending && { opacity: 0.5 },
-                  ]}
-                  onPress={() => handleDelete(item.id)}
-                  disabled={isPending}
-                >
-                  <Trash2 size={16} color={theme.accentError} />
-                  <Text
-                    style={[styles.deleteText, { color: theme.accentError }]}
-                  >
-                    Delete
+              {/* Footer actions */}
+              <View style={[styles.cardFooter, { borderTopColor: theme.border }]}>
+                {updatedAt && (
+                  <Text style={[styles.syncedAt, { color: theme.textMuted }]}>
+                    Synced {updatedAt}
                   </Text>
-                </Pressable>
+                )}
+                <View style={styles.footerActions}>
+                  {/* Sync */}
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.footerBtn,
+                      { backgroundColor: `${theme.primary}15`, borderColor: `${theme.primary}30` },
+                      pressed && { opacity: 0.7 },
+                      isSyncing && { opacity: 0.5 },
+                    ]}
+                    onPress={() => handleSync(item.id)}
+                    disabled={isSyncing || isDeleting}
+                  >
+                    {isSyncing ? (
+                      <ActivityIndicator size={13} color={theme.primary} />
+                    ) : (
+                      <RefreshCw size={13} color={theme.primary} />
+                    )}
+                    <Text style={[styles.footerBtnText, { color: theme.primary }]}>
+                      {isSyncing ? "Syncing…" : "Sync"}
+                    </Text>
+                  </Pressable>
+
+                  {/* Delete */}
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.footerBtn,
+                      { backgroundColor: `${theme.accentError}12`, borderColor: `${theme.accentError}25` },
+                      pressed && { opacity: 0.7 },
+                      isDeleting && { opacity: 0.5 },
+                    ]}
+                    onPress={() => handleDelete(item.id)}
+                    disabled={isSyncing || isDeleting}
+                  >
+                    <Trash2 size={13} color={theme.accentError} />
+                    <Text style={[styles.footerBtnText, { color: theme.accentError }]}>Remove</Text>
+                  </Pressable>
+                </View>
               </View>
             </Animated.View>
           );
         }}
       />
-
-      {/* Loading Overlay */}
-      {isPending && (
-        <Animated.View
-          entering={FadeIn.duration(200)}
-          style={[styles.loadingOverlay, { backgroundColor: `${theme.bg}cc` }]}
-        >
-          <View
-            style={[
-              styles.loadingContent,
-              { backgroundColor: theme.surfaceSecondary },
-            ]}
-          >
-            <Animated.View style={styles.spinnerWrapper} entering={FadeIn}>
-              <Loader size={48} color={theme.primary} />
-            </Animated.View>
-            <Text style={[styles.loadingTitle, { color: theme.textPrimary }]}>
-              Disconnecting Server
-            </Text>
-            <Text
-              style={[styles.loadingSubtitle, { color: theme.textSecondary }]}
-            >
-              Please wait while we remove your playlist...
-            </Text>
-          </View>
-        </Animated.View>
-      )}
     </SafeAreaView>
   );
 }
@@ -244,176 +259,67 @@ export default function PlaylistsSelectScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
 
-  // --- Form Styles ---
-  formScroll: { padding: 24 },
-  formHeader: { alignItems: "center", marginBottom: 32 },
-  headerTopRow: { width: "100%", alignItems: "flex-end", marginBottom: 10 },
-  closeBtn: { padding: 8, borderRadius: 20 },
-  iconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  formTitle: { fontSize: 24, fontWeight: "800", marginBottom: 4 },
-  formSubtitle: { fontSize: 14 },
-
-  inputGroup: { gap: 16, marginBottom: 24 },
-  inputContainer: { gap: 8 },
-  label: {
-    fontSize: 12,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  inputWrapper: {
+  header: {
     flexDirection: "row",
     alignItems: "center",
-    height: 52,
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 16,
     gap: 12,
-  },
-  input: { flex: 1, fontSize: 15, height: "100%" },
-
-  errorBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 24,
-  },
-  errorText: { fontSize: 13, flex: 1 },
-
-  actionGroup: { gap: 12 },
-  primaryBtn: {
-    height: 54,
-    borderRadius: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-  },
-  primaryBtnText: { color: "#000", fontSize: 16, fontWeight: "700" },
-
-  // --- List Styles ---
-  listHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     borderBottomWidth: 1,
   },
-  title: { fontSize: 28, fontWeight: "800" },
-  subtitle: { fontSize: 13, fontWeight: "500", marginTop: 4 },
+  backBtn: { padding: 4 },
+  headerText: { flex: 1 },
+  title: { fontSize: 20, fontWeight: "800" },
+  subtitle: { fontSize: 12, fontWeight: "500", marginTop: 1 },
   addBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: "center",
-    alignItems: "center",
+    width: 38, height: 38, borderRadius: 19,
+    justifyContent: "center", alignItems: "center",
   },
-  listContent: { padding: 20, paddingBottom: 40 },
 
-  // Card
+  listContent: { padding: 16, paddingBottom: 40 },
+
   card: {
-    borderRadius: 16,
-    borderWidth: 1,
-    marginBottom: 16,
-    overflow: "hidden",
+    borderRadius: 16, borderWidth: 1,
+    marginBottom: 12, overflow: "hidden",
   },
-  cardContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    gap: 12,
+  cardMain: {
+    flexDirection: "row", alignItems: "center",
+    padding: 14, gap: 12,
   },
-  cardIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    borderWidth: 1,
-    justifyContent: "center",
-    alignItems: "center",
+  serverIcon: {
+    width: 38, height: 38, borderRadius: 10,
+    justifyContent: "center", alignItems: "center",
   },
   cardInfo: { flex: 1 },
-  cardTitle: { fontSize: 15, fontWeight: "700" },
-  cardMeta: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 4,
-  },
-  cardUser: { fontSize: 12 },
+  cardUrl: { fontSize: 14, fontWeight: "700" },
+  cardMeta: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 3 },
+  cardMetaText: { fontSize: 12, fontWeight: "500" },
 
-  activeBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  activeText: { fontSize: 10, fontWeight: "800", textTransform: "uppercase" },
-
-  cardDivider: { height: 1, width: "100%" },
   cardFooter: {
-    flexDirection: "row",
+    flexDirection: "row", alignItems: "center",
     justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 14, paddingVertical: 10,
+    borderTopWidth: 1,
   },
-  lastActive: { fontSize: 11, fontVariant: ["tabular-nums"] },
-  deleteAction: { flexDirection: "row", alignItems: "center", gap: 6 },
-  deleteText: { fontSize: 12, fontWeight: "600" },
+  syncedAt: { fontSize: 11, fontWeight: "500" },
+  footerActions: { flexDirection: "row", gap: 8, marginLeft: "auto" },
+  footerBtn: {
+    flexDirection: "row", alignItems: "center", gap: 5,
+    paddingHorizontal: 12, paddingVertical: 6,
+    borderRadius: 8, borderWidth: 1,
+  },
+  footerBtnText: { fontSize: 12, fontWeight: "700" },
 
-  // Empty State
-  emptyContainer: {
-    alignItems: "center",
-    marginTop: 60,
-    paddingHorizontal: 40,
-  },
+  empty: { alignItems: "center", paddingTop: 80, paddingHorizontal: 40, gap: 10 },
   emptyIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 16,
+    width: 72, height: 72, borderRadius: 36,
+    justifyContent: "center", alignItems: "center", marginBottom: 4,
   },
-  emptyTitle: { fontSize: 18, fontWeight: "700", marginBottom: 8 },
-  emptyText: { fontSize: 14, textAlign: "center", lineHeight: 20 },
-
-  // Loading Overlay
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 0,
+  emptyTitle: { fontSize: 17, fontWeight: "700" },
+  emptyBody: { fontSize: 13, textAlign: "center", lineHeight: 20 },
+  emptyBtn: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    marginTop: 8, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10,
   },
-  loadingContent: {
-    alignItems: "center",
-    paddingHorizontal: 32,
-    paddingVertical: 40,
-    borderRadius: 20,
-  },
-  spinnerWrapper: {
-    marginBottom: 24,
-  },
-  loadingTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  loadingSubtitle: {
-    fontSize: 14,
-    textAlign: "center",
-    lineHeight: 20,
-  },
+  emptyBtnText: { fontSize: 14, fontWeight: "700" },
 });

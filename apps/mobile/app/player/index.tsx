@@ -2,12 +2,13 @@ import { VideoControls } from "@/components/player/Controllers";
 import { usePlayer } from "@/hooks/usePlayer";
 import { usePlayerGestures } from "@/hooks/usePlayerGestures";
 import { usePlayerTheme } from "@/theme/playerTheme";
+import { useWatchedMoviesStore, useWatchedSeriesStore } from "@/store/watched-store";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import { useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { VideoView } from "expo-video";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   BackHandler,
@@ -58,11 +59,62 @@ const ReanimatedPercentage = ({
 // --- Main Component ---
 
 export default function Player() {
-  const { url, title, mediaType } = useLocalSearchParams<{
+  const { url, title, mediaType, movieId, streamId, categoryId, playlistId, poster, seriesId, seriesTitle, totalEpisodes, episodeNumber, seasonId, resumePosition } = useLocalSearchParams<{
     url: string;
     mediaType?: "live" | "vod";
     title: string;
+    movieId?: string;
+    streamId?: string;
+    categoryId?: string;
+    playlistId?: string;
+    poster?: string;
+    seriesId?: string;
+    seriesTitle?: string;
+    totalEpisodes?: string;
+    episodeNumber?: string;
+    seasonId?: string;
+    resumePosition?: string;
   }>();
+
+  const { saveProgress: saveMovieProgress } = useWatchedMoviesStore();
+  const { saveProgress: saveSeriesProgress } = useWatchedSeriesStore();
+
+  const onProgress = useCallback(
+    (position: number, duration: number) => {
+      if (seriesId && playlistId && episodeNumber && seasonId) {
+        saveSeriesProgress(
+          {
+            id: Number(seriesId),
+            categoryId: Number(categoryId ?? 0),
+            playlistId: Number(playlistId),
+            poster: poster || undefined,
+            title: seriesTitle || title || undefined,
+            totalEpisodes: Number(totalEpisodes ?? 0),
+          },
+          {
+            episodeNumber: Number(episodeNumber),
+            seasonId: Number(seasonId),
+            position,
+            duration,
+            src: url ?? "",
+          },
+        );
+      } else if (movieId && playlistId) {
+        saveMovieProgress({
+          id: Number(movieId),
+          streamId: Number(streamId ?? movieId),
+          categoryId: Number(categoryId ?? 0),
+          position,
+          duration,
+          poster: poster || undefined,
+          title: title || undefined,
+          src: url || undefined,
+          playlistId: Number(playlistId),
+        });
+      }
+    },
+    [movieId, streamId, categoryId, seriesId, playlistId, poster, title, seriesTitle, totalEpisodes, episodeNumber, seasonId, url, saveMovieProgress, saveSeriesProgress],
+  );
 
   const theme = usePlayerTheme();
 
@@ -86,7 +138,7 @@ export default function Player() {
     skipBackward,
     handleBackPress,
     changeSource,
-  } = usePlayer(url, mediaType);
+  } = usePlayer(url, mediaType, (movieId || seriesId) ? onProgress : undefined, resumePosition ? Number(resumePosition) : undefined);
 
   const {
     composedGesture,

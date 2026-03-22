@@ -121,7 +121,7 @@ const InstallationOverlay = ({
 
           {/* Single status row shown during update */}
           {isUpdating && (
-            <div className="flex items-center gap-3 rounded-sm border border-primary bg-primary/10 px-4 py-3 border-t border-white/5 mt-4">
+            <div className="flex items-center gap-3 rounded-sm border border-primary bg-primary/10 px-4 py-3 border-t mt-4">
               <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
               <span className="text-xs font-bold tracking-wider uppercase text-white">
                 Syncing channels, movies &amp; series…

@@ -37,11 +37,25 @@ export default function SeriesScreen() {
       playlistId: selectPlaylist?.id ?? 0,
     });
 
-  const { data: series, isLoading: loadingSeries } =
-    trpc.series.getseries.useQuery(
-      { playlistId: selectPlaylist?.id ?? 0, categoryId: selectedCatId ?? 0 },
-      { enabled: !!selectedCatId },
-    );
+  const {
+    data: seriesData,
+    isLoading: loadingSeries,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = trpc.series.getseries.useInfiniteQuery(
+    {
+      playlistId: selectPlaylist?.id ?? 0,
+      categoryId: selectedCatId ?? 0,
+      limit: 50,
+    },
+    {
+      enabled: !!selectedCatId,
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+    },
+  );
+
+  const series = seriesData?.pages.flatMap((p) => p.items) ?? [];
 
   useEffect(() => {
     if (categories?.length && !selectedCatId) {
@@ -168,6 +182,17 @@ export default function SeriesScreen() {
             contentContainerStyle={styles.gridContent}
             renderItem={renderSeriesItem}
             showsVerticalScrollIndicator={false}
+            onEndReached={() => hasNextPage && fetchNextPage()}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={
+              isFetchingNextPage ? (
+                <ActivityIndicator
+                  size="small"
+                  color={theme.primary}
+                  style={{ marginVertical: 16 }}
+                />
+              ) : null
+            }
           />
         ) : (
           <Animated.View entering={FadeIn} style={styles.emptyState}>

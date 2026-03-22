@@ -3,7 +3,8 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 export interface WatchedMoviesItem {
-  id: number;
+  id: number;       // DB primary key
+  streamId: number; // Xtream stream_id, used to navigate back
   categoryId: number;
   position: number;
   duration: number;
@@ -28,25 +29,16 @@ export const useWatchedMoviesStore = create<WatchedMoviesStore>()(
       movies: [],
 
       saveProgress: (item) => {
-        const existing = get().movies.find((i) => i.id === item.id);
-
-        if (existing) {
-          set({
-            movies: get().movies.map((i) =>
-              i.id === item.id ? { ...i, ...item, updatedAt: Date.now() } : i,
-            ),
-          });
-        } else {
-          set({
-            movies: [
-              ...get().movies,
-              {
-                ...item,
-                updatedAt: Date.now(),
-              },
-            ],
-          });
-        }
+        set((state) => {
+          const exists = state.movies.some((i) => i.id === item.id);
+          return {
+            movies: exists
+              ? state.movies.map((i) =>
+                  i.id === item.id ? { ...i, ...item, updatedAt: Date.now() } : i,
+                )
+              : [...state.movies, { ...item, updatedAt: Date.now() }],
+          };
+        });
       },
 
       getProgress: (id, playlistId) =>

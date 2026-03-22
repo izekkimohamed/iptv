@@ -1,9 +1,9 @@
 import { trpc } from "@/lib/trpc";
 import { usePlaylistStore } from "@/store";
+import { useWatchedMoviesStore } from "@/store/watched-store";
 import { usePlayerTheme } from "@/theme/playerTheme";
 import { cleanName } from "@repo/utils";
 import { FlashList } from "@shopify/flash-list";
-
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   Calendar,
@@ -11,9 +11,9 @@ import {
   Clock,
   Film,
   Play,
+  RotateCcw,
   Star,
   User,
-  Zap,
 } from "lucide-react-native";
 import React, { useCallback, useMemo } from "react";
 import {
@@ -28,24 +28,19 @@ import {
 import Animated, {
   FadeIn,
   FadeInDown,
-  FadeInUp,
   interpolate,
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
 } from "react-native-reanimated";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 ("use no memo");
 
 const { width, height } = Dimensions.get("window");
-const POSTER_WIDTH = width * 0.42;
+const POSTER_WIDTH = width * 0.38;
 const POSTER_HEIGHT = POSTER_WIDTH * 1.5;
 
-// --- Helper Hook (Kept from your code) ---
 export const useStreamingUrls = (
   baseUrl: string,
   username: string,
@@ -54,19 +49,14 @@ export const useStreamingUrls = (
   container_extension?: string,
 ) => {
   const srcUrl = useMemo<string>(
-    () =>
-      `${baseUrl}/movie/${username}/${password}/${stream_id}.${
-        container_extension || "mp4"
-      }`,
+    () => `${baseUrl}/movie/${username}/${password}/${stream_id}.${container_extension || "mp4"}`,
     [baseUrl, username, password, stream_id, container_extension],
   );
-
   const getEpisodeSrcUrl = useCallback<(episode: any) => string>(
     (episode: any) =>
       `${baseUrl}/series/${username}/${password}/${episode.id}.${episode.container_extension}`,
     [baseUrl, password, username],
   );
-
   return { srcUrl, getEpisodeSrcUrl };
 };
 
@@ -75,13 +65,13 @@ export default function MovieDetailsScreen() {
   const theme = usePlayerTheme();
   const insets = useSafeAreaInsets();
   const selectPlaylist = usePlaylistStore((state) => state.selectedPlaylist);
-  const { id, url } = useLocalSearchParams<{
-    id: string;
-    url: string;
-  }>();
-
-  // Animation Shared Values
+  const { id, url } = useLocalSearchParams<{ id: string; url: string }>();
   const scrollY = useSharedValue(0);
+
+  const saved = useWatchedMoviesStore((s) =>
+    s.movies.find((i) => i.id === Number(id) && i.playlistId === (selectPlaylist?.id ?? 0))
+  );
+  const progress = saved && saved.duration > 0 ? saved.position / saved.duration : 0;
 
   const { data: movie, isLoading } = trpc.movies.getMovie.useQuery({
     movieId: +id,
@@ -90,24 +80,16 @@ export default function MovieDetailsScreen() {
     password: selectPlaylist?.password ?? "",
   });
 
-  // --- Animation Handlers ---
-  const scrollHandler = useAnimatedScrollHandler((event) => {
-    scrollY.value = event.contentOffset.y;
-  });
-
-  const stickyHeaderStyle = useAnimatedStyle(() => {
-    return {
-      opacity: interpolate(scrollY.value, [0, 200], [0, 1]),
-      backgroundColor: theme.bg,
-    };
-  });
+  const scrollHandler = useAnimatedScrollHandler((e) => { scrollY.value = e.contentOffset.y; });
+  const stickyStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollY.value, [0, 180], [0, 1]),
+    backgroundColor: theme.bg,
+  }));
 
   if (isLoading)
     return (
       <View style={[styles.centered, { backgroundColor: theme.bg }]}>
-        <View style={[styles.loadingBackdrop, { borderColor: theme.border }]}>
-          <ActivityIndicator size="large" color={theme.primary} />
-        </View>
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
 
@@ -115,346 +97,174 @@ export default function MovieDetailsScreen() {
     return (
       <View style={[styles.centered, { backgroundColor: theme.bg }]}>
         <Film size={48} color={theme.textMuted} strokeWidth={1.5} />
-        <Text style={[styles.errorText, { color: theme.textMuted }]}>
-          Movie not found
-        </Text>
+        <Text style={[styles.errorText, { color: theme.textMuted }]}>Movie not found</Text>
       </View>
     );
 
-  // --- Data Mapping ---
   const movieTitle = cleanName(movie.movie_data.name);
   const backdropUrl = movie.tmdb?.backdrop || movie.info?.cover_big;
   const posterUrl = movie.tmdb?.poster || movie.info?.cover;
   const rating = parseFloat(movie.tmdb?.rating || movie.info?.rating || "0");
-  const releaseYear =
-    movie.tmdb?.releaseDate?.split("-")[0] ||
-    movie.info?.releasedate?.split("-")[0];
-  const duration =
-    movie.tmdb?.runtime || Math.floor((movie.info?.duration_secs || 0) / 60);
-  const genres =
-    movie.tmdb?.genres
-      ?.map((g: any) => g.name)
-      .slice(0, 2)
-      .join(" • ") || movie.info?.genre?.split(",").slice(0, 2).join(" • ");
+  const releaseYear = movie.tmdb?.releaseDate?.split("-")[0] || movie.info?.releasedate?.split("-")[0];
+  const duration = movie.tmdb?.runtime || Math.floor((movie.info?.duration_secs || 0) / 60);
+  const genres = movie.tmdb?.genres?.map((g: any) => g.name).slice(0, 3).join(" · ") || movie.info?.genre?.split(",").slice(0, 3).join(" · ");
   const director = movie.tmdb?.director || movie.info?.director;
-  const cast =
-    movie.tmdb?.cast || movie.info?.cast?.split(", ").slice(0, 8) || [];
+  const cast = movie.tmdb?.cast || movie.info?.cast?.split(", ").slice(0, 8) || [];
+
+  const handlePlay = (resume = false) => {
+    router.push({
+      pathname: "/player",
+      params: {
+        url,
+        title: movieTitle,
+        mediaType: "vod",
+        movieId: id,
+        streamId: id,
+        categoryId: "0",
+        playlistId: String(selectPlaylist?.id ?? ""),
+        poster: posterUrl ?? "",
+        resumePosition: resume && saved ? String(Math.max(0, saved.position - 5)) : "0",
+      },
+    });
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      {/* --- Sticky Header (Fades in) --- */}
-      <Animated.View
-        style={[
-          styles.stickyHeader,
-          stickyHeaderStyle,
-          {
-            height: 60 + insets.top,
-            paddingTop: insets.top,
-            borderBottomColor: theme.border,
-          },
-        ]}
-      >
-        <Text
-          style={[styles.stickyTitle, { color: theme.textPrimary }]}
-          numberOfLines={1}
-        >
-          {movieTitle}
-        </Text>
+      {/* Sticky header */}
+      <Animated.View style={[styles.stickyHeader, stickyStyle, { paddingTop: insets.top, borderBottomColor: theme.border }]}>
+        <Text style={[styles.stickyTitle, { color: theme.textPrimary }]} numberOfLines={1}>{movieTitle}</Text>
       </Animated.View>
 
-      {/* --- Floating Back Button --- */}
+      {/* Back button */}
       <SafeAreaView style={styles.floatingHeader} edges={["top"]}>
-        <Pressable
-          style={[
-            styles.backBtn,
-            {
-              backgroundColor: theme.glassMedium, // Always visible dark glass
-              borderColor: theme.border,
-            },
-          ]}
-          onPress={() => router.back()}
-        >
-          <ChevronLeft color={theme.primary} size={26} strokeWidth={2.5} />
+        <Pressable style={[styles.backBtn, { backgroundColor: "rgba(0,0,0,0.6)", borderColor: "rgba(255,255,255,0.15)" }]} onPress={() => router.back()}>
+          <ChevronLeft color="#fff" size={24} strokeWidth={2.5} />
         </Pressable>
       </SafeAreaView>
 
-      <Animated.ScrollView
-        onScroll={scrollHandler}
-        scrollEventThrottle={16}
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* --- Parallax Backdrop --- */}
+      <Animated.ScrollView onScroll={scrollHandler} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
+
+        {/* Backdrop */}
         <View style={styles.backdropContainer}>
           <Image source={{ uri: backdropUrl }} style={styles.backdrop} />
-          <View
-            style={[
-              styles.backdropGradient,
-              { backgroundColor: theme.bg, opacity: 0.6 },
-            ]}
-          />
+          <View style={[styles.backdropScrim, { backgroundColor: theme.bg }]} />
         </View>
 
-        {/* --- Hero Section --- */}
+        {/* Hero */}
         <View style={styles.heroWrapper}>
-          <Animated.View
-            entering={FadeInDown.duration(600)}
-            style={styles.heroContent}
-          >
-            {/* 1. Large Poster */}
-            <View style={styles.posterContainer}>
-              <View
-                style={[styles.posterShadow, { shadowColor: theme.primary }]}
-              />
-              <Image
-                source={{ uri: posterUrl }}
-                style={[styles.poster, { borderColor: theme.border }]}
-              />
+          <Animated.View entering={FadeInDown.duration(500)} style={styles.heroRow}>
+            {/* Poster */}
+            <View style={styles.posterShadowWrap}>
+              <Image source={{ uri: posterUrl }} style={[styles.poster, { borderColor: theme.border }]} />
               {rating > 0 && (
-                <View style={styles.ratingBadge}>
-                  <View
-                    style={[
-                      styles.ratingBlur,
-                      { backgroundColor: theme.glassStrong },
-                    ]}
-                  />
-                  <Star size={12} color="#fbbf24" fill="#fbbf24" />
-                  <Text
-                    style={[styles.ratingText, { color: theme.textPrimary }]}
-                  >
-                    {rating.toFixed(1)}
-                  </Text>
+                <View style={[styles.ratingBadge, { backgroundColor: "rgba(0,0,0,0.75)" }]}>
+                  <Star size={10} color="#fbbf24" fill="#fbbf24" />
+                  <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
                 </View>
               )}
             </View>
 
-            {/* 2. Info Column */}
-            <View style={styles.infoColumn}>
-              <Text style={[styles.title, { color: theme.textPrimary }]}>
-                {movieTitle}
-              </Text>
+            {/* Info */}
+            <View style={styles.infoCol}>
+              <Text style={[styles.title, { color: theme.textPrimary }]}>{movieTitle}</Text>
 
-              <View style={styles.metaRow}>
+              <View style={styles.chips}>
                 {releaseYear && (
-                  <View
-                    style={[
-                      styles.metaTag,
-                      { backgroundColor: theme.surfaceSecondary },
-                    ]}
-                  >
-                    <Calendar size={12} color={theme.textSecondary} />
-                    <Text
-                      style={[styles.metaText, { color: theme.textSecondary }]}
-                    >
-                      {releaseYear}
-                    </Text>
+                  <View style={[styles.chip, { backgroundColor: theme.surfaceSecondary }]}>
+                    <Calendar size={11} color={theme.textMuted} />
+                    <Text style={[styles.chipText, { color: theme.textSecondary }]}>{releaseYear}</Text>
                   </View>
                 )}
                 {duration > 0 && (
-                  <View
-                    style={[
-                      styles.metaTag,
-                      { backgroundColor: theme.surfaceSecondary },
-                    ]}
-                  >
-                    <Clock size={12} color={theme.textSecondary} />
-                    <Text
-                      style={[styles.metaText, { color: theme.textSecondary }]}
-                    >
-                      {Math.floor(duration / 60)}h {duration % 60}m
-                    </Text>
+                  <View style={[styles.chip, { backgroundColor: theme.surfaceSecondary }]}>
+                    <Clock size={11} color={theme.textMuted} />
+                    <Text style={[styles.chipText, { color: theme.textSecondary }]}>{Math.floor(duration / 60)}h {duration % 60}m</Text>
                   </View>
                 )}
               </View>
 
-              {genres ? (
-                <Text
-                  style={[styles.genreText, { color: theme.primary }]}
-                  numberOfLines={1}
-                >
-                  {genres}
-                </Text>
-              ) : null}
+              {genres ? <Text style={[styles.genres, { color: theme.primary }]} numberOfLines={2}>{genres}</Text> : null}
             </View>
           </Animated.View>
         </View>
 
-        {/* --- Main Play Button --- */}
-        <Animated.View
-          entering={FadeInUp.delay(200)}
-          style={styles.actionSection}
-        >
-          <Pressable
-            style={({ pressed }) => [
-              styles.playButton,
-              pressed && { transform: [{ scale: 0.98 }] },
-            ]}
-            onPress={() =>
-              router.push({
-                pathname: "/player",
-                params: { url: url, title: movieTitle },
-              })
-            }
-          >
-            <View style={styles.playGradient} />
-            <Play
-              size={24}
-              fill={theme.textSecondary}
-              color={theme.textSecondary}
-            />
-            <Text
-              style={[
-                styles.playText,
-                {
-                  color: theme.textSecondary,
-                },
-              ]}
+        {/* Action buttons */}
+        <Animated.View entering={FadeIn.delay(150)} style={styles.actions}>
+          {/* Resume / Watch button */}
+          {saved && progress > 0 ? (
+            <View style={styles.resumeGroup}>
+              <Pressable
+                style={({ pressed }) => [styles.primaryBtn, { backgroundColor: theme.primary }, pressed && { opacity: 0.85 }]}
+                onPress={() => handlePlay(true)}
+              >
+                <RotateCcw size={20} color={theme.primaryForeground} />
+                <Text style={[styles.primaryBtnText, { color: theme.primaryForeground }]}>Resume</Text>
+              </Pressable>
+              {/* Progress bar under resume */}
+              <View style={[styles.resumeBarBg, { backgroundColor: theme.surfaceSecondary }]}>
+                <View style={[styles.resumeBarFill, { width: `${Math.round(progress * 100)}%`, backgroundColor: theme.primary }]} />
+              </View>
+              <Text style={[styles.resumeLabel, { color: theme.textMuted }]}>{Math.round(progress * 100)}% watched</Text>
+              {/* Watch from start */}
+              <Pressable
+                style={({ pressed }) => [styles.secondaryBtn, { borderColor: theme.border, backgroundColor: theme.surfaceSecondary }, pressed && { opacity: 0.7 }]}
+                onPress={() => handlePlay(false)}
+              >
+                <Play size={16} color={theme.textSecondary} />
+                <Text style={[styles.secondaryBtnText, { color: theme.textSecondary }]}>Watch from start</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable
+              style={({ pressed }) => [styles.primaryBtn, { backgroundColor: theme.primary }, pressed && { opacity: 0.85 }]}
+              onPress={() => handlePlay(false)}
             >
-              Watch Now
-            </Text>
-          </Pressable>
+              <Play size={20} color={theme.primaryForeground} fill={theme.primaryForeground} />
+              <Text style={[styles.primaryBtnText, { color: theme.primaryForeground }]}>Watch Now</Text>
+            </Pressable>
+          )}
         </Animated.View>
 
-        {/* --- Overview --- */}
-        <Animated.View
-          entering={FadeIn.delay(300)}
-          style={styles.sectionContainer}
-        >
-          <Text style={[styles.sectionHeader, { color: theme.textPrimary }]}>
-            Overview
-          </Text>
-          <Text style={[styles.bodyText, { color: theme.textSecondary }]}>
-            {movie.info?.description ||
-              movie.tmdb?.overview ||
-              "No synopsis available."}
+        {/* Overview */}
+        <Animated.View entering={FadeIn.delay(200)} style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Overview</Text>
+          <Text style={[styles.body, { color: theme.textSecondary }]}>
+            {movie.info?.description || movie.tmdb?.overview || "No synopsis available."}
           </Text>
         </Animated.View>
 
-        {/* --- Director Info (If available) --- */}
+        {/* Director */}
         {director && (
-          <Animated.View
-            entering={FadeIn.delay(350)}
-            style={[
-              styles.infoBox,
-              {
-                backgroundColor: theme.surfaceSecondary,
-                borderColor: theme.border,
-              },
-            ]}
-          >
-            <View
-              style={[
-                styles.infoIcon,
-                { backgroundColor: `${theme.primary}20` },
-              ]}
-            >
-              <Zap size={18} color={theme.primary} />
-            </View>
-            <View>
-              <Text style={[styles.infoLabel, { color: theme.textMuted }]}>
-                Director
-              </Text>
-              <Text style={[styles.infoValue, { color: theme.textPrimary }]}>
-                {director}
-              </Text>
-            </View>
+          <Animated.View entering={FadeIn.delay(250)} style={[styles.directorRow, { backgroundColor: theme.surfaceSecondary, borderColor: theme.border }]}>
+            <Text style={[styles.directorLabel, { color: theme.textMuted }]}>DIRECTED BY</Text>
+            <Text style={[styles.directorName, { color: theme.textPrimary }]}>{director}</Text>
           </Animated.View>
         )}
 
-        {/* --- Cast List --- */}
+        {/* Cast */}
         {Array.isArray(cast) && cast.length > 0 && (
-          <Animated.View
-            entering={FadeIn.delay(400)}
-            style={styles.sectionContainer}
-          >
-            <Text
-              style={[
-                styles.sectionHeader,
-                { color: theme.textPrimary, marginBottom: 16 },
-              ]}
-            >
-              Top Cast
-            </Text>
-
+          <Animated.View entering={FadeIn.delay(300)} style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Cast</Text>
             <FlashList
               horizontal
               data={cast}
               showsHorizontalScrollIndicator={false}
+              estimatedItemSize={90}
               renderItem={({ item: member }) => {
-                const hasImage =
-                  typeof member === "object" && member.profilePath;
+                const hasImage = typeof member === "object" && member.profilePath;
                 const name = typeof member === "string" ? member : member.name;
-
                 return (
                   <View style={styles.castCard}>
-                    <View
-                      style={[
-                        styles.castImgFrame,
-                        {
-                          backgroundColor: theme.surfaceSecondary,
-                          borderColor: theme.border,
-                        },
-                      ]}
-                    >
-                      {hasImage ? (
-                        <Image
-                          source={{ uri: member.profilePath }}
-                          style={styles.castImg}
-                        />
-                      ) : (
-                        <User size={24} color={theme.textMuted} />
-                      )}
+                    <View style={[styles.castImg, { backgroundColor: theme.surfaceSecondary, borderColor: theme.border }]}>
+                      {hasImage ? <Image source={{ uri: member.profilePath }} style={StyleSheet.absoluteFillObject} /> : <User size={22} color={theme.textMuted} />}
                     </View>
-                    <Text
-                      style={[styles.castName, { color: theme.textSecondary }]}
-                      numberOfLines={2}
-                    >
-                      {name}
-                    </Text>
+                    <Text style={[styles.castName, { color: theme.textSecondary }]} numberOfLines={2}>{name}</Text>
                   </View>
                 );
               }}
             />
           </Animated.View>
         )}
-
-        {/* --- Tech Specs / Quality --- */}
-        <View style={styles.sectionContainer}>
-          <View
-            style={[
-              styles.qualityBox,
-              {
-                backgroundColor: `${theme.primary}10`,
-                borderColor: `${theme.primary}30`,
-              },
-            ]}
-          >
-            <View style={styles.qualityLeft}>
-              <Text style={[styles.qualityLabel, { color: theme.primary }]}>
-                STREAM DETAILS
-              </Text>
-              <Text
-                style={[styles.qualityValue, { color: theme.textSecondary }]}
-              >
-                {movie.movie_data?.container_extension?.toUpperCase() || "MP4"}{" "}
-                • 1080p
-              </Text>
-            </View>
-            <View style={[styles.hdBadge, { borderColor: theme.primary }]}>
-              <Text
-                style={{
-                  color: theme.primary,
-                  fontSize: 10,
-                  fontWeight: "900",
-                }}
-              >
-                HD
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={{ height: 40 }} />
       </Animated.ScrollView>
     </View>
   );
@@ -462,265 +272,83 @@ export default function MovieDetailsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingBackdrop: { padding: 20, borderWidth: 1, borderRadius: 100 },
-  errorText: { marginTop: 12, fontSize: 16 },
+  centered: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12 },
+  errorText: { fontSize: 15, fontWeight: "500" },
 
-  // --- Header ---
   stickyHeader: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
-    alignItems: "center",
-    justifyContent: "flex-end",
-    paddingBottom: 12,
-    borderBottomWidth: 1,
+    position: "absolute", top: 0, left: 0, right: 0, zIndex: 100,
+    alignItems: "center", justifyContent: "flex-end",
+    paddingBottom: 12, borderBottomWidth: 1, height: 90,
   },
-  stickyTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    width: "60%",
-    textAlign: "center",
-  },
-  floatingHeader: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 101,
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    pointerEvents: "box-none", // Let touches pass through except on button
-  },
-  backBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    backdropFilter: "blur(10px)",
-  },
+  stickyTitle: { fontSize: 15, fontWeight: "700", width: "65%", textAlign: "center" },
 
-  contentContainer: { paddingBottom: 50 },
+  floatingHeader: { position: "absolute", top: 0, left: 0, right: 0, zIndex: 101, paddingHorizontal: 16, paddingTop: 8 },
+  backBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: "center", alignItems: "center", borderWidth: 1 },
 
-  // --- Backdrop ---
-  backdropContainer: {
-    height: height * 0.55,
-    width: "100%",
-  },
-  backdrop: {
-    width: "100%",
-    height: "100%",
-  },
-  backdropGradient: {
+  backdropContainer: { height: height * 0.5, width: "100%" },
+  backdrop: { width: "100%", height: "100%", resizeMode: "cover" },
+  backdropScrim: {
     ...StyleSheet.absoluteFillObject,
+    opacity: 0.55,
   },
 
-  // --- Hero Section ---
-  heroWrapper: {
-    paddingHorizontal: 20,
-    marginTop: -160, // The negative margin for overlap
+  heroWrapper: { paddingHorizontal: 16, marginTop: -POSTER_HEIGHT * 0.6 },
+  heroRow: { flexDirection: "row", alignItems: "flex-end", gap: 14 },
+
+  posterShadowWrap: {
+    width: POSTER_WIDTH, height: POSTER_HEIGHT,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.6, shadowRadius: 16, elevation: 12,
   },
-  heroContent: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 16,
-  },
-  posterContainer: {
-    width: POSTER_WIDTH,
-    height: POSTER_HEIGHT,
-    position: "relative",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    elevation: 10,
-  },
-  poster: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  posterShadow: {
-    position: "absolute",
-    top: 10,
-    left: 0,
-    right: 0,
-    bottom: -10,
-    borderRadius: 12,
-    opacity: 0.6,
-  },
+  poster: { width: "100%", height: "100%", borderRadius: 10, borderWidth: 1, resizeMode: "cover" },
   ratingBadge: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    overflow: "hidden",
+    position: "absolute", bottom: 8, left: 8,
+    flexDirection: "row", alignItems: "center", gap: 3,
+    paddingHorizontal: 6, paddingVertical: 3, borderRadius: 6,
   },
-  ratingBlur: {
-    ...StyleSheet.absoluteFillObject,
-    opacity: 0.9,
-  },
-  ratingText: {
-    fontSize: 12,
-    fontWeight: "800",
-  },
+  ratingText: { color: "#fbbf24", fontSize: 11, fontWeight: "800" },
 
-  // --- Info Column ---
-  infoColumn: {
-    flex: 1,
-    paddingBottom: 4,
-    gap: 10,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "800",
-    lineHeight: 28,
-    letterSpacing: -0.5,
-    textShadowColor: "rgba(0,0,0,0.8)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-  },
-  metaRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  metaTag: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  metaText: { fontSize: 11, fontWeight: "700" },
-  genreText: { fontSize: 13, fontWeight: "600" },
+  infoCol: { flex: 1, paddingBottom: 6, gap: 8 },
+  title: { fontSize: 22, fontWeight: "800", lineHeight: 26, letterSpacing: -0.3 },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  chip: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  chipText: { fontSize: 11, fontWeight: "600" },
+  genres: { fontSize: 12, fontWeight: "600", lineHeight: 18 },
 
-  miniActions: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 4,
-  },
-  circleBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  actions: { paddingHorizontal: 16, marginTop: 20, gap: 10 },
 
-  // --- Actions ---
-  actionSection: {
-    paddingHorizontal: 20,
-    marginTop: 24,
+  primaryBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    height: 52, borderRadius: 12, gap: 8,
   },
-  playButton: {
-    width: "100%",
-    height: 56,
-    borderRadius: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    overflow: "hidden",
-  },
-  playGradient: { ...StyleSheet.absoluteFillObject },
-  playText: {
-    color: "#000",
-    fontSize: 16,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
+  primaryBtnText: { fontSize: 16, fontWeight: "700" },
 
-  // --- Content Sections ---
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 20,
-  },
-  sectionHeader: {
-    fontSize: 18,
-    fontWeight: "700",
-    letterSpacing: 0.3,
-    marginBottom: 8,
-  },
-  bodyText: {
-    fontSize: 15,
-    lineHeight: 24,
-    opacity: 0.8,
-  },
+  resumeGroup: { gap: 8 },
+  resumeBarBg: { height: 4, borderRadius: 2, overflow: "hidden" },
+  resumeBarFill: { height: "100%", borderRadius: 2 },
+  resumeLabel: { fontSize: 12, fontWeight: "600", textAlign: "center" },
 
-  // Director Box
-  infoBox: {
-    marginHorizontal: 20,
-    marginTop: 24,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
+  secondaryBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    height: 44, borderRadius: 12, gap: 8, borderWidth: 1,
   },
-  infoIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  infoLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    marginBottom: 2,
-  },
-  infoValue: { fontSize: 15, fontWeight: "600" },
+  secondaryBtnText: { fontSize: 14, fontWeight: "600" },
 
-  // Cast
-  castCard: { width: 90, marginRight: 12 },
-  castImgFrame: {
-    width: 90,
-    height: 135,
-    borderRadius: 8,
-    overflow: "hidden",
-    borderWidth: 1,
-    marginBottom: 8,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  castImg: { width: "100%", height: "100%" },
-  castName: { fontSize: 12, fontWeight: "600" },
+  section: { marginTop: 28, paddingHorizontal: 16 },
+  sectionTitle: { fontSize: 17, fontWeight: "700", marginBottom: 10 },
+  body: { fontSize: 14, lineHeight: 22, opacity: 0.85 },
 
-  // Quality
-  qualityBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
+  directorRow: {
+    marginHorizontal: 16, marginTop: 16,
+    padding: 14, borderRadius: 10, borderWidth: 1, gap: 2,
   },
-  qualityLeft: { gap: 4 },
-  qualityLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1 },
-  qualityValue: { fontSize: 13, fontWeight: "600" },
-  hdBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    borderWidth: 1.5,
+  directorLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1.5 },
+  directorName: { fontSize: 15, fontWeight: "600" },
+
+  castCard: { width: 80, marginRight: 12 },
+  castImg: {
+    width: 80, height: 110, borderRadius: 8, borderWidth: 1,
+    overflow: "hidden", marginBottom: 6,
+    justifyContent: "center", alignItems: "center",
   },
+  castName: { fontSize: 11, fontWeight: "600", lineHeight: 15 },
 });

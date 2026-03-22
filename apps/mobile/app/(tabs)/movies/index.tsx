@@ -55,14 +55,25 @@ export default function MovieExplorer() {
     }
   }, [categories, selectedCategoryId]);
 
-  const { data: movies, isLoading: loadingMovies } =
-    trpc.movies.getMovies.useQuery(
-      {
-        playlistId: selectPlaylist?.id ?? 0,
-        categoryId: selectedCategoryId ?? 0,
-      },
-      { enabled: !!selectedCategoryId },
-    );
+  const {
+    data: moviesData,
+    isLoading: loadingMovies,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = trpc.movies.getMovies.useInfiniteQuery(
+    {
+      playlistId: selectPlaylist?.id ?? 0,
+      categoryId: selectedCategoryId ?? 0,
+      limit: 50,
+    },
+    {
+      enabled: !!selectedCategoryId,
+      getNextPageParam: (lastPage) => lastPage.nextCursor,
+    },
+  );
+
+  const movies = moviesData?.pages.flatMap((p) => p.items) ?? [];
 
   const selectedCategory = categories?.find(
     (c) => c.categoryId === selectedCategoryId,
@@ -217,6 +228,17 @@ export default function MovieExplorer() {
             contentContainerStyle={styles.gridContent}
             showsVerticalScrollIndicator={false}
             keyExtractor={(item) => item.streamId.toString()}
+            onEndReached={() => hasNextPage && fetchNextPage()}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={
+              isFetchingNextPage ? (
+                <ActivityIndicator
+                  size="small"
+                  color={theme.primary}
+                  style={{ marginVertical: 16 }}
+                />
+              ) : null
+            }
           />
         ) : (
           <Animated.View entering={FadeIn} style={styles.emptyState}>

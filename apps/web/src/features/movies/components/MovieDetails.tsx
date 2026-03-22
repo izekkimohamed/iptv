@@ -8,9 +8,9 @@ import { Suspense, useState } from 'react';
 import { CastSection } from '@/shared/components/common/CastSection';
 import { TrailerModal } from '@/shared/components/common/TrailerModels';
 import { TrailersSection } from '@/shared/components/common/TrailersSection';
+import { VideoPlayerModal } from '@/shared/components/common/VideoPlayerModal';
 import { Button } from '@/shared/components/ui/button';
 import { useMoviePlayback, useStreamingUrls, useTrailerPlayback } from '@/shared/hooks/useDetails';
-import { VideoPlayerModal } from '@/shared/components/common/VideoPlayerModal';
 import { usePlaylistStore, useWatchedMoviesStore } from '@repo/store';
 
 interface MovieDetailsProps {
@@ -72,8 +72,8 @@ function MovieDetailsContent({
           onError={() => setImgError(true)}
         />
         <div className="absolute inset-0 bg-background/70 " />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 via-50% to-transparent to-100%" />
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-transparent to-transparent from-10% via-50% to-100% hidden lg:block" />
+        <div className="absolute inset-0 bg-linear-to-t from-background via-background/60 via-50% to-transparent to-100%" />
+        <div className="absolute inset-0 bg-linear-to-r from-background via-transparent to-transparent from-10% via-50% to-100% hidden lg:block" />
 
       </div>
 
@@ -82,7 +82,7 @@ function MovieDetailsContent({
         <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-16">
 
           {/* Poster Card */}
-          <div className="relative h-[480px] w-full max-w-[320px] shrink-0 overflow-hidden rounded-sm border border-white/10 shadow-2xl transition-transform duration-500 hover:scale-[1.02] lg:h-[540px] lg:max-w-[360px]">
+          <div className="relative h-120 w-full max-w-[320px] shrink-0 overflow-hidden rounded-sm border border-white/10 shadow-2xl transition-transform duration-500 hover:scale-[1.02] lg:h-135 lg:max-w-90">
             <Image
               src={image}
               alt={name}
@@ -99,68 +99,68 @@ function MovieDetailsContent({
             <div className="space-y-4">
 
 
-               <h1 className="text-5xl font-black tracking-tight text-foreground sm:text-2xl lg:text-5xl drop-shadow-2xl">
-                 {name}
-               </h1>
+              <h1 className="text-5xl font-black tracking-tight text-foreground sm:text-2xl lg:text-5xl drop-shadow-2xl">
+                {name}
+              </h1>
 
-               {tmdb?.tagline && (
-                 <p className="text-xl font-medium text-primary/80 italic tracking-tight">
-                    {tmdb.tagline}
-                 </p>
-               )}
-                    <div className="flex flex-wrap items-center gap-4">
-                  <div className="flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1 text-sm font-black text-primary backdrop-blur-md">
-                     <Star className="h-4 w-4 fill-current" />
-                     {tmdb?.voteAverage ? tmdb.voteAverage.toFixed(1) : parseFloat(rating).toFixed(1)}
-                     {tmdb?.voteCount && (
-                       <span className="text-primary/60 text-xs font-medium">({tmdb.voteCount.toLocaleString()})</span>
-                     )}
+              {tmdb?.tagline && (
+                <p className="text-xl font-medium text-primary/80 italic tracking-tight">
+                  {tmdb.tagline}
+                </p>
+              )}
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1 text-sm font-black text-primary backdrop-blur-md">
+                  <Star className="h-4 w-4 fill-current" />
+                  {tmdb?.voteAverage ? tmdb.voteAverage.toFixed(1) : parseFloat(rating).toFixed(1)}
+                  {tmdb?.voteCount && (
+                    <span className="text-primary/60 text-xs font-medium">({tmdb.voteCount.toLocaleString()})</span>
+                  )}
+                </div>
+                {tmdb?.release_date && (
+                  <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-sm font-bold text-foreground/80 backdrop-blur-md">
+                    <Calendar className="h-4 w-4" />
+                    {new Date(tmdb.release_date).getFullYear()}
                   </div>
-                  {tmdb?.release_date && (
-                    <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-sm font-bold text-foreground/80 backdrop-blur-md">
-                       <Calendar className="h-4 w-4" />
-                       {new Date(tmdb.release_date).getFullYear()}
-                    </div>
-                  )}
-                  {tmdb?.runtime && (
-                    <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-sm font-bold text-foreground/80 backdrop-blur-md">
-                       <Clock className="h-4 w-4" />
-                       {Math.floor(tmdb.runtime / 60)}h {tmdb.runtime % 60}m
-                    </div>
-                  )}
-                  {tmdb?.status && (
-                    <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-sm font-bold text-foreground/80 backdrop-blur-md">
-                      {tmdb.status}
-                    </div>
-                  )}
-                  {tmdb?.originalLanguage && (
-                    <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-sm font-bold text-foreground/80 backdrop-blur-md uppercase">
-                      {tmdb.originalLanguage}
-                    </div>
-                  )}
-               </div>
-                {/* Additional Metadata */}
-            {tmdb?.genres && (
-              <div className="flex flex-wrap gap-2 pt-6">
-                {tmdb.genres.map((genre: any) => (
-                  <span key={genre.id} className="rounded-sm border border-white/5 bg-white/5 px-3 py-1.5 text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                    {genre.name}
-                  </span>
-                ))}
+                )}
+                {tmdb?.runtime && (
+                  <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-sm font-bold text-foreground/80 backdrop-blur-md">
+                    <Clock className="h-4 w-4" />
+                    {Math.floor(tmdb.runtime / 60)}h {tmdb.runtime % 60}m
+                  </div>
+                )}
+                {tmdb?.status && (
+                  <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-sm font-bold text-foreground/80 backdrop-blur-md">
+                    {tmdb.status}
+                  </div>
+                )}
+                {tmdb?.originalLanguage && (
+                  <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-sm font-bold text-foreground/80 backdrop-blur-md uppercase">
+                    {tmdb.originalLanguage}
+                  </div>
+                )}
               </div>
-            )}
-            {tmdb?.director && (
-              <div className="flex items-center gap-2 pt-2 text-sm text-foreground/60">
-                <span className="font-medium">Directed by</span>
-                <span>{tmdb.director}</span>
-              </div>
-            )}
-            {tmdb?.productionCountries && tmdb.productionCountries.length > 0 && (
-              <div className="flex items-center gap-2 pt-1 text-sm text-foreground/60">
-                <span className="font-medium">Country</span>
-                <span>{tmdb.productionCountries.join(', ')}</span>
-              </div>
-            )}
+              {/* Additional Metadata */}
+              {tmdb?.genres && (
+                <div className="flex flex-wrap gap-2 pt-6">
+                  {tmdb.genres.map((genre: any) => (
+                    <span key={genre.id} className="rounded-sm border border-white/5 bg-white/5 px-3 py-1.5 text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                      {genre.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {tmdb?.director && (
+                <div className="flex items-center gap-2 pt-2 text-sm text-foreground/60">
+                  <span className="font-medium">Directed by</span>
+                  <span>{tmdb.director}</span>
+                </div>
+              )}
+              {tmdb?.productionCountries && tmdb.productionCountries.length > 0 && (
+                <div className="flex items-center gap-2 pt-1 text-sm text-foreground/60">
+                  <span className="font-medium">Country</span>
+                  <span>{tmdb.productionCountries.join(', ')}</span>
+                </div>
+              )}
             </div>
 
             <p className="max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl font-medium">
@@ -168,18 +168,18 @@ function MovieDetailsContent({
             </p>
 
             <div className="flex flex-wrap items-center gap-4 pt-4">
-               <Button
+              <Button
                 onClick={handlePlayMovie}
                 className="h-16 rounded-sm px-10 text-lg font-black shadow-2xl shadow-primary/20 transition-all hover:scale-105 active:scale-95"
-               >
-                  <Play className="mr-3 h-6 w-6 fill-current" />
-                  Watch Now
-               </Button>
+              >
+                <Play className="mr-3 h-6 w-6 fill-current" />
+                Watch Now
+              </Button>
 
-               <Button variant="outline" className="h-16 rounded-sm border-white/10 bg-white/5 px-8 text-lg font-bold backdrop-blur-md transition-all hover:bg-white/10 active:scale-95">
-                  <Tag className="mr-2 h-5 w-5" />
-                  Add to List
-               </Button>
+              <Button variant="outline" className="h-16 rounded-sm border-white/10 bg-white/5 px-8 text-lg font-bold backdrop-blur-md transition-all hover:bg-white/10 active:scale-95">
+                <Tag className="mr-2 h-5 w-5" />
+                Add to List
+              </Button>
             </div>
 
 
@@ -188,8 +188,8 @@ function MovieDetailsContent({
 
         {/* Sections: Cast & Trailers */}
 
-           {tmdb?.cast && <CastSection cast={tmdb.cast} />}
-           {tmdb?.videos && <TrailersSection videos={tmdb.videos} onTrailerClick={handleTrailerClick} />}
+        {tmdb?.cast && <CastSection cast={tmdb.cast} />}
+        {tmdb?.videos && <TrailersSection videos={tmdb.videos} onTrailerClick={handleTrailerClick} />}
 
       </div>
 
