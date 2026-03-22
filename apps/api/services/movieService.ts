@@ -1,6 +1,6 @@
 import { batchInsert, getTmdbInfo } from "@/trpc/common";
 import { getDb } from "@/trpc/db";
-import { movies } from "@/trpc/schema";
+import { movies, playlists } from "@/trpc/schema";
 import { cleanName } from "@/utils/cleanName";
 import { Xtream } from "@iptv/xtream-api";
 import { and, asc, eq, gt, ilike } from "drizzle-orm";
@@ -45,7 +45,7 @@ export async function getMoviesFromDb(input: {
 
 export async function fetchAndPrepareMovies(
   playlistId: number,
-  xtreamClient: Xtream
+  xtreamClient: Xtream,
 ) {
   const db = getDb();
   const fetched = await xtreamClient.getMovies();
@@ -91,11 +91,12 @@ export async function getMovieDetails(
   url: string,
   username: string,
   password: string,
-  movieId: number
+  movieId: number,
 ) {
   const res = await fetch(
-    `${url}/player_api.php?username=${username}&password=${password}&action=get_vod_info&vod_id=${movieId}`
+    `${url}/player_api.php?username=${username}&password=${password}&action=get_vod_info&vod_id=${movieId}`,
   );
+  console.log(JSON.stringify(res, null, 2));
   const data = await res.json();
   if (!data) throw new Error("Failed to get movie details from Xtream API");
 
@@ -103,7 +104,7 @@ export async function getMovieDetails(
     "movie",
     data.info.tmdb_id,
     cleanName(data.movie_data.name),
-    new Date(data.info.releasedate).getFullYear()
+    new Date(data.info.releasedate).getFullYear(),
   );
   return { ...data, tmdb: details };
 }
@@ -113,60 +114,50 @@ export async function getTmdbMovieMatches(tmdbId: number, playlistId: number) {
   if (!tmdbDetails) return [];
 
   const db = getDb();
-  const dbMovies = await db
-    .select()
-    .from(movies)
-    .where(
-      and(
-        ilike(movies.name, `%${tmdbDetails.title}%`),
-        eq(movies.playlistId, playlistId)
+  const [playlist, dbMovies] = await Promise.all([
+    db.select().from(playlists).where(eq(playlists.id, playlistId)).limit(1),
+    db
+      .select()
+      .from(movies)
+      .where(
+        and(
+          ilike(movies.name, `%${tmdbDetails.title}%`),
+          eq(movies.playlistId, playlistId),
+        ),
       )
-    )
-    .execute();
+      .execute(),
+  ]);
 
-  if (dbMovies.length === 0) {
-    const tmdb = {
-      ...tmdbDetails,
-      overview: tmdbDetails.overview ?? null,
-      genres: tmdbDetails.genres ?? null,
-      runtime: tmdbDetails.runtime ?? null,
-      releaseDate: tmdbDetails.releaseDate ?? null,
-    };
-    return [{ tmdb, dbMovies: [] }];
-  }
+  if (!playlist[0]) throw new Error("Playlist not found");
+  if (dbMovies.length === 0) return [{ tmdb: tmdbDetails, dbMovies: [] }];
 
+  const { baseUrl, username, password } = playlist[0];
   const tmdbYear =
     tmdbDetails.releaseDate ?
       new Date(tmdbDetails.releaseDate).getFullYear()
     : null;
 
-  const matched: typeof dbMovies = [];
-  for (const movie of dbMovies) {
-    const baseUrl = movie.url.split("/movie")[0];
-    const username = movie.url.split("/")[4];
-    const password = movie.url.split("/")[5];
+  const results = await Promise.all(
+    dbMovies.map(async (movie) => {
+      try {
+        const res = await fetch(
+          `${baseUrl}/player_api.php?username=${username}&password=${password}&action=get_vod_info&vod_id=${movie.streamId}`,
+        );
+        const movieInfo = await res.json();
+        const movieYear =
+          movieInfo.info?.releasedate ?
+            new Date(movieInfo.info.releasedate).getFullYear()
+          : null;
+        if (tmdbYear && movieYear && movieYear !== tmdbYear) return null;
+        return movie;
+      } catch {
+        return movie;
+      }
+    }),
+  );
 
-    const res = await fetch(
-      `${baseUrl}/player_api.php?username=${username}&password=${password}&action=get_vod_info&vod_id=${movie.streamId}`
-    );
-    const movieInfo = await res.json();
-    const movieYear =
-      movieInfo.info?.releasedate ?
-        new Date(movieInfo.info.releasedate).getFullYear()
-      : null;
-
-    if (!movieYear) continue;
-    if (tmdbYear && movieYear === tmdbYear) {
-      matched.push(movie);
-    }
-  }
-
-  const tmdb = {
-    ...tmdbDetails,
-    overview: tmdbDetails.overview ?? null,
-    genres: tmdbDetails.genres ?? null,
-    runtime: tmdbDetails.runtime ?? null,
-    releaseDate: tmdbDetails.releaseDate ?? null,
-  };
-  return [{ tmdb, dbMovies: matched }];
+  const matched = results.filter(
+    (m): m is (typeof dbMovies)[number] => m !== null,
+  );
+  return [{ tmdb: tmdbDetails, dbMovies: matched }];
 }

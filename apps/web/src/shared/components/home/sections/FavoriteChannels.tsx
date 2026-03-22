@@ -11,7 +11,7 @@ import { usePlaylistStore } from '@repo/store';
 function FavoriteChannels() {
   const { selectedPlaylist: playlist } = usePlaylistStore();
 
-  const { data: favoriteChannelsData } = trpc.channels.getChannels.useQuery(
+  const { data: favoriteChannels = [] } = trpc.channels.getChannels.useQuery(
     {
       favorites: true,
       playlistId: playlist?.id || 0,
@@ -20,8 +20,6 @@ function FavoriteChannels() {
       enabled: !!playlist,
     },
   );
-
-  const favoriteChannels = favoriteChannelsData?.items || [];
 
   if (favoriteChannels.length === 0) return null;
 

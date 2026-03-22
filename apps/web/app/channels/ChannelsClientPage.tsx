@@ -31,17 +31,15 @@ function ChannelsContentInner() {
   const { setMedia, src, poster, title } = usePlayerStore();
   const { selectedPlaylist: playlist } = usePlaylistStore();
 
-  const { data: infiniteChannels, isLoading: isFetchingChannels, fetchNextPage, hasNextPage, isFetchingNextPage } = trpc.channels.getChannels.useInfiniteQuery(
+  const { data: channels = [], isLoading: isFetchingChannels } = trpc.channels.getChannels.useQuery(
     {
       categoryId: parseInt(selectedCategoryId || '0'),
       playlistId: playlist?.id || 0,
     },
     {
-      getNextPageParam: (lastPage) => lastPage.nextCursor,
       enabled: !!selectedCategoryId && !!playlist,
     },
   );
-  const channels = infiniteChannels?.pages.flatMap((page) => page.items) || [];
 
   const selectedIndex = useMemo(() => {
     if (!channels || !selectedChannelId) return -1;

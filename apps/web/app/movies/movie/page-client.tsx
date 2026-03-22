@@ -11,12 +11,11 @@ import { DetailSkeleton } from '@/shared/components/common/DetailSkeleton';
 import { HeaderSection } from '@/shared/components/common/HeaderSection';
 import { TrailerModal } from '@/shared/components/common/TrailerModels';
 import { TrailersSection } from '@/shared/components/common/TrailersSection';
+import { VideoPlayerModal } from '@/shared/components/common/VideoPlayerModal';
 import { Button } from '@/shared/components/ui/button';
 import { trpc } from '@/shared/lib/trpc';
-import { VideoPlayerModal } from '@/shared/components/common/VideoPlayerModal';
 import { usePlaylistStore } from '@repo/store';
 import Image from 'next/image';
-import LoadingSpinner from '@/shared/components/ui/LoadingSpinner';
 
 function PageContent() {
   const searchParams = useSearchParams();
@@ -116,9 +115,16 @@ function PageContent() {
           releaseDate={tmdb.releaseDate ?? ''}
           runtime={tmdb.runtime ?? 0}
           genres={tmdb.genres ?? []}
-          dbMovies={movie.dbMovies}
-          currentSrc={srcUrl} // Pass the state from Page
-          handlePlayMovie={handlePlayMovie} // Pass the function from Page
+          tagline={tmdb.tagline}
+          status={tmdb.status}
+          voteAverage={tmdb.voteAverage}
+          voteCount={tmdb.voteCount}
+          director={tmdb.director}
+          productionCountries={tmdb.productionCountries}
+          spokenLanguages={tmdb.spokenLanguages}
+          dbMovies={movie.dbMovies || []}
+          currentSrc={srcUrl}
+          handlePlayMovie={handlePlayMovie}
           onBack={() => window.history.back()}
         />
         {/* --- 3. MAIN CONTENT --- */}

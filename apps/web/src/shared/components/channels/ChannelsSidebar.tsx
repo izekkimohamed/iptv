@@ -2,64 +2,33 @@ import { Search, Star, Tv, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import React, { Suspense, useEffect, useState } from 'react';
+import React, { Suspense, useState } from 'react';
 
 import { Input } from '../ui/input';
 
 import { useAutoScrollToSelected } from '@/shared/hooks/useAutoScrollToSelected';
 import { Channel } from '@/shared/lib/types';
-import { usePlayerStore, usePlaylistStore } from '@repo/store';
+import { usePlayerStore } from '@repo/store';
 
-import { trpc } from '@/shared/lib/trpc';
 import { cn } from '@/shared/lib/utils';
 import LoadingSpinner from '../ui/LoadingSpinner';
 
 interface ChannelsSidebarProps {
   channels?: Channel[];
   isLoading: boolean;
-  hasNextPage?: boolean;
-  isFetchingNextPage?: boolean;
-  fetchNextPage?: () => void;
 }
 
 function ChannelsSidebarContent({
   channels,
   isLoading,
-  hasNextPage,
-  isFetchingNextPage,
-  fetchNextPage,
 }: ChannelsSidebarProps) {
   const selectedCategoryId = useSearchParams().get('categoryId');
   const selectedChannelId = useSearchParams().get('channelId');
   const listRef = React.useRef<HTMLDivElement | null>(null);
   const newChannels = useSearchParams().get('new');
-  const selectedPlaylist = usePlaylistStore((state) => state.selectedPlaylist);
   const { setSrc, setTitle } = usePlayerStore();
   const [searchValue, setSearchValue] = useState('');
-  const [filteredChannels, setFilteredChannels] = useState<Channel[]>([]);
 
-  const { data: newChannelsData, isLoading: loadingNewData } = trpc.new.getNewChannels.useQuery(
-    {
-      playlistId: selectedPlaylist?.id || 0,
-    },
-    {
-      enabled: !!newChannels,
-    },
-  );
-
-  useEffect(() => {
-    const list = newChannels ? newChannelsData : channels;
-    if (!list) return;
-
-    if (!searchValue) {
-      setFilteredChannels(list as Channel[]);
-      return;
-    }
-
-    setFilteredChannels(
-      (list as Channel[]).filter((c) => c.name.toLowerCase().includes(searchValue.toLowerCase())),
-    );
-  }, [channels, newChannelsData, newChannels, searchValue]);
 
   useAutoScrollToSelected({
     containerRef: listRef,
@@ -97,17 +66,6 @@ function ChannelsSidebarContent({
       <div
         className="scrollbar-hide flex-1 overflow-y-auto p-2"
         ref={listRef}
-        onScroll={(e) => {
-          const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-          if (
-            scrollHeight - scrollTop <= clientHeight * 1.5 &&
-            hasNextPage &&
-            !isFetchingNextPage &&
-            fetchNextPage
-          ) {
-            fetchNextPage();
-          }
-        }}
       >
         {!selectedCategoryId && !newChannels ? (
           <div className="flex h-full flex-col items-center justify-center space-y-4 text-center">
@@ -116,11 +74,11 @@ function ChannelsSidebarContent({
               Select a category to view channels
             </p>
           </div>
-        ) : isLoading || loadingNewData ? (
+        ) : isLoading ? (
           <div className="flex h-full items-center justify-center">
             <LoadingSpinner />
           </div>
-        ) : !channels?.length && !newChannelsData ? (
+        ) : !channels?.length ? (
           <div className="flex h-full flex-col items-center justify-center space-y-4 text-center">
             <Tv className="text-muted-foreground/40 h-12 w-12" />
             <p className="text-muted-foreground text-sm font-medium">
@@ -129,7 +87,7 @@ function ChannelsSidebarContent({
           </div>
         ) : (
           <div className="flex flex-col gap-1">
-            {filteredChannels.map((channel, index) => {
+            {channels.map((channel, index) => {
               const id = newChannels ? index.toString() : (channel as Channel).id.toString();
               const isSelected = selectedChannelId === id;
 
@@ -197,7 +155,7 @@ function ChannelsSidebarContent({
                 </button>
               ) : (
                 <Link
-                  key={(channel as Channel).id}
+                  key={(channel as Channel).streamId}
                   href={`/channels?categoryId=${selectedCategoryId}&channelId=${(channel as Channel).id}`}
                   data-channel-id={(channel as Channel).id}
                   className="w-full outline-none"
@@ -206,11 +164,6 @@ function ChannelsSidebarContent({
                 </Link>
               );
             })}
-            {isFetchingNextPage && (
-              <div className="flex justify-center p-4">
-                <LoadingSpinner />
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -220,7 +173,7 @@ function ChannelsSidebarContent({
         <div className="text-muted-foreground/60 flex items-center justify-between text-[10px] font-black tracking-widest uppercase">
           <span>{searchValue ? 'Matches Found' : 'Total Channels'}</span>
           <span className="text-foreground rounded-sm bg-white/5 px-2 py-0.5 ring-1 ring-white/10">
-            {filteredChannels.length}
+            {channels?.length}
           </span>
         </div>
       </div>

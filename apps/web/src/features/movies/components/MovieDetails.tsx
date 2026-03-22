@@ -111,7 +111,10 @@ function MovieDetailsContent({
                     <div className="flex flex-wrap items-center gap-4">
                   <div className="flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1 text-sm font-black text-primary backdrop-blur-md">
                      <Star className="h-4 w-4 fill-current" />
-                     {parseFloat(rating).toFixed(1)} / 10
+                     {tmdb?.voteAverage ? tmdb.voteAverage.toFixed(1) : parseFloat(rating).toFixed(1)}
+                     {tmdb?.voteCount && (
+                       <span className="text-primary/60 text-xs font-medium">({tmdb.voteCount.toLocaleString()})</span>
+                     )}
                   </div>
                   {tmdb?.release_date && (
                     <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-sm font-bold text-foreground/80 backdrop-blur-md">
@@ -125,6 +128,16 @@ function MovieDetailsContent({
                        {Math.floor(tmdb.runtime / 60)}h {tmdb.runtime % 60}m
                     </div>
                   )}
+                  {tmdb?.status && (
+                    <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-sm font-bold text-foreground/80 backdrop-blur-md">
+                      {tmdb.status}
+                    </div>
+                  )}
+                  {tmdb?.originalLanguage && (
+                    <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-sm font-bold text-foreground/80 backdrop-blur-md uppercase">
+                      {tmdb.originalLanguage}
+                    </div>
+                  )}
                </div>
                 {/* Additional Metadata */}
             {tmdb?.genres && (
@@ -134,6 +147,18 @@ function MovieDetailsContent({
                     {genre.name}
                   </span>
                 ))}
+              </div>
+            )}
+            {tmdb?.director && (
+              <div className="flex items-center gap-2 pt-2 text-sm text-foreground/60">
+                <span className="font-medium">Directed by</span>
+                <span>{tmdb.director}</span>
+              </div>
+            )}
+            {tmdb?.productionCountries && tmdb.productionCountries.length > 0 && (
+              <div className="flex items-center gap-2 pt-1 text-sm text-foreground/60">
+                <span className="font-medium">Country</span>
+                <span>{tmdb.productionCountries.join(', ')}</span>
               </div>
             )}
             </div>

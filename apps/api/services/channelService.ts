@@ -2,18 +2,14 @@ import { batchInsert } from "@/trpc/common";
 import { getDb } from "@/trpc/db";
 import { channels } from "@/trpc/schema";
 import { Xtream } from "@iptv/xtream-api";
-import { and, asc, desc, eq, gt } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 
 export async function getChannelsFromDb(input: {
   playlistId: number;
   categoryId?: number;
   favorites?: boolean;
-  cursor?: number | null;
-  limit?: number;
 }) {
   const db = getDb();
-  const limit = input.limit ?? 50;
-  const cursor = input.cursor;
 
   const whereConditions = [eq(channels.playlistId, input.playlistId)];
 
@@ -25,36 +21,22 @@ export async function getChannelsFromDb(input: {
     whereConditions.push(eq(channels.isFavorite, true));
   }
 
-  if (cursor) {
-    whereConditions.push(gt(channels.id, cursor));
-  }
-
   const result = await db
     .select()
     .from(channels)
     .where(and(...whereConditions))
-    .orderBy(asc(channels.id)) // Use ID for cursor-based pagination
-    .limit(limit + 1);
+    .orderBy(desc(channels.isFavorite), asc(channels.createdAt));
 
-  let nextCursor: typeof cursor | undefined = undefined;
-  if (result.length > limit) {
-    const nextItem = result.pop();
-    nextCursor = nextItem?.id;
-  }
-
-  return {
-    items: result.map((c) => ({
-      ...c,
-      streamIcon: c.streamIcon ?? undefined,
-      isFavorite: c.isFavorite ?? undefined,
-    })),
-    nextCursor,
-  };
+  return result.map((c) => ({
+    ...c,
+    streamIcon: c.streamIcon ?? undefined,
+    isFavorite: c.isFavorite ?? false,
+  }));
 }
 
 export async function fetchAndPrepareChannels(
   playlistId: number,
-  xtreamClient: Xtream
+  xtreamClient: Xtream,
 ) {
   const db = getDb();
   const fetched = await xtreamClient.getChannels();
@@ -79,24 +61,15 @@ export async function fetchAndPrepareChannels(
       url: c.url || "",
     }));
 
-  const toDelete = fetched
-    .filter((c) => !fetchedMap.has(Number(c.stream_id)))
-    .map((c) => ({
-      categoryId: +c.category_id,
-      name: c.name || "Unknown channel",
-      streamType: c.stream_type,
-      streamId: c.stream_id,
-      streamIcon: c.stream_icon || "",
-      playlistId,
-      isFavorite: false,
-      url: c.url || "",
-    }));
+  const toDelete = existing
+    .filter((c) => !fetchedMap.has(Number(c.streamId)))
+    .map((c) => ({ streamId: c.streamId, playlistId }));
 
   return { newChannels, toDelete };
 }
 
 export async function insertChannels(
-  newChannels: (typeof channels.$inferInsert)[]
+  newChannels: (typeof channels.$inferInsert)[],
 ) {
   if (newChannels.length === 0) return;
 
@@ -108,7 +81,7 @@ export async function insertChannels(
 
 export async function toggleChannelFavorite(
   channelId: number,
-  isFavorite: boolean
+  isFavorite: boolean,
 ) {
   const db = getDb();
   const existing = await db

@@ -12,12 +12,12 @@ import {
 import { getDb } from "@/trpc/db";
 import {
   categories,
-  paginationInputSchema,
+  channels,
   zodCategoriesSchema,
   zodChannelsSchema,
 } from "@/trpc/schema";
 import { createXtreamClient } from "@/utils/xtream";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { publicProcedure, t } from "../trpc";
 
@@ -28,14 +28,9 @@ export const channelsRouter = t.router({
         playlistId: z.number(),
         categoryId: z.number().optional(),
         favorites: z.boolean().optional(),
-        cursor: z.number().nullish(),
-        limit: z.number().min(1).max(100).default(50),
       }),
     )
-    .output(z.object({
-      items: z.array(zodChannelsSchema),
-      nextCursor: z.number().nullish(),
-    }))
+    .output(z.array(zodChannelsSchema))
     .query(async ({ input }) => {
       return await getChannelsFromDb(input);
     }),
@@ -183,6 +178,7 @@ export const channelsRouter = t.router({
         url: c.url,
         streamIcon: c.streamIcon ?? undefined,
         isFavorite: c.isFavorite ?? undefined,
+        createdAt: c.createdAt,
       }));
     }),
 

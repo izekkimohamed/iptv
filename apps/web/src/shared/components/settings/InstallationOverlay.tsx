@@ -73,50 +73,61 @@ const InstallationOverlay = ({
             </div>
           </div>
 
-          {/* Stages Grid */}
-          <div className="grid grid-cols-2 gap-3 border-t border-white/5 pt-4">
-            {Object.values(CreationStage)
-              .filter((s) => s !== 'completed')
-              .map((stage) => {
-                const status = getStageStatus(stage);
-                return (
-                  <div
-                    key={stage}
-                    className={cn(
-                      'flex items-center gap-3 rounded-sm border px-4 py-3 transition-all duration-300',
-                      status === 'active'
-                        ? 'translate-x-1 border-primary bg-primary/10 shadow-[0_0_15px_-5px_rgba(var(--primary),0.3)]'
-                        : status === 'completed'
-                          ? 'border-emerald-500/20 bg-emerald-500/5 opacity-80'
-                          : 'border-white/5 bg-neutral-800/30 opacity-40',
-                    )}
-                  >
-                    {status === 'active' && (
-                      <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
-                    )}
-                    {status === 'completed' && (
-                      <Check className="h-4 w-4 shrink-0 text-emerald-500" />
-                    )}
-                    {status === 'pending' && (
-                      <div className="h-4 w-4 shrink-0 rounded-full border border-neutral-600" />
-                    )}
-
-                    <span
+          {/* Stages Grid — only shown during first-time creation */}
+          {!isUpdating && (
+            <div className="grid grid-cols-2 gap-3 border-t border-white/5 pt-4">
+              {Object.values(CreationStage)
+                .filter((s) => s !== 'completed')
+                .map((stage) => {
+                  const status = getStageStatus(stage);
+                  return (
+                    <div
+                      key={stage}
                       className={cn(
-                        'text-xs font-bold tracking-wider uppercase',
+                        'flex items-center gap-3 rounded-sm border px-4 py-3 transition-all duration-300',
                         status === 'active'
-                          ? 'text-white'
+                          ? 'translate-x-1 border-primary bg-primary/10 shadow-[0_0_15px_-5px_rgba(var(--primary),0.3)]'
                           : status === 'completed'
-                            ? 'text-emerald-400'
-                            : 'text-neutral-500',
+                            ? 'border-emerald-500/20 bg-emerald-500/5 opacity-80'
+                            : 'border-white/5 bg-neutral-800/30 opacity-40',
                       )}
                     >
-                      {stage}
-                    </span>
-                  </div>
-                );
-              })}
-          </div>
+                      {status === 'active' && (
+                        <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
+                      )}
+                      {status === 'completed' && (
+                        <Check className="h-4 w-4 shrink-0 text-emerald-500" />
+                      )}
+                      {status === 'pending' && (
+                        <div className="h-4 w-4 shrink-0 rounded-full border border-neutral-600" />
+                      )}
+                      <span
+                        className={cn(
+                          'text-xs font-bold tracking-wider uppercase',
+                          status === 'active'
+                            ? 'text-white'
+                            : status === 'completed'
+                              ? 'text-emerald-400'
+                              : 'text-neutral-500',
+                        )}
+                      >
+                        {stage}
+                      </span>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+
+          {/* Single status row shown during update */}
+          {isUpdating && (
+            <div className="flex items-center gap-3 rounded-sm border border-primary bg-primary/10 px-4 py-3 border-t border-white/5 mt-4">
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
+              <span className="text-xs font-bold tracking-wider uppercase text-white">
+                Syncing channels, movies &amp; series…
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>

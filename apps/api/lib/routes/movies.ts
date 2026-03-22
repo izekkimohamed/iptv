@@ -12,16 +12,49 @@ import {
 } from "@/services/movieService";
 import { getTmdbInfo } from "@/trpc/common";
 import { getDb } from "@/trpc/db";
-import {
-  categories,
-  paginationInputSchema,
-  zodCategoriesSchema,
-  zodMovieSchema,
-} from "@/trpc/schema";
+import { categories, zodCategoriesSchema, zodMovieSchema } from "@/trpc/schema";
 import { createXtreamClient } from "@/utils/xtream";
 import { and, asc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { publicProcedure, t } from "../trpc";
+
+const tmdbInfoSchema = z.object({
+  id: z.number(),
+  title: z.string(),
+  overview: z.string().nullable(),
+  tagline: z.string().nullable(),
+  status: z.string().nullable(),
+  voteAverage: z.number().nullable(),
+  voteCount: z.number().nullable(),
+  popularity: z.number().nullable(),
+  originalLanguage: z.string().nullable(),
+  spokenLanguages: z.array(z.string()).nullable(),
+  productionCountries: z.array(z.string()).nullable(),
+  genres: z.array(z.object({ id: z.number(), name: z.string() })).nullable(),
+  runtime: z.number().nullable(),
+  numberOfSeasons: z.number().nullable(),
+  numberOfEpisodes: z.number().nullable(),
+  networks: z
+    .array(z.object({ name: z.string(), logo: z.string().nullable() }))
+    .nullable(),
+  createdBy: z.array(z.string()).nullable(),
+  releaseDate: z.string().nullable(),
+  poster: z.string().nullable(),
+  backdrop: z.string().nullable(),
+  director: z.string().nullable(),
+  cast: z.array(
+    z.object({ name: z.string(), profilePath: z.string().nullable() }),
+  ),
+  videos: z.array(
+    z.object({
+      id: z.string(),
+      key: z.string(),
+      site: z.string(),
+      type: z.string(),
+      name: z.string(),
+    }),
+  ),
+});
 
 export const moviesRouter = t.router({
   getMovies: publicProcedure
@@ -31,13 +64,13 @@ export const moviesRouter = t.router({
         categoryId: z.number(),
         cursor: z.number().nullish(),
         limit: z.number().min(1).max(100).default(50),
-      })
+      }),
     )
     .output(
       z.object({
         items: z.array(zodMovieSchema),
         nextCursor: z.number().nullish(),
-      })
+      }),
     )
     .query(async ({ input }) => {
       return await getMoviesFromDb(input);
@@ -50,14 +83,14 @@ export const moviesRouter = t.router({
         username: z.string(),
         password: z.string(),
         movieId: z.number(),
-      })
+      }),
     )
     .query(async ({ input }) => {
       return await getMovieDetails(
         input.url,
         input.username,
         input.password,
-        input.movieId
+        input.movieId,
       );
     }),
 
@@ -66,63 +99,16 @@ export const moviesRouter = t.router({
       z.object({
         tmdbId: z.number(),
         playlistId: z.number(),
-      })
+      }),
     )
     .output(
       z.array(
         z.object({
-          tmdb: z.object({
-            id: z.number(),
-            title: z.string(),
-            overview: z.string().nullable(),
-            genres: z
-              .array(
-                z.object({
-                  id: z.number(),
-                  name: z.string(),
-                })
-              )
-              .nullable(),
-            runtime: z.number().nullable(),
-            releaseDate: z.string().nullable(),
-            poster: z.string().nullable(),
-            backdrop: z.string().nullable(),
-            director: z.string().nullable(),
-            cast: z.array(
-              z.object({
-                name: z.string(),
-                profilePath: z.string().nullable(),
-              })
-            ),
-            videos: z.array(
-              z.object({
-                id: z.string(),
-                key: z.string(),
-                site: z.string(),
-                type: z.string(),
-                name: z.string(),
-              })
-            ),
-          }),
-          dbMovies: z.array(
-            z.object({
-              id: z.number(),
-              streamId: z.number(),
-              name: z.string(),
-              streamType: z.string(),
-              streamIcon: z.string(),
-              rating: z.string(),
-              added: z.string(),
-              categoryId: z.number(),
-              playlistId: z.number(),
-              containerExtension: z.string(),
-              url: z.string(),
-            })
-          ),
-        })
-      )
+          tmdb: tmdbInfoSchema,
+          dbMovies: z.array(zodMovieSchema),
+        }),
+      ),
     )
-
     .query(async ({ input }) => {
       return await getTmdbMovieMatches(input.tmdbId, input.playlistId);
     }),
@@ -133,41 +119,9 @@ export const moviesRouter = t.router({
         tmdbId: z.number().nullable(),
         name: z.string().nullable(),
         year: z.number().nullable(),
-      })
+      }),
     )
-    .output(
-      z
-        .object({
-          id: z.number(),
-          title: z.string(),
-          overview: z.string().nullable(),
-          genres: z
-            .array(z.object({ id: z.number(), name: z.string() }))
-            .nullable(),
-          runtime: z.number().nullable(),
-          releaseDate: z.string().nullable(),
-          poster: z.string().nullable(),
-          backdrop: z.string().nullable(),
-          director: z.string().nullable(),
-          cast: z
-            .array(
-              z.object({ name: z.string(), profilePath: z.string().nullable() })
-            )
-            .nullable(),
-          videos: z
-            .array(
-              z.object({
-                id: z.string(),
-                key: z.string(),
-                site: z.string(),
-                type: z.string(),
-                name: z.string(),
-              })
-            )
-            .nullable(),
-        })
-        .nullable()
-    )
+    .output(tmdbInfoSchema.nullable())
     .query(async ({ input }) => {
       if (input.tmdbId !== null && input.tmdbId !== undefined) {
         return await getTmdbInfo("movie", input.tmdbId ?? undefined);
@@ -176,7 +130,7 @@ export const moviesRouter = t.router({
         "movie",
         undefined,
         input.name ?? undefined,
-        input.year ?? undefined
+        input.year ?? undefined,
       );
     }),
 
@@ -187,25 +141,25 @@ export const moviesRouter = t.router({
         username: z.string(),
         password: z.string(),
         playlistId: z.number(),
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       const xtreamClient = createXtreamClient(
         input.url,
         input.username,
-        input.password
+        input.password,
       );
 
       const { newMovies } = await fetchAndPrepareMovies(
         input.playlistId,
-        xtreamClient
+        xtreamClient,
       );
 
       const categoryData = buildMissingCategories(
         newMovies,
         "movies",
         input.playlistId,
-        new Set()
+        new Set(),
       );
       await insertMissingCategories(categoryData);
       await insertMovies(newMovies);
@@ -224,8 +178,8 @@ export const moviesRouter = t.router({
         .where(
           and(
             eq(categories.playlistId, input.playlistId),
-            eq(categories.type, "movies")
-          )
+            eq(categories.type, "movies"),
+          ),
         )
         .orderBy(asc(categories.id));
       return rows.map((r) => ({
@@ -241,18 +195,18 @@ export const moviesRouter = t.router({
         username: z.string(),
         password: z.string(),
         playlistId: z.number(),
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       const xtreamClient = createXtreamClient(
         input.url,
         input.username,
-        input.password
+        input.password,
       );
       return await fetchAndCreateCategoriesByType(
         xtreamClient,
         "movies",
-        input.playlistId
+        input.playlistId,
       );
     }),
 });

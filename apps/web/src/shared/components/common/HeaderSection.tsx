@@ -1,8 +1,8 @@
 import { BackButton } from './BackButton';
+import { MobilePoster } from './MobilePoster';
 import { MovieActionButtons } from './MovieActionButtons';
 import { MovieMetadata } from './MovieMetadata';
 import { MoviePoster } from './MoviePoster';
-import { MobilePoster } from './MobilePoster';
 import { MovieSynopsis } from './MovieSynopsis';
 import { MovieTags } from './MovieTags';
 
@@ -10,7 +10,7 @@ interface DbMovie {
   id: number;
   streamId: number;
   name: string;
-  rating: string;
+  rating: string | null;
   url: string;
   categoryId: number;
 }
@@ -29,7 +29,13 @@ interface HeaderSectionProps {
   releaseDate?: string;
   runtime?: number;
   genres?: { id: number; name: string }[];
-  rating?: string;
+  tagline?: string | null;
+  status?: string | null;
+  voteAverage?: number | null;
+  voteCount?: number | null;
+  director?: string | null;
+  productionCountries?: string[] | null;
+  spokenLanguages?: string[] | null;
   dbMovies: DbMovie[];
   currentSrc: string;
   episodeToPlay?: EpisodeToPlay | null;
@@ -44,7 +50,13 @@ export function HeaderSection({
   releaseDate,
   runtime,
   genres,
-  rating,
+  tagline,
+  status,
+  voteAverage,
+  voteCount,
+  director,
+  productionCountries,
+  spokenLanguages,
   dbMovies,
   currentSrc,
   handlePlayMovie,
@@ -63,13 +75,18 @@ export function HeaderSection({
             <div className="mb-6 space-y-4">
               <MobilePoster poster={poster} name={name} />
 
-              <MovieTags genres={genres} />
+              <MovieTags genres={genres} status={status} />
 
               <MovieMetadata
                 name={name}
                 releaseDate={releaseDate}
                 runtime={runtime}
-                rating={rating}
+                voteAverage={voteAverage}
+                voteCount={voteCount}
+                tagline={tagline}
+                director={director}
+                productionCountries={productionCountries}
+                spokenLanguages={spokenLanguages}
               />
             </div>
 

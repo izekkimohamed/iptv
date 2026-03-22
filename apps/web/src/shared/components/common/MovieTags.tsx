@@ -4,9 +4,10 @@ import { Badge } from '@/shared/components/ui/badge';
 
 interface MovieTagsProps {
   genres?: { id: number; name: string }[];
+  status?: string | null;
 }
 
-export function MovieTags({ genres }: MovieTagsProps) {
+export function MovieTags({ genres, status }: MovieTagsProps) {
   return (
     <div className="flex flex-wrap items-center gap-3">
       <Badge
@@ -15,6 +16,14 @@ export function MovieTags({ genres }: MovieTagsProps) {
       >
         MOVIE
       </Badge>
+      {status && (
+        <Badge
+          variant="outline"
+          className="border-white/10 bg-white/5 px-3 py-1 font-bold text-neutral-400"
+        >
+          {status}
+        </Badge>
+      )}
       {genres?.map((g) => (
         <Badge
           key={g.id}

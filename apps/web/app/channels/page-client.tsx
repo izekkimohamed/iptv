@@ -33,26 +33,16 @@ function ChannelsPageInner() {
   const { selectedPlaylist: playlist } = usePlaylistStore();
 
   const {
-    data: infiniteChannels,
+    data: channels = [],
     isLoading: isFetchingChannels,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = trpc.channels.getChannels.useInfiniteQuery(
+  } = trpc.channels.getChannels.useQuery(
     {
       categoryId: parseInt(selectedCategoryId || '0'),
       playlistId: playlist?.id || 0,
-      limit: 50,
     },
     {
-      getNextPageParam: (lastPage) => lastPage.nextCursor,
       enabled: !!selectedCategoryId && !!playlist,
     },
-  );
-
-  const channels = useMemo(
-    () => infiniteChannels?.pages.flatMap((page) => page.items) || [],
-    [infiniteChannels],
   );
 
   const utils = trpc.useUtils();
@@ -99,12 +89,7 @@ function ChannelsPageInner() {
   const playNextChannel = () => {
     if (selectedIndex < 0) return;
     const nextIndex = selectedIndex + 1;
-    if (nextIndex >= channels.length) {
-      if (hasNextPage && !isFetchingNextPage) {
-        fetchNextPage();
-      }
-      return;
-    }
+    if (nextIndex >= channels.length) return;
     const target = channels[nextIndex];
     const params = new URLSearchParams(searchParams.toString());
     params.set('channelId', target.id.toString());
@@ -148,9 +133,6 @@ function ChannelsPageInner() {
       <ChannelsSidebar
         channels={channels}
         isLoading={isFetchingChannels}
-        hasNextPage={hasNextPage}
-        isFetchingNextPage={isFetchingNextPage}
-        fetchNextPage={fetchNextPage}
       />
 
       {/* Player Area */}

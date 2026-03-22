@@ -1,4 +1,5 @@
 import { ensureAnonymousUser } from "@/services/userService";
+import { performPlaylistUpdate } from "@/services/playlistUpdateService";
 import { getDb } from "@/trpc/db";
 import { playlists, zodPlaylistsSchema } from "@/trpc/schema";
 import { createXtreamClient } from "@/utils/xtream";
@@ -79,9 +80,21 @@ export const playlistsRouter = t.router({
       })
     )
     .mutation(async ({ input }) => {
-      // const res = await performPlaylistUpdate(input);
-
       const db = getDb();
+      const [playlist] = await db
+        .select()
+        .from(playlists)
+        .where(eq(playlists.id, input.playlistId));
+
+      if (!playlist) throw new Error("Playlist not found");
+
+      await performPlaylistUpdate({
+        url: playlist.baseUrl,
+        username: playlist.username,
+        password: playlist.password,
+        playlistId: input.playlistId,
+      });
+
       const [data] = await db
         .update(playlists)
         .set({ updatedAt: new Date().toISOString() })

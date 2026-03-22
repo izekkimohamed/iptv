@@ -1,7 +1,5 @@
 'use client';
 
-import { Play, Tv } from 'lucide-react';
-import { useMemo } from 'react';
 import { Button } from '@/shared/components/ui/button';
 import {
   DropdownMenu,
@@ -12,13 +10,14 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu';
 import { cn } from '@/shared/lib/utils';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Play, Tv } from 'lucide-react';
+import { useMemo } from 'react';
 
 interface DbMovie {
   id: number;
   streamId: number;
   name: string;
-  rating: string;
+  rating: string | null;
   url: string;
   categoryId: number;
 }

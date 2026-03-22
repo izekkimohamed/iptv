@@ -42,26 +42,38 @@ export function usePlaylistCreation({
   const utils = trpc.useUtils();
   const { updatePlaylist: updateStorePlaylist } = usePlaylistStore();
 
-  const [currentStage, setCurrentStage] = useState<CreationStage>(CreationStage.CHANNELS_CATEGORIES);
+  const [currentStage, setCurrentStage] = useState<CreationStage>(
+    CreationStage.CHANNELS_CATEGORIES,
+  );
   const [totalProgress, setTotalProgress] = useState(0);
   const [isUpdating, setIsUpdating] = useState(false);
 
+  // --- Update path: single call to updatePlaylists which runs performPlaylistUpdate ---
   const { mutate: updatePlaylist } = trpc.playlists.updatePlaylists.useMutation({
     onSuccess: (data, variables) => {
       updateStorePlaylist(variables.playlistId, data);
+      setTotalProgress(100);
+      setCurrentStage(CreationStage.COMPLETED);
+      setTimeout(() => {
+        setIsUpdating(false);
+        utils.playlists.getPlaylists.invalidate();
+        toast.success('Playlist synced successfully');
+      }, 1500);
+    },
+    onError: (err: any) => {
+      toast.error(`Sync failed: ${err.message}`);
+      setIsUpdating(false);
     },
   });
 
+  // --- Creation path: step-by-step mutations for first-time setup ---
   const mutationOptions = (stage: CreationStage, next: CreationStage | 'COMPLETED') => ({
     onSuccess: () => {
       if (next === 'COMPLETED') {
         setTotalProgress(100);
         setCurrentStage(CreationStage.COMPLETED);
         setTimeout(() => {
-          if (!selectedPlaylist) return;
-          updatePlaylist({ playlistId: selectedPlaylist.id });
           finishPlaylistCreation();
-          setIsUpdating(false);
           utils.playlists.getPlaylists.invalidate();
           toast.success('Database sync complete');
         }, 1500);
@@ -73,7 +85,6 @@ export function usePlaylistCreation({
     },
     onError: (err: any) => {
       toast.error(`Error at ${stage}: ${err.message}`);
-      setIsUpdating(false);
     },
   });
 
@@ -97,25 +108,28 @@ export function usePlaylistCreation({
   );
 
   const handleUpdate = () => {
+    if (!selectedPlaylist) return;
     setIsUpdating(true);
     setCurrentStage(CreationStage.CHANNELS_CATEGORIES);
     setTotalProgress(0);
+    updatePlaylist({ playlistId: selectedPlaylist.id });
   };
 
+  // Creation-only effect: runs the stage machine only during first-time playlist creation
   useEffect(() => {
-    const activePlaylist = selectedPlaylist;
     if (
-      (!isCreatingPlaylist && !isUpdating) ||
-      !activePlaylist ||
+      !isCreatingPlaylist ||
+      isUpdating ||
+      !selectedPlaylist ||
       currentStage === CreationStage.COMPLETED
     )
       return;
 
     const payload = {
-      url: activePlaylist.baseUrl,
-      username: activePlaylist.username,
-      password: activePlaylist.password,
-      playlistId: activePlaylist.id,
+      url: selectedPlaylist.baseUrl,
+      username: selectedPlaylist.username,
+      password: selectedPlaylist.password,
+      playlistId: selectedPlaylist.id,
     };
 
     switch (currentStage) {

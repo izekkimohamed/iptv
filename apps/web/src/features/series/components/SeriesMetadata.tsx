@@ -1,6 +1,6 @@
 'use client';
 
-import { Calendar, Play, Star, Tag, Tv } from 'lucide-react';
+import { Calendar, Clock, Play, Star, Tag, Tv, Globe, Users } from 'lucide-react';
 import Image from 'next/image';
 
 import { Button } from '@/shared/components/ui/button';
@@ -12,11 +12,23 @@ interface SeriesMetadataProps {
     title?: string;
     releaseDate?: string;
     genres?: { id: number; name: string }[];
+    voteAverage?: number | null;
+    voteCount?: number | null;
+    status?: string | null;
+    numberOfSeasons?: number | null;
+    numberOfEpisodes?: number | null;
+    networks?: { name: string; logo: string | null }[] | null;
+    createdBy?: string[] | null;
+    runtime?: number | null;
+    originalLanguage?: string | null;
   };
   seasons: number[];
 }
 
 export function SeriesMetadata({ name, rating, tmdb, seasons }: SeriesMetadataProps) {
+  const displayRating = tmdb?.voteAverage ?? (rating ? parseFloat(rating) : null);
+  const displayVoteCount = tmdb?.voteCount;
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-4">
@@ -29,7 +41,7 @@ export function SeriesMetadata({ name, rating, tmdb, seasons }: SeriesMetadataPr
           {tmdb.title}
         </p>
       )}
-      <div className="flex gap-4">
+      <div className="flex flex-wrap gap-3">
         {tmdb?.releaseDate && (
           <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-sm font-bold text-foreground/80 backdrop-blur-md">
             <Calendar className="h-4 w-4" />
@@ -38,15 +50,62 @@ export function SeriesMetadata({ name, rating, tmdb, seasons }: SeriesMetadataPr
         )}
         <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-sm font-bold text-foreground/80 backdrop-blur-md">
           <Tv className="h-4 w-4" />
-          {seasons.length} Seasons
+          {tmdb?.numberOfSeasons ?? seasons.length} Seasons
         </div>
-        <div className="flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1 text-sm font-black text-primary backdrop-blur-md">
-          <Star className="h-4 w-4 fill-current" />
-          {rating ? parseFloat(rating).toFixed(1) : '0.0'} / 10
-        </div>
+        {tmdb?.numberOfEpisodes && (
+          <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-sm font-bold text-foreground/80 backdrop-blur-md">
+            <Clock className="h-4 w-4" />
+            {tmdb.numberOfEpisodes} Episodes
+          </div>
+        )}
+        {displayRating !== null && (
+          <div className="flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1 text-sm font-black text-primary backdrop-blur-md">
+            <Star className="h-4 w-4 fill-current" />
+            {displayRating.toFixed(1)}
+            {displayVoteCount && (
+              <span className="text-primary/60 text-xs font-medium">({displayVoteCount.toLocaleString()})</span>
+            )}
+          </div>
+        )}
+        {tmdb?.status && (
+          <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-sm font-bold text-foreground/80 backdrop-blur-md">
+            {tmdb.status}
+          </div>
+        )}
+        {tmdb?.originalLanguage && (
+          <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1 text-sm font-bold text-foreground/80 backdrop-blur-md uppercase">
+            <Globe className="h-4 w-4" />
+            {tmdb.originalLanguage}
+          </div>
+        )}
       </div>
+
+      {tmdb?.networks && tmdb.networks.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3">
+          {tmdb.networks.map((network) => (
+            network.logo ? (
+              <div key={network.name} className="relative h-7 w-16 rounded-sm bg-white/10 p-1">
+                <Image fill sizes="64px" src={network.logo} alt={network.name} className="object-contain" />
+              </div>
+            ) : (
+              <span key={network.name} className="rounded-sm border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-foreground/60">
+                {network.name}
+              </span>
+            )
+          ))}
+        </div>
+      )}
+
+      {tmdb?.createdBy && tmdb.createdBy.length > 0 && (
+        <div className="flex items-center gap-2 text-sm text-foreground/60">
+          <Users className="h-4 w-4 shrink-0" />
+          <span className="font-medium">Created by</span>
+          <span>{tmdb.createdBy.join(', ')}</span>
+        </div>
+      )}
+
       {tmdb?.genres && (
-        <div className="flex flex-wrap gap-2 ">
+        <div className="flex flex-wrap gap-2">
           {tmdb.genres.map((genre: { id: number; name: string }) => (
             <span key={genre.id} className="rounded-sm border border-white/5 bg-white/5 px-3 py-1.5 text-[10px] font-black text-muted-foreground uppercase tracking-widest">
               {genre.name}
