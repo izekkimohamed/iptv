@@ -1,4 +1,5 @@
 'use client';
+import { ArrowRight, Play } from 'lucide-react';
 import Image from 'next/image';
 
 import { trpc } from '@/shared/lib/trpc';
@@ -41,13 +42,13 @@ function Tmdb(props: TmdbProps) {
             (c: { id?: number; name: string; profilePath: string | null }, idx: number) => (
               <div
                 key={c.id ?? idx}
-                className="group relative flex aspect-square min-w-[150px] cursor-pointer items-center justify-center overflow-hidden rounded-full bg-gray-400 text-center"
+                className="group relative flex aspect-square min-w-37.5 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-gray-400 text-center"
               >
-                <div className="absolute flex size-full items-center justify-center bg-gradient-to-t from-black/60 to-transparent">
+                <div className="absolute flex size-full items-center justify-center bg-linear-to-t from-black/60 to-transparent">
                   <p className="text-lg font-semibold">{c.name}</p>
                 </div>
                 <Image fill src={c.profilePath ? c.profilePath : ''} alt={c.name} sizes="200px" />
-                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-black/60 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                <div className="absolute inset-0 flex items-center justify-center bg-linear-to-t from-black/60 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                   <p className="text-lg font-semibold">{c.name}</p>
                 </div>
               </div>
@@ -66,12 +67,12 @@ function Tmdb(props: TmdbProps) {
               key={t.key}
               target="_blank"
               title={t.name}
-              className="relative aspect-video min-w-[200px] transform overflow-hidden rounded-sm transition-all duration-300 hover:scale-105"
+              className="relative aspect-video min-w-50 transform overflow-hidden rounded-sm transition-all duration-300 hover:scale-105"
             >
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-gray-700 to-gray-900">
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-linear-to-br from-gray-700 to-gray-900">
                 <div className="relative flex flex-col items-center justify-center gap-1">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-600 transition-transform duration-300 group-hover:scale-110">
-                    <span className="text-2xl">▶</span>
+                    <Play className="h-8 w-8 fill-white text-white pl-1" />
                   </div>
                   <span className="text-center">trailer</span>
                 </div>
@@ -86,7 +87,7 @@ function Tmdb(props: TmdbProps) {
         <div className="mb-8 flex items-center justify-between">
           <h2 className="text-foreground text-3xl font-bold">You Might Also Like</h2>
           <Button className="text-gray-400 transition-colors duration-300 hover:text-white">
-            View All →
+            View All <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
         <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"></div>

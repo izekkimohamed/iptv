@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, LayoutGrid, Trophy, Tv } from 'lucide-react';
+import { Home, LayoutGrid, Settings, Trophy, Tv } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -75,7 +75,7 @@ export function MobileNav({
             : 'text-muted-foreground hover:text-foreground hover:bg-white/5',
         )}
       >
-        <span className="h-5 w-5">⚙️</span>
+        <Settings className="h-5 w-5" />
         Settings
       </Link>
     </nav>

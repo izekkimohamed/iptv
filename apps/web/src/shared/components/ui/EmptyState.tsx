@@ -1,4 +1,4 @@
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, FolderOpen } from 'lucide-react';
 import { memo } from 'react';
 
 import { Button } from './button';
@@ -12,7 +12,7 @@ interface EmptyStateProps {
 }
 
 const EmptyState = memo(function EmptyState({
-  icon = '📂',
+  icon,
   title,
   description,
   fullScreen = false,
@@ -25,8 +25,8 @@ const EmptyState = memo(function EmptyState({
   return (
     <div className={containerClasses}>
       <div className="text-center">
-        <div className="mb-4 flex justify-center text-6xl opacity-50">
-          {typeof icon === 'string' ? icon : icon}
+        <div className="mb-4 flex justify-center text-primary/50">
+          {icon ? icon : <FolderOpen className="h-16 w-16" />}
         </div>
 
         <h2 className="mb-2 text-2xl font-bold text-white">{title}</h2>

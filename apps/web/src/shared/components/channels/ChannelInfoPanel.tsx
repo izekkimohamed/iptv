@@ -1,3 +1,4 @@
+import { Calendar } from 'lucide-react';
 import { trpc } from '@/shared/lib/trpc';
 import { Channel, PlaylistProps } from '@/shared/lib/types';
 import { cn } from '@/shared/lib/utils';
@@ -135,7 +136,7 @@ export default function ChannelInfoPanel(props: ChannelInfoPanelProps) {
         ) : (
           <div className="flex h-40 flex-col items-center justify-center space-y-4 rounded-3xl border border-dashed border-white/5 bg-white/2 opacity-40">
             <div className="h-10 w-10 flex items-center justify-center rounded-full bg-white/5">
-              <span className="text-xl">📅</span>
+              <Calendar className="text-xl text-muted-foreground" />
             </div>
             <span className="text-[10px] font-black tracking-[0.2em] uppercase">No Schedule Found</span>
           </div>

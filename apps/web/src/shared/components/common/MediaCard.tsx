@@ -71,9 +71,9 @@ function MediaCardContent(props: MediaCardBase) {
             e.currentTarget.src = fallbackSrc;
           }}
         />
-        
+
         {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/20 to-transparent" />
 
         {/* Badge */}
         {badge && (
@@ -128,7 +128,7 @@ function MediaCardContent(props: MediaCardBase) {
 
   if (href) {
     return (
-      <Link href={href} className="group relative">
+      <Link href={href} className="group relative cursor-pointer">
         {content}
       </Link>
     );
@@ -136,8 +136,8 @@ function MediaCardContent(props: MediaCardBase) {
 
   if (onClick) {
     return (
-      <div 
-        className="group relative cursor-pointer" 
+      <div
+        className="group relative cursor-pointer"
         onClick={onClick}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {

@@ -1,4 +1,6 @@
-import { LayoutGrid, Rows3 } from 'lucide-react';
+import React from 'react';
+
+import { LayoutGrid, Rows3, Target, Tv, Film, Videotape } from 'lucide-react';
 
 import { Button } from '../../ui/button';
 import { cn } from '../../../lib/utils';
@@ -14,10 +16,10 @@ interface SearchFiltersProps {
 }
 
 const filters = [
-  { id: 'all', label: 'All', icon: '🎯' },
-  { id: 'channels', label: 'Channels', icon: '📺' },
-  { id: 'movies', label: 'Movies', icon: '🎬' },
-  { id: 'series', label: 'Series', icon: '📼' },
+  { id: 'all', label: 'All', icon: Target },
+  { id: 'channels', label: 'Channels', icon: Tv },
+  { id: 'movies', label: 'Movies', icon: Film },
+  { id: 'series', label: 'Series', icon: Videotape },
 ] as const;
 
 export function SearchFilters({
@@ -41,7 +43,7 @@ export function SearchFilters({
                 : 'border-white/5 bg-white/5 text-muted-foreground hover:border-white/10 hover:bg-white/10 hover:text-foreground'
             )}
           >
-            <span className="text-lg opacity-80">{filter.icon}</span>
+            {React.createElement(filter.icon, { className: 'h-4 w-4 opacity-80' })}
             {filter.label}
             <span
               className={cn(
