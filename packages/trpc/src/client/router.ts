@@ -147,6 +147,15 @@ export interface AppRouter {
       };
       output: unknown;
     };
+    getSerieEpisodes: {
+      input: { playlistId: number; serieId: number };
+      output: {
+        info: unknown;
+        seasons: number[];
+        episodes: Record<string, { id: number; episodeNum: number; title: string; streamUrl: string; plot?: string }[]>;
+        tmdb: unknown;
+      };
+    };
     createSerie: {
       input: {
         url: string;

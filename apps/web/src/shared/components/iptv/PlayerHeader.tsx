@@ -29,8 +29,8 @@ export default function PlayerHeader(props: PlayerHeaderProps) {
   const displayIcon = selectedChannel?.streamIcon || poster;
 
   return (
-    <div className="relative overflow-hidden group border-b border-white/10">
-      <div className="relative z-10 flex items-center justify-between p-4.5">
+    <div className="relative overflow-hidden group border-b border-white/10 h-17 p-2 flex items-center justify-between">
+      <div className="relative z-10 flex items-center justify-between w-full">
         <div className="flex items-center gap-4">
           {displayIcon && (
             <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-sm  border-white/5 bg-white/5">

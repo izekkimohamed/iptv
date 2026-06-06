@@ -13,25 +13,23 @@ export async function fetchAndPrepareCategories(playlistId: number) {
     .from(categories)
     .where(eq(categories.playlistId, playlistId));
 
-  return {
-    existing,
-    byType: {
-      channels: existing.filter((c) => c.type === "channels"),
-      movies: existing.filter((c) => c.type === "movies"),
-      series: existing.filter((c) => c.type === "series"),
-    },
-    idSets: {
-      channels: new Set(
-        existing.filter((c) => c.type === "channels").map((c) => c.categoryId)
-      ),
-      movies: new Set(
-        existing.filter((c) => c.type === "movies").map((c) => c.categoryId)
-      ),
-      series: new Set(
-        existing.filter((c) => c.type === "series").map((c) => c.categoryId)
-      ),
-    },
+  const byType: Record<CategoryType, typeof existing> = {
+    channels: [],
+    movies: [],
+    series: [],
   };
+  const idSets: Record<CategoryType, Set<number>> = {
+    channels: new Set(),
+    movies: new Set(),
+    series: new Set(),
+  };
+
+  for (const c of existing) {
+    byType[c.type].push(c);
+    idSets[c.type].add(c.categoryId);
+  }
+
+  return { existing, byType, idSets };
 }
 
 export function buildMissingCategories<

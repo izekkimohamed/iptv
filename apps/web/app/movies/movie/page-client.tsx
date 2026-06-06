@@ -5,7 +5,6 @@ import { Film } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useMemo, useState } from 'react';
 
-
 import { CastSection } from '@/shared/components/common/CastSection';
 import { DetailSkeleton } from '@/shared/components/common/DetailSkeleton';
 import { HeaderSection } from '@/shared/components/common/HeaderSection';
@@ -71,13 +70,14 @@ function PageContent() {
   // --- Error State ---
   if (error || !movieDetails || movieDetails.length === 0) {
     return (
-      <div className="flex h-screen w-full flex-col items-center justify-center bg-background p-6 text-center">
+      <div className="bg-background flex h-screen w-full flex-col items-center justify-center p-6 text-center">
         <div className="mb-8 flex h-24 w-24 items-center justify-center rounded-full border-2 border-white/5 bg-white/2">
           <Film className="h-10 w-10 text-white/20" />
         </div>
         <h2 className="text-4xl font-black tracking-tight text-white">Content Unavailable</h2>
-        <p className="mt-4 max-w-sm text-lg font-medium text-white/40 leading-relaxed">
-          We couldn&apos;t retrieve the stream details for this title. It might be temporarily offline or restricted.
+        <p className="mt-4 max-w-sm text-lg leading-relaxed font-medium text-white/40">
+          We couldn&apos;t retrieve the stream details for this title. It might be temporarily
+          offline or restricted.
         </p>
         <Button
           onClick={() => window.history.back()}
@@ -94,11 +94,11 @@ function PageContent() {
   const hasMultipleSources = movie.dbMovies.length > 1;
 
   return (
-    <div className="relative min-h-full w-full overflow-x-hidden bg-background font-sans text-foreground selection:bg-primary/30">
+    <div className="bg-background text-foreground selection:bg-primary/30 relative min-h-full w-full overflow-x-hidden font-sans">
       {/* --- 1. IMMERSIVE BACKDROP --- */}
       <div className="absolute inset-0 z-0 h-full w-full overflow-hidden overflow-y-auto">
-        <div className="absolute inset-0 z-10 bg-linear-to-t from-background via-background/60 to-transparent" />
-        <div className="absolute inset-0 z-10 bg-linear-to-r from-background/90 via-transparent to-transparent hidden lg:block" />
+        <div className="from-background via-background/60 absolute inset-0 z-10 bg-linear-to-t to-transparent" />
+        <div className="from-background/90 absolute inset-0 z-10 hidden bg-linear-to-r via-transparent to-transparent lg:block" />
         <Image
           src={tmdb?.backdrop || tmdb.poster || ''}
           alt="Backdrop"

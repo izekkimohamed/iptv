@@ -51,15 +51,17 @@ function CategoriesSidebarContent({
 
   const typeName = categoryType.charAt(0).toUpperCase() + categoryType.slice(1);
 
+
+
   return (
-    <div className="border-border/50 bg-background/50 flex h-full w-72 flex-col border-r">
+    <div className="border-border bg-background/50 flex h-full w-1/5 flex-col border-x">
       {/* Search Header */}
-      <div className="border-border/50 flex flex-col gap-6 border-b px-4 py-6">
+      <div className="border-border flex flex-col gap-6 border-b px-4 py-3">
         <div className="relative">
           <Search className="text-muted-foreground absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2" />
           <Input
             placeholder="Search categories..."
-            className="border-input bg-background placeholder:text-muted-foreground focus:ring-ring/20 h-11 rounded-sm border pr-10 pl-10 text-sm font-medium focus:ring-2"
+            className="border-border/5 active:ring-none  bg-background placeholder:text-muted-foreground focus:ring-none h-11 rounded-sm  pr-10 pl-10 text-sm font-medium focus:ring-none focus-visible:ring-none"
             value={searchValue}
             onChange={handleChange}
           />
@@ -79,11 +81,14 @@ function CategoriesSidebarContent({
 
       {/* List */}
       <div className="scrollbar-hide flex-1 overflow-y-auto p-2" ref={categoryRef}>
-        {isLoading ? (
-          <div className="flex h-40 items-center justify-center">
-            <LoadingSpinner />
-          </div>
-        ) : !filteredCategories?.length ? (
+        {
+          isLoading ? (
+            <div className="flex h-full items-center justify-center">
+              <LoadingSpinner />
+            </div>
+          ) : null
+        }
+        {!filteredCategories?.length ? (
           <div className="flex flex-col items-center justify-center space-y-4 py-20 text-center">
             <div className="bg-muted flex h-12 w-12 items-center justify-center rounded-sm">
               <Folder className="text-muted-foreground/40 h-6 w-6" />

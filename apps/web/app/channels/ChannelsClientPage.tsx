@@ -97,7 +97,7 @@ function ChannelsContentInner() {
     <>
       <ChannelsSidebar channels={channels} isLoading={isFetchingChannels} />
 
-      <div className="scrollbar-hide flex-1 overflow-y-auto">
+      <div className="scrollbar-hide  overflow-y-auto ">
         <PlayerHeader selectedChannel={selectedChannel} />
 
         {hasPlayerContent ? (

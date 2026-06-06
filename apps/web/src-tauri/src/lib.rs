@@ -1,5 +1,5 @@
+use std::net::TcpListener;
 use std::process::Command;
-use tokio::time::sleep;
 use std::time::Duration;
 use tauri::Emitter;
 
@@ -27,86 +27,113 @@ fn minimize_app(window: tauri::Window) {
 }
 
 fn find_vlc_binary() -> Option<String> {
-    let vlc_binaries = ["vlc", "/snap/bin/vlc", "/usr/bin/vlc", "/usr/local/bin/vlc"];
+    let vlc_binaries = [
+        "vlc",
+        "/snap/bin/vlc",
+        "/usr/bin/vlc",
+        "/usr/local/bin/vlc",
+        "/var/lib/flatpak/exports/bin/org.videolan.VLC",
+        "/app/bin/vlc",
+    ];
     for binary in &vlc_binaries {
-        if Command::new(binary)
-            .arg("--version")
-            .output()
-            .is_ok()
-        {
+        if Command::new(binary).arg("--version").output().is_ok() {
             return Some(binary.to_string());
         }
     }
     None
 }
 
+fn find_available_port() -> u16 {
+    for port in 8080..=8090 {
+        if let Ok(listener) = TcpListener::bind(("127.0.0.1", port)) {
+            drop(listener);
+            return port;
+        }
+    }
+    8080
+}
+
 #[tauri::command]
-async fn open_in_vlc(app: tauri::AppHandle, url: String, aspect_ratio: Option<String>, start_position: Option<f64>) -> Result<f64, String> {
-    let vlc_binary = find_vlc_binary().ok_or("VLC not found")?;
+async fn open_in_vlc(
+    app: tauri::AppHandle,
+    url: String,
+    aspect_ratio: Option<String>,
+    start_position: Option<f64>,
+) -> Result<(), String> {
+    let vlc_binary = find_vlc_binary().ok_or_else(|| {
+        "VLC not found. Install VLC media player to use this feature.".to_string()
+    })?;
+
+    let port = find_available_port();
     let password = "tauri_internal";
-    let port = "8080";
 
     let mut cmd = Command::new(&vlc_binary);
 
-    // Set aspect ratio if provided
+    // Flags BEFORE the URL (ordering matters for some VLC builds)
     if let Some(ratio) = aspect_ratio {
         cmd.arg(format!("--aspect-ratio={}", ratio));
     }
-
-    // Hide video title
     cmd.arg("--no-video-title-show");
-
-    // toggle fullscreen
     cmd.arg("--fullscreen");
+    cmd.arg("--play-and-exit");
+    cmd.arg("--extraintf=http");
+    cmd.arg(format!("--http-password={}", password));
+    cmd.arg(format!("--http-port={}", port));
 
-    // Start from position if provided (in seconds)
     if let Some(pos) = start_position {
         cmd.arg(format!("--start-time={}", pos));
     }
 
     cmd.arg(&url);
-    cmd.arg("--extraintf=http");
-    cmd.arg(format!("--http-password={}", password));
-    cmd.arg(format!("--http-port={}", port));
 
-    let mut child = cmd.spawn()
+    let mut child = cmd
+        .spawn()
         .map_err(|e| format!("Failed to launch VLC: {}", e))?;
 
-    let mut last_position = 0.0;
-    let client = reqwest::Client::new();
-    let status_url = format!("http://localhost:{}/requests/status.json", port);
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(5))
+        .build()
+        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
 
-    // Poll VLC status until the process exits
-    loop {
-        match child.try_wait() {
-            Ok(Some(_status)) => break, // VLC closed
-            Ok(None) => {
-                // VLC is still running, try to get the time
-                if let Ok(resp) = client.get(&status_url)
-                    .basic_auth("", Some(password.to_string()))
-                    .send()
-                    .await {
+    let status_url = format!("http://127.0.0.1:{}/requests/status.json", port);
+    let app_clone = app.clone();
 
-                    if let Ok(json) = resp.json::<serde_json::Value>().await {
-                        // VLC returns 'time' in seconds
-                        if let Some(time) = json["time"].as_f64() {
-                            last_position = time;
-                            // Emit position update to frontend
-                            let _ = app.emit("vlc-position-update", time);
+    // Spawn background task to monitor VLC (non-blocking)
+    tokio::spawn(async move {
+        let mut last_position = 0.0;
+
+        loop {
+            match child.try_wait() {
+                Ok(Some(_)) => {
+                    let _ = app_clone.emit("vlc-closed", last_position);
+                    break;
+                }
+                Ok(None) => {
+                    if let Ok(resp) = client
+                        .get(&status_url)
+                        .basic_auth("", Some(password))
+                        .send()
+                        .await
+                    {
+                        if let Ok(json) = resp.json::<serde_json::Value>().await {
+                            if let Some(time) = json["time"].as_f64() {
+                                last_position = time;
+                                let _ = app_clone.emit("vlc-position-update", time);
+                            }
                         }
                     }
+                    tokio::time::sleep(Duration::from_millis(1000)).await;
                 }
-                sleep(Duration::from_millis(1000)).await;
+                Err(e) => {
+                    log::error!("VLC monitoring error: {}", e);
+                    let _ = app_clone.emit("vlc-closed", last_position);
+                    break;
+                }
             }
-            Err(e) => return Err(format!("Error waiting for VLC: {}", e)),
         }
-    }
+    });
 
-    // Emit vlc-closed event to frontend
-    let _ = app.emit("vlc-closed", last_position);
-
-    println!("VLC closed at: {} seconds", last_position);
-    Ok(last_position)
+    Ok(())
 }
 pub fn run() {
     tauri::Builder::default()

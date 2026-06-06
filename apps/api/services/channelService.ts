@@ -8,6 +8,8 @@ export async function getChannelsFromDb(input: {
   playlistId: number;
   categoryId?: number;
   favorites?: boolean;
+  skip?: number;
+  take?: number;
 }) {
   const db = getDb();
 
@@ -21,11 +23,21 @@ export async function getChannelsFromDb(input: {
     whereConditions.push(eq(channels.isFavorite, true));
   }
 
-  const result = await db
+  const query = db
     .select()
     .from(channels)
     .where(and(...whereConditions))
-    .orderBy(desc(channels.isFavorite), asc(channels.createdAt));
+    .orderBy(desc(channels.isFavorite), asc(channels.createdAt))
+    .$dynamic();
+
+  if (input.skip != null) {
+    query.offset(input.skip);
+  }
+  if (input.take != null) {
+    query.limit(input.take);
+  }
+
+  const result = await query;
 
   return result.map((c) => ({
     ...c,
@@ -39,17 +51,24 @@ export async function fetchAndPrepareChannels(
   xtreamClient: Xtream,
 ) {
   const db = getDb();
-  const fetched = await xtreamClient.getChannels();
+
+  let fetched: Awaited<ReturnType<typeof xtreamClient.getChannels>>;
+  try {
+    fetched = await xtreamClient.getChannels();
+  } catch {
+    throw new Error("Failed to fetch channels from Xtream API");
+  }
+
   const existing = await db
     .select({ streamId: channels.streamId })
     .from(channels)
     .where(eq(channels.playlistId, playlistId));
 
-  const fetchedMap = new Map(fetched.map((c) => [c.stream_id, c]));
-  const existingMap = new Map(existing.map((c) => [c.streamId, c]));
+  const existingStreamIds = new Set(existing.map((c) => c.streamId));
+  const fetchedStreamIds = new Set(fetched.map((c) => Number(c.stream_id)));
 
   const newChannels = fetched
-    .filter((c) => !existingMap.has(Number(c.stream_id)))
+    .filter((c) => !existingStreamIds.has(Number(c.stream_id)))
     .map((c) => ({
       categoryId: +c.category_id,
       name: c.name || "Unknown channel",
@@ -62,7 +81,7 @@ export async function fetchAndPrepareChannels(
     }));
 
   const toDelete = existing
-    .filter((c) => !fetchedMap.has(Number(c.streamId)))
+    .filter((c) => !fetchedStreamIds.has(c.streamId))
     .map((c) => ({ streamId: c.streamId, playlistId }));
 
   return { newChannels, toDelete };

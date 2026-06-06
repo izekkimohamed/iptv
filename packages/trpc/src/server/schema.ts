@@ -90,6 +90,8 @@ export const channels = pgTable(
     index("channels_category_idx").on(t.categoryId),
     uniqueIndex("unique_channel").on(t.streamId, t.categoryId, t.playlistId),
     index("favorite_idx").on(t.isFavorite),
+    index("channels_playlist_category_idx").on(t.playlistId, t.categoryId),
+    index("channels_playlist_favorites_idx").on(t.playlistId, t.isFavorite),
   ],
 );
 

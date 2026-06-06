@@ -1,7 +1,7 @@
 'use client';
 
 import { parseAsString, useQueryState } from 'nuqs';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import HomeSearch from '@/shared/components/home/HomeSearch';
 import HomeLanding from '@/shared/components/home/Landing';
@@ -13,7 +13,11 @@ export function IPTVHomePageClient() {
   // Sync search with the URL ?q=...
   const [searchQuery, setSearchQuery] = useQueryState(
     'q',
-    parseAsString.withDefault('').withOptions({ shallow: false }),
+    parseAsString.withDefault('').withOptions({
+      shallow: false,
+
+    })
+
   );
 
   const {
@@ -26,8 +30,14 @@ export function IPTVHomePageClient() {
   } = usePlaylistStore();
 
   const { data: playlists } = trpc.playlists.getPlaylists.useQuery();
+
+  const synced = useRef(false);
+
   useEffect(() => {
     if (!playlists) return;
+
+    if (synced.current) return;
+    synced.current = true;
 
     // 1. Identify items to REMOVE (in store but not in fetched data)
     storePlaylists.forEach((stored) => {
@@ -57,18 +67,10 @@ export function IPTVHomePageClient() {
     if (!selectedPlaylist && playlists.length > 0) {
       selectPlaylist(playlists[0]);
     }
-  }, [
-    playlists,
-    storePlaylists,
-    addPlaylist,
-    removePlaylist,
-    updatePlaylist,
-    selectPlaylist,
-    selectedPlaylist,
-  ]);
+  }, [playlists]);
 
-  const handleInputSearch = (term: string) => {
-    setSearchQuery(term);
+  const handleInputSearch = (term: string, opts?: any) => {
+    setSearchQuery(term, opts);
   };
 
   return (

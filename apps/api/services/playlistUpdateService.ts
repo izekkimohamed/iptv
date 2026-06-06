@@ -19,7 +19,7 @@ export async function performPlaylistUpdate(input: PlaylistUpdateInput) {
   const xtreamClient = createXtreamClient(
     input.url,
     input.username,
-    input.password
+    input.password,
   );
 
   // Fetch categories + all 3 content types from Xtream in parallel
@@ -36,12 +36,31 @@ export async function performPlaylistUpdate(input: PlaylistUpdateInput) {
   ]);
 
   // Build missing categories for each type
-  const newChannelsCategories = buildMissingCategories(newChannels, "channels", input.playlistId, categoryData.idSets.channels);
-  const newMoviesCategories = buildMissingCategories(newMovies, "movies", input.playlistId, categoryData.idSets.movies);
-  const newSeriesCategories = buildMissingCategories(newSeries, "series", input.playlistId, categoryData.idSets.series);
+  const newChannelsCategories = buildMissingCategories(
+    newChannels,
+    "channels",
+    input.playlistId,
+    categoryData.idSets.channels,
+  );
+  const newMoviesCategories = buildMissingCategories(
+    newMovies,
+    "movies",
+    input.playlistId,
+    categoryData.idSets.movies,
+  );
+  const newSeriesCategories = buildMissingCategories(
+    newSeries,
+    "series",
+    input.playlistId,
+    categoryData.idSets.series,
+  );
 
   // Insert categories then content in parallel
-  await insertMissingCategories([...newChannelsCategories, ...newMoviesCategories, ...newSeriesCategories]);
+  await insertMissingCategories([
+    ...newChannelsCategories,
+    ...newMoviesCategories,
+    ...newSeriesCategories,
+  ]);
   await Promise.all([
     insertChannels(newChannels),
     insertMovies(newMovies),
@@ -51,19 +70,19 @@ export async function performPlaylistUpdate(input: PlaylistUpdateInput) {
   return {
     success: true,
     newItems: {
-      channels: newChannels,
-      movies: newMovies,
-      series: newSeries,
+      channels: newChannels.length,
+      movies: newMovies.length,
+      series: newSeries.length,
     },
     deletedItems: {
-      channels: channelsToDelete,
-      movies: moviesToDelete,
-      series: seriesToDelete,
+      channels: channelsToDelete.length,
+      movies: moviesToDelete.length,
+      series: seriesToDelete.length,
     },
     categories: {
-      channelsCat: newChannelsCategories,
-      moviesCat: newMoviesCategories,
-      seriesCat: newSeriesCategories,
+      channelsCat: newChannelsCategories.length,
+      moviesCat: newMoviesCategories.length,
+      seriesCat: newSeriesCategories.length,
     },
   };
 }

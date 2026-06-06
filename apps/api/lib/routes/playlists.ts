@@ -1,5 +1,5 @@
-import { ensureAnonymousUser } from "@/services/userService";
 import { performPlaylistUpdate } from "@/services/playlistUpdateService";
+import { ensureAnonymousUser } from "@/services/userService";
 import { getDb } from "@/trpc/db";
 import { playlists, zodPlaylistsSchema } from "@/trpc/schema";
 import { createXtreamClient } from "@/utils/xtream";
@@ -22,8 +22,8 @@ export const playlistsRouter = t.router({
           isTrial: z.string(),
           createdAt: z.string(),
           updatedAt: z.string(),
-        })
-      )
+        }),
+      ),
     )
     .query(async () => {
       const db = getDb();
@@ -36,7 +36,7 @@ export const playlistsRouter = t.router({
         url: z.string(),
         username: z.string(),
         password: z.string(),
-      })
+      }),
     )
     .output(zodPlaylistsSchema)
     .mutation(async ({ input }) => {
@@ -44,7 +44,7 @@ export const playlistsRouter = t.router({
       const xtreamClient = createXtreamClient(
         input.url,
         input.username,
-        input.password
+        input.password,
       );
       const data = await xtreamClient.getProfile();
 
@@ -77,7 +77,7 @@ export const playlistsRouter = t.router({
     .input(
       z.object({
         playlistId: z.number(),
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       const db = getDb();
@@ -88,7 +88,7 @@ export const playlistsRouter = t.router({
 
       if (!playlist) throw new Error("Playlist not found");
 
-      await performPlaylistUpdate({
+      const updatedPlaylist = await performPlaylistUpdate({
         url: playlist.baseUrl,
         username: playlist.username,
         password: playlist.password,
@@ -100,7 +100,10 @@ export const playlistsRouter = t.router({
         .set({ updatedAt: new Date().toISOString() })
         .where(eq(playlists.id, input.playlistId))
         .returning();
-      return data;
+      return {
+        ...updatedPlaylist,
+        playlist: data,
+      };
     }),
 
   deletePlaylist: publicProcedure

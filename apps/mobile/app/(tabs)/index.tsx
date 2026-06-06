@@ -1,7 +1,8 @@
 import { FlashList } from "@shopify/flash-list";
 import { useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 import { Clock, Database, Play, Star, Tv, X } from "lucide-react-native";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   FlatList,
   Image,
@@ -43,6 +44,8 @@ export default function HomeScreen() {
   const currentDate = new Date();
   const [selectedGameId, setSelectedGameId] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [heroIndex, setHeroIndex] = useState(0);
+  const heroListRef = useRef<any>(null);
 
   const {
     selectedPlaylist,
@@ -145,100 +148,58 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
+  // Auto-scroll hero every 5s — placed after homeData is declared
+  useEffect(() => {
+    const movies = homeData?.movies;
+    if (!movies?.length || movies.length <= 1) return;
+    const timer = setInterval(() => {
+      setHeroIndex((prev) => {
+        const next = (prev + 1) % movies.length;
+        heroListRef.current?.scrollToIndex({ index: next, animated: true });
+        return next;
+      });
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [homeData?.movies]);
+
   const renderFeaturedItem = useCallback(
     ({ item }: { item: any }) => (
       <Pressable
-        onPress={() =>
-          router.push({
-            pathname: "/movies/tmdb",
-            params: { movieId: item.id, playlistId: selectedPlaylist?.id },
-          })
-        }
-        style={({ pressed }) => [
-          { width, height: 420 },
-          pressed && { opacity: 0.9 },
-        ]}
+        onPress={() => router.push({ pathname: "/movies/tmdb", params: { movieId: item.id, playlistId: selectedPlaylist?.id } })}
+        style={({ pressed }) => [{ width, height: 420 }, pressed && { opacity: 0.9 }]}
       >
-        <Image
-          source={{ uri: item.backdropUrl || item.posterUrl || undefined }}
-          style={styles.heroImage}
+        <Image source={{ uri: item.backdropUrl || item.posterUrl || undefined }} style={styles.heroImage} />
+        <LinearGradient
+          colors={["transparent", "rgba(0,0,0,0.55)", "rgba(0,0,0,0.93)"]}
+          locations={[0.3, 0.65, 1]}
+          style={styles.heroGradient}
         />
-        <View style={styles.heroOverlay} />
-
         <View style={styles.heroContent}>
           <View style={[styles.heroBadge, { backgroundColor: theme.primary }]}>
-            <Star
-              size={12}
-              color={theme.primaryForeground}
-              fill={theme.primaryForeground}
-            />
-            <Text
-              style={[styles.heroBadgeText, { color: theme.primaryForeground }]}
-            >
-              {item.voteAverage?.toFixed(1) || "NEW"}
-            </Text>
+            <Star size={12} color={theme.primaryForeground} fill={theme.primaryForeground} />
+            <Text style={[styles.heroBadgeText, { color: theme.primaryForeground }]}>{item.voteAverage?.toFixed(1) || "NEW"}</Text>
           </View>
-
-          <Text style={styles.heroTitle} numberOfLines={2}>
-            {item.title || item.name}
-          </Text>
-
-          <Text style={styles.heroSubtitle} numberOfLines={2}>
-            {item.overview || "Watch now"}
-          </Text>
-
+          <Text style={styles.heroTitle} numberOfLines={2}>{item.title || item.name}</Text>
+          <Text style={styles.heroSubtitle} numberOfLines={2}>{item.overview || "Watch now"}</Text>
           <View style={styles.heroActions}>
             <Pressable
-              style={[
-                styles.heroPlayButton,
-                { backgroundColor: theme.primary },
-              ]}
-              onPress={() =>
-                router.push({
-                  pathname: "/movies/tmdb",
-                  params: { movieId: item.id, playlistId: selectedPlaylist?.id },
-                })
-              }
+              style={[styles.heroPlayButton, { backgroundColor: theme.primary }]}
+              onPress={() => router.push({ pathname: "/movies/tmdb", params: { movieId: item.id, playlistId: selectedPlaylist?.id } })}
             >
-              <Play
-                size={20}
-                color={theme.primaryForeground}
-                fill={theme.primaryForeground}
-              />
-              <Text
-                style={[
-                  styles.heroPlayText,
-                  { color: theme.primaryForeground },
-                ]}
-              >
-                Play
-              </Text>
+              <Play size={20} color={theme.primaryForeground} fill={theme.primaryForeground} />
+              <Text style={[styles.heroPlayText, { color: theme.primaryForeground }]}>Play</Text>
             </Pressable>
-
             <Pressable
-              style={[
-                styles.heroInfoButton,
-                {
-                  backgroundColor: theme.glassLight,
-                  borderColor: theme.border,
-                },
-              ]}
-              onPress={() =>
-                router.push({
-                  pathname: "/movies/tmdb",
-                  params: { movieId: item.id, playlistId: selectedPlaylist?.id },
-                })
-              }
+              style={[styles.heroInfoButton, { backgroundColor: theme.glassLight, borderColor: theme.border }]}
+              onPress={() => router.push({ pathname: "/movies/tmdb", params: { movieId: item.id, playlistId: selectedPlaylist?.id } })}
             >
               <Star size={20} color={theme.textPrimary} />
             </Pressable>
           </View>
         </View>
-
-        <View style={styles.heroGradient} />
       </Pressable>
     ),
-    [router, theme, selectedPlaylist?.id],
+    [router, theme, selectedPlaylist?.id, width],
   );
 
   const renderChannel = useCallback(
@@ -297,13 +258,15 @@ export default function HomeScreen() {
       return (
         <View style={styles.continueCardWrapper}>
           <Pressable
-            onPress={() => router.push({
-              pathname: "/(tabs)/movies/[id]",
-              params: { id: item.streamId, url: item.src },
-            })}
+            onPress={() => router.push({ pathname: "/(tabs)/movies/[id]", params: { id: item.streamId, url: item.src } })}
             style={({ pressed }) => [styles.continueCard, { backgroundColor: theme.surfaceSecondary, borderColor: theme.border }, pressed && { opacity: 0.9 }]}
           >
             <Image source={{ uri: item.poster || undefined }} style={styles.continueImage} />
+            <View style={styles.continuePlayOverlay}>
+              <View style={styles.continuePlayBtn}>
+                <Play size={16} color="#fff" fill="#fff" />
+              </View>
+            </View>
             <View style={styles.continueOverlay}>
               <View style={[styles.progressPill, { backgroundColor: "rgba(0,0,0,0.6)" }]}>
                 <Text style={styles.progressPillText}>{Math.round(progress * 100)}%</Text>
@@ -316,10 +279,7 @@ export default function HomeScreen() {
               </View>
             </View>
           </Pressable>
-          <Pressable
-            onPress={() => removeMovie(item.id, item.playlistId)}
-            style={[styles.removeBtn, { backgroundColor: theme.surfacePrimary, borderColor: theme.border }]}
-          >
+          <Pressable onPress={() => removeMovie(item.id, item.playlistId)} style={[styles.removeBtn, { backgroundColor: theme.surfacePrimary, borderColor: theme.border }]}>
             <X size={12} color={theme.textMuted} />
           </Pressable>
         </View>
@@ -340,6 +300,11 @@ export default function HomeScreen() {
             style={({ pressed }) => [styles.continueCard, { backgroundColor: theme.surfaceSecondary, borderColor: theme.border }, pressed && { opacity: 0.9 }]}
           >
             <Image source={{ uri: item.poster || undefined }} style={styles.continueImage} />
+            <View style={styles.continuePlayOverlay}>
+              <View style={styles.continuePlayBtn}>
+                <Play size={16} color="#fff" fill="#fff" />
+              </View>
+            </View>
             <View style={styles.continueOverlay}>
               <View style={[styles.episodePill, { backgroundColor: `${theme.primary}33`, borderColor: `${theme.primary}66` }]}>
                 <Text style={[styles.episodePillText, { color: theme.primary }]}>S{lastEp.seasonId} E{lastEp.episodeNumber}</Text>
@@ -352,10 +317,7 @@ export default function HomeScreen() {
               </View>
             </View>
           </Pressable>
-          <Pressable
-            onPress={() => removeSeriesItem(item.id)}
-            style={[styles.removeBtn, { backgroundColor: theme.surfacePrimary, borderColor: theme.border }]}
-          >
+          <Pressable onPress={() => removeSeriesItem(item.id)} style={[styles.removeBtn, { backgroundColor: theme.surfacePrimary, borderColor: theme.border }]}>
             <X size={12} color={theme.textMuted} />
           </Pressable>
         </View>
@@ -434,9 +396,10 @@ export default function HomeScreen() {
           </View>
         ) : (
           <>
-            {/* Hero Carousel - Scrollable with paging */}
+            {/* Hero Carousel */}
             <View style={[styles.featuredSection, { width }]}>
               <FlashList
+                ref={heroListRef}
                 horizontal
                 pagingEnabled
                 data={homeData?.movies || []}
@@ -444,7 +407,26 @@ export default function HomeScreen() {
                 showsHorizontalScrollIndicator={false}
                 snapToInterval={width}
                 decelerationRate="fast"
+                onViewableItemsChanged={({ viewableItems }) => {
+                  if (viewableItems[0]) setHeroIndex(viewableItems[0].index ?? 0);
+                }}
+                viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
               />
+              {(homeData?.movies?.length ?? 0) > 1 && (
+                <View style={styles.dotRow}>
+                  {homeData!.movies.map((_: any, i: number) => (
+                    <View
+                      key={i}
+                      style={[
+                        styles.dot,
+                        i === heroIndex
+                          ? { backgroundColor: theme.primary, width: 18 }
+                          : { backgroundColor: "rgba(255,255,255,0.35)", width: 6 },
+                      ]}
+                    />
+                  ))}
+                </View>
+              )}
             </View>
 
             {/* Favorite Channels */}
@@ -564,17 +546,12 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-  heroOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.3)",
-  },
   heroGradient: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    height: 200,
-    backgroundColor: "transparent",
+    height: 280,
   },
   heroContent: {
     position: "absolute",
@@ -626,6 +603,36 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
+  },
+  dotRow: {
+    position: "absolute",
+    bottom: 72,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 5,
+  },
+  dot: {
+    height: 6,
+    borderRadius: 3,
+  },
+  continuePlayOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.22)",
+  },
+  continuePlayBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.5)",
   },
   trendingCard: {
     width: 140,

@@ -1,8 +1,10 @@
 'use client';
 
+// @ts-ignore: side-effect import for global CSS without type declarations
 import './globals.css';
 
 import { invoke } from '@tauri-apps/api/core';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Inter, JetBrains_Mono, Outfit } from 'next/font/google';
 import { usePathname } from 'next/navigation';
 import { type ReactNode, Suspense, useEffect } from 'react';
@@ -86,9 +88,20 @@ export default function RootLayout({
         >
           <TopNav />
           <div className="bg-background text-foreground flex h-screen flex-col pt-16">
-            <main className="flex-1 overflow-y-auto">
+            <main className="flex-1 overflow-y-hidden">
               <ErrorBoundary>
-                <Suspense>{children}</Suspense>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={pathname}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.18, ease: 'easeInOut' }}
+                    className="h-full"
+                  >
+                    <Suspense>{children}</Suspense>
+                  </motion.div>
+                </AnimatePresence>
               </ErrorBoundary>
             </main>
           </div>

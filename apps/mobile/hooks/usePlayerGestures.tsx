@@ -16,6 +16,10 @@ interface UsePlayerGesturesProps {
   setShowControls: (show: boolean) => void;
   skipForward?: () => void;
   skipBackward?: () => void;
+  seekBy?: (seconds: number) => void;
+  onLongPressStart?: () => void;
+  onLongPressEnd?: () => void;
+  onPinch?: () => void;
 }
 
 export const usePlayerGestures = ({
@@ -23,153 +27,176 @@ export const usePlayerGestures = ({
   setShowControls,
   skipForward,
   skipBackward,
+  seekBy,
+  onLongPressStart,
+  onLongPressEnd,
+  onPinch,
 }: UsePlayerGesturesProps) => {
-  // Screen width tracking
   const screenWidth = useSharedValue(Dimensions.get("window").width);
   const screenWidthRef = useRef(Dimensions.get("window").width);
 
   useEffect(() => {
-    const subscription = Dimensions.addEventListener("change", ({ window }) => {
+    const sub = Dimensions.addEventListener("change", ({ window }) => {
       screenWidth.value = window.width;
       screenWidthRef.current = window.width;
     });
-    return () => subscription?.remove();
+    return () => sub?.remove();
   }, [screenWidth]);
 
-  // --- Shared Values (Replaces Animated.Value) ---
+  // --- Volume / Brightness shared values ---
   const volumeValue = useSharedValue(0);
-  const volumeAnim = useSharedValue(0); // Opacity: 0 or 1
+  const volumeAnim = useSharedValue(0);
   const gestureStartVolume = useSharedValue(0);
-
   const brightnessValue = useSharedValue(0);
-  const brightnessAnim = useSharedValue(0); // Opacity: 0 or 1
+  const brightnessAnim = useSharedValue(0);
   const gestureStartBrightness = useSharedValue(0);
 
-  // Double tap animations
+  // --- Double-tap ripple animation values ---
   const leftDoubleTapAnim = useSharedValue(0);
   const rightDoubleTapAnim = useSharedValue(0);
 
-  // Initialize values
-  useEffect(() => {
-    const initializeValues = async () => {
-      try {
-        const currentVolume = await VolumeManager.getVolume();
-        volumeValue.value = currentVolume.volume;
+  // Seek seconds shown in the ripple label (shared so Reanimated can read on UI thread)
+  const leftSeekSeconds = useSharedValue(10);
+  const rightSeekSeconds = useSharedValue(10);
 
-        const currentBrightness = await Brightness.getBrightnessAsync();
-        brightnessValue.value = currentBrightness;
-      } catch (error) {
-        console.error("Failed to initialize volume/brightness:", error);
-      }
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const v = await VolumeManager.getVolume();
+        volumeValue.value = v.volume;
+        const b = await Brightness.getBrightnessAsync();
+        brightnessValue.value = b;
+      } catch {}
     };
-    initializeValues();
+    init();
   }, [brightnessValue, volumeValue]);
 
-  // --- Helpers for Overlay Visibility (UI Thread) ---
-  const showVolume = () => {
-    "worklet";
-    volumeAnim.value = withTiming(1, { duration: 200 });
-  };
+  // --- Volume / Brightness overlay helpers ---
+  const showVolume = () => { "worklet"; volumeAnim.value = withTiming(1, { duration: 200 }); };
+  const hideVolume = () => { "worklet"; volumeAnim.value = withDelay(1000, withTiming(0, { duration: 500 })); };
+  const showBrightness = () => { "worklet"; brightnessAnim.value = withTiming(1, { duration: 200 }); };
+  const hideBrightness = () => { "worklet"; brightnessAnim.value = withDelay(1000, withTiming(0, { duration: 500 })); };
 
-  const hideVolume = () => {
-    "worklet";
-    volumeAnim.value = withDelay(1000, withTiming(0, { duration: 500 }));
-  };
+  // --- Multi-tap accumulation state (JS thread) ---
+  // Each side tracks: last tap timestamp, tap count, and a pending reset timer
+  const tapState = useRef({
+    left:  { count: 0, lastTs: 0, timer: null as ReturnType<typeof setTimeout> | null },
+    right: { count: 0, lastTs: 0, timer: null as ReturnType<typeof setTimeout> | null },
+  });
 
-  const showBrightness = () => {
-    "worklet";
-    brightnessAnim.value = withTiming(1, { duration: 200 });
-  };
+  const MULTI_TAP_WINDOW = 500; // ms — window to accumulate taps
+  const SECONDS_PER_TAP = 10;
 
-  const hideBrightness = () => {
-    "worklet";
-    brightnessAnim.value = withDelay(1000, withTiming(0, { duration: 500 }));
-  };
-
-  // --- Tap Logic ---
-  // We use a JS-side ref for double tap timing because complex logic is easier there
-  // and double-taps don't require 60fps precision like dragging does.
-  const lastTapTimestamp = useRef(0);
-
-  const handleTap = useCallback(() => {
-    const now = new Date().getTime();
-    const DOUBLE_TAP_DELAY = 300;
-
-    if (now - lastTapTimestamp.current < DOUBLE_TAP_DELAY) {
-      // Double Tap detected - return "double" to the gesture
-      lastTapTimestamp.current = 0;
-      return true;
+  const triggerRipple = useCallback((side: "left" | "right", seconds: number) => {
+    if (side === "left") {
+      leftSeekSeconds.value = seconds;
+      // Re-trigger: snap to 1 instantly then fade out, so each extra tap refreshes the overlay
+      leftDoubleTapAnim.value = withSequence(
+        withTiming(1, { duration: 80 }),
+        withDelay(600, withTiming(0, { duration: 350 })),
+      );
     } else {
-      // Potentially a single tap
-      lastTapTimestamp.current = now;
-      setTimeout(() => {
-        if (lastTapTimestamp.current === now) {
-          // No second tap occurred
-          setShowControls(!showControls);
-        }
-      }, DOUBLE_TAP_DELAY);
-      return false;
+      rightSeekSeconds.value = seconds;
+      rightDoubleTapAnim.value = withSequence(
+        withTiming(1, { duration: 80 }),
+        withDelay(600, withTiming(0, { duration: 350 })),
+      );
     }
-  }, [showControls, setShowControls]);
+  }, [leftDoubleTapAnim, rightDoubleTapAnim, leftSeekSeconds, rightSeekSeconds]);
 
-  // Wrapper to handle the JS logic and callbacks for tap gestures
-  const handleTapWrapper = useCallback(
-    (isRightSide: boolean) => {
-      const isDoubleTap = handleTap();
-      if (isDoubleTap) {
-        if (isRightSide) {
-          // Trigger Reanimated sequence directly
-          rightDoubleTapAnim.value = withSequence(
-            withTiming(1, { duration: 100 }),
-            withDelay(300, withTiming(0, { duration: 300 }))
-          );
-          if (skipForward) skipForward();
-        } else {
-          leftDoubleTapAnim.value = withSequence(
-            withTiming(1, { duration: 100 }),
-            withDelay(300, withTiming(0, { duration: 300 }))
-          );
-          if (skipBackward) skipBackward();
-        }
+  const commitSeek = useCallback((side: "left" | "right", totalSeconds: number) => {
+    if (side === "right") {
+      if (seekBy) seekBy(totalSeconds);
+      else if (skipForward) skipForward();
+    } else {
+      if (seekBy) seekBy(-totalSeconds);
+      else if (skipBackward) skipBackward();
+    }
+  }, [seekBy, skipForward, skipBackward]);
+
+  const handleTap = useCallback((isRightSide: boolean) => {
+    const now = Date.now();
+    const side = isRightSide ? "right" : "left";
+    const oppSide = isRightSide ? "left" : "right";
+    const state = tapState.current[side];
+    const oppState = tapState.current[oppSide];
+
+    // If tapping the opposite side, reset that side immediately
+    if (oppState.count > 0) {
+      if (oppState.timer) clearTimeout(oppState.timer);
+      oppState.count = 0;
+      oppState.lastTs = 0;
+    }
+
+    const isWithinWindow = now - state.lastTs < MULTI_TAP_WINDOW;
+
+    if (isWithinWindow && state.count > 0) {
+      // Accumulate
+      state.count += 1;
+    } else {
+      // First tap — check if it's a single tap (show/hide controls) or start of multi-tap
+      // We defer the single-tap action to see if a second tap follows
+      state.count = 1;
+    }
+
+    state.lastTs = now;
+
+    const currentCount = state.count;
+    const totalSeconds = currentCount * SECONDS_PER_TAP;
+
+    // Show ripple immediately on every tap ≥ 2, or on first tap after a gap
+    if (currentCount >= 2) {
+      triggerRipple(side, totalSeconds);
+    }
+
+    // Clear any existing commit timer
+    if (state.timer) clearTimeout(state.timer);
+
+    // After the window expires, commit the seek
+    state.timer = setTimeout(() => {
+      const finalCount = tapState.current[side].count;
+      if (finalCount === 1) {
+        // Single tap — toggle controls, no ripple
+        setShowControls(!showControls);
+      } else {
+        // Multi-tap — seek
+        const finalSeconds = finalCount * SECONDS_PER_TAP;
+        triggerRipple(side, finalSeconds);
+        commitSeek(side, finalSeconds);
       }
-    },
-    [
-      handleTap,
-      leftDoubleTapAnim,
-      rightDoubleTapAnim,
-      skipForward,
-      skipBackward,
-    ]
-  );
+      tapState.current[side].count = 0;
+      tapState.current[side].lastTs = 0;
+      tapState.current[side].timer = null;
+    }, MULTI_TAP_WINDOW);
 
-  const tapGesture = useMemo(() => {
-    return Gesture.Tap()
+    // Show ripple only when count >= 2
+    if (currentCount >= 2) {
+      triggerRipple(side, totalSeconds);
+    }
+  }, [showControls, setShowControls, triggerRipple, commitSeek]);
+
+  const tapGesture = useMemo(() =>
+    Gesture.Tap()
       .maxDuration(250)
       .onStart((e) => {
         "worklet";
-        // We calculate side immediately on UI thread for instant visual feedback
         const isRightSide = e.absoluteX > screenWidth.value / 2;
+        runOnJS(handleTap)(isRightSide);
+      }),
+  [handleTap, screenWidth]);
 
-        // Call JS to check timing logic
-        runOnJS(handleTapWrapper)(isRightSide);
-      });
-  }, [handleTapWrapper, screenWidth]);
-
-  // --- Pan Gesture (Volume / Brightness) ---
+  // --- Pan Gesture ---
   const BRIGHTNESS_ZONE = 0.5;
-  const CONTROL_NONE = 0;
-  const CONTROL_BRIGHTNESS = 1;
-  const CONTROL_VOLUME = 2;
+  const CONTROL_NONE = 0, CONTROL_BRIGHTNESS = 1, CONTROL_VOLUME = 2;
   const activeControl = useSharedValue(CONTROL_NONE);
 
-  const panGesture = useMemo(() => {
-    return Gesture.Pan()
-      .minDistance(20) // Increased slightly to prevent accidental swipes while tapping
+  const panGesture = useMemo(() =>
+    Gesture.Pan()
+      .minDistance(20)
       .onStart((e) => {
         "worklet";
-        const relativeX = e.absoluteX / screenWidth.value;
-
-        if (relativeX > BRIGHTNESS_ZONE) {
+        const relX = e.absoluteX / screenWidth.value;
+        if (relX > BRIGHTNESS_ZONE) {
           activeControl.value = CONTROL_VOLUME;
           gestureStartVolume.value = volumeValue.value;
           showVolume();
@@ -181,54 +208,43 @@ export const usePlayerGestures = ({
       })
       .onUpdate((e) => {
         "worklet";
-        const delta = -e.translationY / 300; // Sensitivity
-
+        const delta = -e.translationY / 300;
         if (activeControl.value === CONTROL_VOLUME) {
-          const newVal = Math.min(
-            Math.max(gestureStartVolume.value + delta, 0),
-            1
-          );
-          if (Math.abs(newVal - volumeValue.value) > 0.005) {
-            volumeValue.value = newVal;
-            runOnJS(VolumeManager.setVolume)(newVal);
+          const v = Math.min(Math.max(gestureStartVolume.value + delta, 0), 1);
+          if (Math.abs(v - volumeValue.value) > 0.005) {
+            volumeValue.value = v;
+            runOnJS(VolumeManager.setVolume)(v);
           }
-          // Keep overlay visible while dragging
           volumeAnim.value = 1;
         } else if (activeControl.value === CONTROL_BRIGHTNESS) {
-          const newVal = Math.min(
-            Math.max(gestureStartBrightness.value + delta, 0),
-            1
-          );
-          if (Math.abs(newVal - brightnessValue.value) > 0.005) {
-            brightnessValue.value = newVal;
-            runOnJS(Brightness.setBrightnessAsync)(newVal);
+          const b = Math.min(Math.max(gestureStartBrightness.value + delta, 0), 1);
+          if (Math.abs(b - brightnessValue.value) > 0.005) {
+            brightnessValue.value = b;
+            runOnJS(Brightness.setBrightnessAsync)(b);
           }
           brightnessAnim.value = 1;
         }
       })
       .onEnd(() => {
         "worklet";
-        if (activeControl.value === CONTROL_VOLUME) {
-          hideVolume();
-        } else if (activeControl.value === CONTROL_BRIGHTNESS) {
-          hideBrightness();
-        }
+        if (activeControl.value === CONTROL_VOLUME) hideVolume();
+        else if (activeControl.value === CONTROL_BRIGHTNESS) hideBrightness();
         activeControl.value = CONTROL_NONE;
-      });
-  }, [
-    screenWidth,
-    activeControl,
-    gestureStartVolume,
-    volumeValue,
-    gestureStartBrightness,
-    brightnessValue,
-    volumeAnim,
-    brightnessAnim,
-  ]);
+      }),
+  [screenWidth, activeControl, gestureStartVolume, volumeValue, gestureStartBrightness, brightnessValue, volumeAnim, brightnessAnim]);
 
-  const composedGesture = useMemo(() => {
-    return Gesture.Simultaneous(tapGesture, panGesture);
-  }, [tapGesture, panGesture]);
+  const composedGesture = useMemo(() =>
+    Gesture.Simultaneous(
+      tapGesture,
+      panGesture,
+      Gesture.LongPress()
+        .minDuration(400)
+        .onStart(() => { "worklet"; if (onLongPressStart) runOnJS(onLongPressStart)(); })
+        .onEnd(() => { "worklet"; if (onLongPressEnd) runOnJS(onLongPressEnd)(); }),
+      Gesture.Pinch()
+        .onEnd(() => { "worklet"; if (onPinch) runOnJS(onPinch)(); }),
+    ),
+  [tapGesture, panGesture, onLongPressStart, onLongPressEnd, onPinch]);
 
   return {
     composedGesture,
@@ -239,5 +255,7 @@ export const usePlayerGestures = ({
     brightnessAnim,
     leftDoubleTapAnim,
     rightDoubleTapAnim,
+    leftSeekSeconds,
+    rightSeekSeconds,
   };
 };

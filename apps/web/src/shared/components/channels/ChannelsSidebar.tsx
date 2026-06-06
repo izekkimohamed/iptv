@@ -40,14 +40,14 @@ function ChannelsSidebarContent({
   });
 
   return (
-    <div className="border-border/50 bg-background/50 flex h-full w-72 flex-col border-r">
+    <div className="border-border bg-background/50 flex h-full w-1/5 flex-col border-x">
       {/* Header */}
-      <div className="border-border/50 flex flex-col gap-6 border-b px-4 py-6">
+      <div className="border-border flex flex-col gap-6 border-b px-2 py-3">
         <div className="relative">
           <Search className="text-muted-foreground absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2" />
           <Input
             placeholder="Search channels..."
-            className="border-input bg-background placeholder:text-muted-foreground focus:ring-ring/20 h-11 rounded-sm border pr-10 pl-10 text-sm font-medium focus:ring-2"
+            className="border-border/5 active:ring-none  bg-background placeholder:text-muted-foreground focus:ring-none h-11 rounded-sm  pr-10 pl-10 text-sm font-medium focus:ring-none focus-visible:ring-none"
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
           />

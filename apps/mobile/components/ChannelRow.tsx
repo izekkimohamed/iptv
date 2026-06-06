@@ -3,7 +3,7 @@ import { usePlaylistStore } from "@/store";
 import { usePlayerTheme } from "@/theme/playerTheme";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import { Heart, Tv } from "lucide-react-native";
+import { Heart, Play, Tv } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
@@ -11,6 +11,7 @@ import Animated, {
   useSharedValue,
   withSequence,
   withSpring,
+  withTiming,
 } from "react-native-reanimated";
 
 ("use no memo");
@@ -23,19 +24,15 @@ export const ChannelRow = ({ channel }: ChannelRowProps) => {
   const router = useRouter();
   const theme = usePlayerTheme();
   const utils = trpc.useUtils();
-  const [currentTime, setCurrentTime] = useState(() =>
-    Math.floor(Date.now() / 1000),
-  );
+  const [currentTime, setCurrentTime] = useState(() => Math.floor(Date.now() / 1000));
+  const [pressed, setPressed] = useState(false);
 
-  // Fix: useSharedValue should only be accessed via useAnimatedStyle
   const heartScale = useSharedValue(1);
+  const playScale = useSharedValue(0);
   const playlist = usePlaylistStore((state) => state.selectedPlaylist);
 
   useEffect(() => {
-    const timer = setInterval(
-      () => setCurrentTime(Math.floor(Date.now() / 1000)),
-      30000,
-    );
+    const timer = setInterval(() => setCurrentTime(Math.floor(Date.now() / 1000)), 30000);
     return () => clearInterval(timer);
   }, []);
 
@@ -56,129 +53,100 @@ export const ChannelRow = ({ channel }: ChannelRowProps) => {
   const programInfo = useMemo(() => {
     if (!epgData?.length) return null;
     const current = epgData.find(
-      (p: any) =>
-        currentTime >= Number(p.start_timestamp) &&
-        currentTime <= Number(p.stop_timestamp),
+      (p: any) => currentTime >= Number(p.start_timestamp) && currentTime <= Number(p.stop_timestamp),
     );
     if (!current) return null;
-
     const start = Number(current.start_timestamp);
     const stop = Number(current.stop_timestamp);
-    const progress = Math.min(
-      100,
-      Math.max(0, ((currentTime - start) / (stop - start)) * 100),
-    );
-
+    const progress = Math.min(100, Math.max(0, ((currentTime - start) / (stop - start)) * 100));
     const formatTime = (ts: number) =>
-      new Date(ts * 1000).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-
-    return {
-      title: current.title,
-      progress,
-      startTime: formatTime(start),
-      stopTime: formatTime(stop),
-    };
+      new Date(ts * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return { title: current.title, progress, startTime: formatTime(start), stopTime: formatTime(stop) };
   }, [epgData, currentTime]);
 
   const handleFavorite = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     heartScale.value = withSequence(withSpring(1.3), withSpring(1));
-    toggleFavorite({
-      channelsId: Number(channel.id),
-      isFavorite: !channel.isFavorite,
-    });
+    toggleFavorite({ channelsId: Number(channel.id), isFavorite: !channel.isFavorite });
   };
 
-  // Fix for the Reanimated Warning:
   const animatedHeartStyle = useAnimatedStyle(() => ({
     transform: [{ scale: heartScale.value }],
   }));
 
+  const playOverlayStyle = useAnimatedStyle(() => ({
+    opacity: playScale.value,
+    transform: [{ scale: 0.7 + playScale.value * 0.3 }],
+  }));
+
+  const handlePressIn = () => {
+    setPressed(true);
+    playScale.value = withTiming(1, { duration: 150 });
+  };
+
+  const handlePressOut = () => {
+    setPressed(false);
+    playScale.value = withTiming(0, { duration: 200 });
+  };
+
+  const isNowPlaying = programInfo !== null;
+
   return (
     <Pressable
-      style={({ pressed }) => [
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      onPress={() => router.push({ pathname: "/player", params: { url: channel.url, title: channel.name } })}
+      style={[
         styles.row,
-        { backgroundColor: pressed ? `${theme.primary}10` : "transparent" },
+        { backgroundColor: pressed ? `${theme.primary}10` : isNowPlaying ? `${theme.primary}06` : "transparent" },
       ]}
-      onPress={() =>
-        router.push({
-          pathname: "/player",
-          params: { url: channel.url, title: channel.name },
-        })
-      }
     >
-      <View
-        style={[
-          styles.logoContainer,
-          {
-            backgroundColor: theme.surfaceSecondary,
-            borderColor: theme.border,
-          },
-        ]}
-      >
+      {/* Now-playing left accent bar */}
+      {isNowPlaying && (
+        <View style={[styles.accentBar, { backgroundColor: theme.primary }]} />
+      )}
+
+      {/* Logo */}
+      <View style={[styles.logoContainer, { backgroundColor: theme.surfaceSecondary, borderColor: isNowPlaying ? `${theme.primary}40` : theme.border }]}>
         {channel.streamIcon ? (
-          <Image source={{ uri: channel.streamIcon }} style={styles.logo} />
+          <Image source={{ uri: channel.streamIcon }} style={styles.logo} resizeMode="contain" />
         ) : (
           <Tv size={20} color={theme.textMuted} />
         )}
+        {/* Play overlay on press */}
+        <Animated.View style={[styles.playOverlay, playOverlayStyle]}>
+          <Play size={18} color="#fff" fill="#fff" />
+        </Animated.View>
       </View>
 
+      {/* Info */}
       <View style={styles.infoContainer}>
-        <Text
-          style={[styles.channelName, { color: theme.textPrimary }]}
-          numberOfLines={1}
-        >
+        <Text style={[styles.channelName, { color: theme.textPrimary }]} numberOfLines={1}>
           {channel.name}
         </Text>
 
         {programInfo ? (
           <View style={styles.epgWrapper}>
-            <Text
-              style={[styles.programTitle, { color: theme.textSecondary }]}
-              numberOfLines={1}
-            >
+            <Text style={[styles.programTitle, { color: theme.textSecondary }]} numberOfLines={1}>
               {programInfo.title}
             </Text>
             <View style={styles.progressRow}>
-              <Text style={[styles.timeText, { color: theme.textMuted }]}>
-                {programInfo.startTime}
-              </Text>
+              <Text style={[styles.timeText, { color: theme.textMuted }]}>{programInfo.startTime}</Text>
               <View style={[styles.track, { backgroundColor: theme.border }]}>
-                <View
-                  style={[
-                    styles.fill,
-                    {
-                      width: `${programInfo.progress}%`,
-                      backgroundColor: theme.primary,
-                    },
-                  ]}
-                />
+                <View style={[styles.fill, { width: `${programInfo.progress}%`, backgroundColor: theme.primary }]} />
+                {/* Glow at the tip */}
+                <View style={[styles.fillGlow, { left: `${programInfo.progress}%` as any, backgroundColor: theme.primary }]} />
               </View>
-              <Text
-                style={[
-                  styles.timeText,
-                  { color: theme.textMuted, textAlign: "right" },
-                ]}
-              >
-                {programInfo.stopTime}
-              </Text>
+              <Text style={[styles.timeText, { color: theme.textMuted, textAlign: "right" }]}>{programInfo.stopTime}</Text>
             </View>
           </View>
         ) : (
-          <Text style={[styles.noEpg, { color: theme.textMuted }]}>
-            No Information Available
-          </Text>
+          <Text style={[styles.noEpg, { color: theme.textMuted }]}>No information available</Text>
         )}
       </View>
 
-      <Pressable
-        onPress={handleFavorite}
-        hitSlop={15}
-        style={styles.favoriteTouch}
-      >
+      {/* Favorite */}
+      <Pressable onPress={handleFavorite} hitSlop={15} style={styles.favoriteTouch}>
         <Animated.View style={animatedHeartStyle}>
           <Heart
             size={22}
@@ -199,6 +167,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 16,
     marginBottom: 4,
+    position: "relative",
+    overflow: "hidden",
+  },
+  accentBar: {
+    position: "absolute",
+    left: 0,
+    top: 8,
+    bottom: 8,
+    width: 3,
+    borderRadius: 2,
   },
   logoContainer: {
     width: 64,
@@ -208,51 +186,38 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",
+    position: "relative",
   },
   logo: { width: "80%", height: "80%" },
-  infoContainer: {
-    flex: 1,
-    marginLeft: 14,
-    gap: 2,
-  },
-  channelName: {
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  epgWrapper: {
-    marginTop: 2,
-  },
-  programTitle: {
-    fontSize: 13,
-    fontWeight: "500",
-    marginBottom: 4,
-  },
-  progressRow: {
-    flexDirection: "row",
+  playOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "center",
     alignItems: "center",
-    gap: 6,
   },
+  infoContainer: { flex: 1, marginLeft: 14, gap: 2 },
+  channelName: { fontSize: 15, fontWeight: "700" },
+  epgWrapper: { marginTop: 2 },
+  programTitle: { fontSize: 13, fontWeight: "500", marginBottom: 5 },
+  progressRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   track: {
     flex: 1,
-    height: 3,
+    height: 4,
     borderRadius: 2,
-    overflow: "hidden",
+    overflow: "visible",
+    position: "relative",
   },
-  fill: {
-    height: "100%",
+  fill: { height: "100%", borderRadius: 2 },
+  fillGlow: {
+    position: "absolute",
+    top: -2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    opacity: 0.6,
+    transform: [{ translateX: -4 }],
   },
-  timeText: {
-    fontSize: 10,
-    fontWeight: "600",
-    minWidth: 40,
-  },
-  noEpg: {
-    fontSize: 12,
-    fontStyle: "italic",
-    marginTop: 2,
-  },
-  favoriteTouch: {
-    padding: 8,
-    marginLeft: 4,
-  },
+  timeText: { fontSize: 10, fontWeight: "600", minWidth: 40 },
+  noEpg: { fontSize: 12, fontStyle: "italic", marginTop: 2 },
+  favoriteTouch: { padding: 8, marginLeft: 4 },
 });

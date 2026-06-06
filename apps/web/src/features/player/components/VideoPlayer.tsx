@@ -117,6 +117,7 @@ export default function VideoPlayer({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const progressRef = useRef<HTMLDivElement | null>(null);
   const volumeBarRef = useRef<HTMLDivElement>(null!);
+  const vlcPositionRef = useRef(0);
 
   const storedVolume = usePlayerStore((s) => s.volume);
   const storedMuted = usePlayerStore((s) => s.isMuted);
@@ -168,6 +169,7 @@ export default function VideoPlayer({
       episodeNumber,
       seasonId,
       totalEpisodes,
+      vlcPositionRef,
     });
 
   const handleHlsError = useCallback(
@@ -201,7 +203,7 @@ export default function VideoPlayer({
 
   const isHlsStream = src?.includes('.m3u8') || src?.includes('.ts');
 
-  const { vlcStatus, handleOpenInVlc, handleVlcPositionUpdate } = useVlcFallback({
+  const { vlcStatus, handleOpenInVlc } = useVlcFallback({
     src,
     isDesktopApp,
     isHlsStream,
@@ -213,6 +215,7 @@ export default function VideoPlayer({
     setPlaybackError,
     saveProgressNow,
     videoRef,
+    vlcPositionRef,
   });
 
   const {
@@ -387,7 +390,6 @@ export default function VideoPlayer({
           onQualityChange={setQuality}
           onPauseVideo={() => videoRef.current?.pause()}
           onOpenInVlc={handleOpenInVlc}
-          onVlcPositionUpdate={handleVlcPositionUpdate}
           vlcStatus={vlcStatus}
         />
       </div>
