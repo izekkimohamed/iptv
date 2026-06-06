@@ -54,9 +54,8 @@ interface CustomControlsProps {
   qualityLevels?: { index: number; height?: number; bitrate?: number; label: string }[];
   currentQuality?: number;
   onQualityChange?: (quality: number) => void;
-  onOpenInVlc?: (url: string, aspectRatio: string) => void;
+  onOpenInVlc?: () => void;
   onPauseVideo?: () => void;
-  onVlcPositionUpdate?: (position: number) => void;
   vlcStatus?: 'idle' | 'opening' | 'playing' | 'closed';
 }
 

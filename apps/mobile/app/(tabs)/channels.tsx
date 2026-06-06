@@ -1,7 +1,9 @@
 import { ChannelRow } from "@/components/ChannelRow";
+import { SkeletonRow } from "@/components/ui/Skeleton";
 import { trpc } from "@/lib/trpc";
 import { usePlaylistStore } from "@/store";
 import { usePlayerTheme } from "@/theme/playerTheme";
+import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { FlashList, FlashListRef } from "@shopify/flash-list";
 import {
   ArrowDownAZ,
@@ -36,15 +38,21 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function ChannelsScreen() {
   const theme = usePlayerTheme();
   const selectPlaylist = usePlaylistStore((state) => state.selectedPlaylist);
-  const categoryListRef = useRef<FlashListRef<any>>(null);
+  const categorySheetRef = useRef<BottomSheet>(null);
+  const sortSheetRef = useRef<BottomSheet>(null);
+  const categorySnapPoints = useMemo(() => ["60%", "85%"], []);
+  const sortSnapPoints = useMemo(() => ["40%"], []);
 
   const [selectedCatId, setSelectedCatId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [showCategoryDrawer, setShowCategoryDrawer] = useState(false);
-  const [showSortModal, setShowSortModal] = useState(false);
   const [sortBy, setSortBy] = useState<
     "default" | "az" | "za" | "favorites" | "recent"
   >("default");
+
+  const openCategorySheet = () => categorySheetRef.current?.expand();
+  const openSortSheet = () => sortSheetRef.current?.expand();
+  const closeCategorySheet = () => categorySheetRef.current?.close();
+  const closeSortSheet = () => sortSheetRef.current?.close();
 
   type SortOption = {
     id: "default" | "az" | "za" | "favorites" | "recent";
@@ -172,7 +180,7 @@ export default function ChannelsScreen() {
           )}
         </View>
         <Pressable
-          onPress={() => setShowSortModal(true)}
+          onPress={openSortSheet}
           style={[
             styles.filterButton,
             {
@@ -184,7 +192,7 @@ export default function ChannelsScreen() {
           <SlidersHorizontal size={18} color={theme.textPrimary} />
         </Pressable>
         <Pressable
-          onPress={() => setShowCategoryDrawer(true)}
+          onPress={openCategorySheet}
           style={[
             styles.filterButton,
             {
@@ -221,12 +229,13 @@ export default function ChannelsScreen() {
 
       <SafeAreaView style={styles.listContainer} edges={["bottom"]}>
         {loadingChannels ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.primary} />
-            <Text style={[styles.loadingText, { color: theme.textMuted }]}>
-              Loading Streams...
-            </Text>
-          </View>
+          <FlashList
+            data={Array(10).fill(null)}
+            renderItem={() => <SkeletonRow />}
+            keyExtractor={(_, i) => `skel-${i}`}
+            contentContainerStyle={styles.listContent}
+
+          />
         ) : (
           <FlashList
             data={sortedChannels}
@@ -248,176 +257,86 @@ export default function ChannelsScreen() {
         )}
       </SafeAreaView>
 
-      {/* Sort Modal */}
-      <Modal
-        visible={showSortModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowSortModal(false)}
+      {/* Category Bottom Sheet */}
+      <BottomSheet
+        ref={categorySheetRef}
+        index={-1}
+        snapPoints={categorySnapPoints}
+        enablePanDownToClose
+        backgroundStyle={{ backgroundColor: theme.surfacePrimary }}
+        handleIndicatorStyle={{ backgroundColor: theme.border }}
       >
-        <View style={styles.modalOverlay}>
-          <Pressable
-            style={styles.modalBackdrop}
-            onPress={() => setShowSortModal(false)}
-          />
-          <Animated.View
-            entering={FadeInDown.springify()}
-            style={[
-              styles.drawerContent,
-              { backgroundColor: theme.surfacePrimary },
-            ]}
-          >
-            <View
-              style={[styles.drawerHandle, { backgroundColor: theme.border }]}
-            />
-
-            <View style={styles.drawerHeader}>
-              <Text style={[styles.drawerTitle, { color: theme.textPrimary }]}>
-                Sort Channels
-              </Text>
-            </View>
-
-            <View style={styles.sortOptionsContainer}>
-              {sortOptions.map((option) => (
-                <Pressable
-                  key={option.id}
-                  onPress={() => {
-                    setSortBy(option.id);
-                    setShowSortModal(false);
-                  }}
-                  style={[
-                    styles.sortOption,
-                    {
-                      backgroundColor:
-                        sortBy === option.id
-                          ? theme.primary
-                          : theme.surfaceSecondary,
-                      borderColor:
-                        sortBy === option.id ? theme.primary : theme.border,
-                    },
-                  ]}
-                >
-                  {option.icon}
-                  <Text
-                    style={[
-                      styles.sortOptionText,
-                      {
-                        color:
-                          sortBy === option.id
-                            ? theme.primaryForeground
-                            : theme.textPrimary,
-                      },
-                    ]}
-                  >
-                    {option.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </Animated.View>
+        <View style={[styles.sheetHeader, { borderBottomColor: theme.border }]}>
+          <Text style={[styles.sheetTitle, { color: theme.textPrimary }]}>Categories</Text>
+          <Text style={[styles.sheetSubtitle, { color: theme.textMuted }]}>{categories?.length ?? 0} categories</Text>
         </View>
-      </Modal>
-
-      {/* Category Drawer Modal */}
-      <Modal
-        visible={showCategoryDrawer}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowCategoryDrawer(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <Pressable
-            style={styles.modalBackdrop}
-            onPress={() => setShowCategoryDrawer(false)}
+        <View style={[styles.sheetSearch, { backgroundColor: theme.surfaceSecondary }]}>
+          <Search size={16} color={theme.textMuted} />
+          <TextInput
+            style={[styles.sheetSearchInput, { color: theme.textPrimary }]}
+            placeholder="Search categories..."
+            placeholderTextColor={theme.textMuted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
           />
-          <Animated.View
-            entering={FadeInDown.springify()}
-            style={[
-              styles.drawerContent,
-              { backgroundColor: theme.surfacePrimary },
-            ]}
-          >
-            <View
-              style={[styles.drawerHandle, { backgroundColor: theme.border }]}
-            />
-
-            <View style={styles.drawerHeader}>
-              <Text style={[styles.drawerTitle, { color: theme.textPrimary }]}>
-                Categories
-              </Text>
-              <Text style={[styles.drawerSubtitle, { color: theme.textMuted }]}>
-                {categories?.length || 0} categories
-              </Text>
-            </View>
-
-            {/* Search in drawer */}
-            <View
-              style={[
-                styles.drawerSearch,
-                { backgroundColor: theme.surfaceSecondary },
-              ]}
+        </View>
+        <BottomSheetScrollView contentContainerStyle={styles.sheetList}>
+          {filteredCategories.map((category) => (
+            <Pressable
+              key={category.categoryId}
+              onPress={() => { setSelectedCatId(category.categoryId); closeCategorySheet(); setSearchQuery(""); }}
+              style={[styles.sheetItem, {
+                backgroundColor: selectedCatId === category.categoryId ? theme.primary : theme.surfaceSecondary,
+                borderColor: selectedCatId === category.categoryId ? theme.primary : theme.border,
+              }]}
             >
-              <Search size={16} color={theme.textMuted} />
-              <TextInput
-                style={[styles.drawerSearchInput, { color: theme.textPrimary }]}
-                placeholder="Search categories..."
-                placeholderTextColor={theme.textMuted}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-              />
-            </View>
+              <Text style={[styles.sheetItemText, {
+                color: selectedCatId === category.categoryId ? theme.primaryForeground : theme.textPrimary,
+                fontWeight: selectedCatId === category.categoryId ? "700" : "500",
+              }]}>
+                {category.categoryName}
+              </Text>
+            </Pressable>
+          ))}
+        </BottomSheetScrollView>
+      </BottomSheet>
 
-            <View style={styles.categoryListContainer}>
-              <FlashList
-                data={filteredCategories}
-                renderItem={({ item: category }) => (
-                  <View>
-                    <Pressable
-                      onPress={() => {
-                        setSelectedCatId(category.categoryId);
-                        setShowCategoryDrawer(false);
-                        setSearchQuery("");
-                      }}
-                      style={[
-                        styles.categoryItem,
-                        {
-                          backgroundColor:
-                            selectedCatId === category.categoryId
-                              ? theme.primary
-                              : theme.surfaceSecondary,
-                          borderColor:
-                            selectedCatId === category.categoryId
-                              ? theme.primary
-                              : theme.border,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.categoryItemText,
-                          {
-                            color:
-                              selectedCatId === category.categoryId
-                                ? theme.primaryForeground
-                                : theme.textPrimary,
-                            fontWeight:
-                              selectedCatId === category.categoryId
-                                ? "700"
-                                : "500",
-                          },
-                        ]}
-                      >
-                        {category.categoryName}
-                      </Text>
-                    </Pressable>
-                  </View>
-                )}
-                keyExtractor={(item) => item.categoryId.toString()}
-              />
-            </View>
-          </Animated.View>
+      {/* Sort Bottom Sheet */}
+      <BottomSheet
+        ref={sortSheetRef}
+        index={-1}
+        snapPoints={sortSnapPoints}
+        enablePanDownToClose
+        backgroundStyle={{ backgroundColor: theme.surfacePrimary }}
+        handleIndicatorStyle={{ backgroundColor: theme.border }}
+      >
+        <View style={[styles.sheetHeader, { borderBottomColor: theme.border }]}>
+          <Text style={[styles.sheetTitle, { color: theme.textPrimary }]}>Sort Channels</Text>
         </View>
-      </Modal>
+        <BottomSheetScrollView contentContainerStyle={styles.sheetList}>
+          {sortOptions.map((option) => (
+            <Pressable
+              key={option.id}
+              onPress={() => { setSortBy(option.id); closeSortSheet(); }}
+              style={[styles.sheetItem, {
+                backgroundColor: sortBy === option.id ? theme.primary : theme.surfaceSecondary,
+                borderColor: sortBy === option.id ? theme.primary : theme.border,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 12,
+              }]}
+            >
+              {option.icon}
+              <Text style={[styles.sheetItemText, {
+                color: sortBy === option.id ? theme.primaryForeground : theme.textPrimary,
+                fontWeight: sortBy === option.id ? "700" : "500",
+              }]}>
+                {option.label}
+              </Text>
+            </Pressable>
+          ))}
+        </BottomSheetScrollView>
+      </BottomSheet>
     </SafeAreaView>
   );
 }
@@ -547,88 +466,34 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-  },
-  modalBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  drawerContent: {
-    height: "65%",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingBottom: 34,
-  },
-  categoryListContainer: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  drawerHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    alignSelf: "center",
-    marginTop: 12,
-    marginBottom: 8,
-  },
-  drawerHeader: {
+  // Sheet styles
+  sheetHeader: {
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.1)",
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 8,
   },
-  drawerTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-  },
-  drawerSubtitle: {
-    fontSize: 13,
-    marginTop: 4,
-  },
-  drawerSearch: {
+  sheetTitle: { fontSize: 18, fontWeight: "800" },
+  sheetSubtitle: { fontSize: 13 },
+  sheetSearch: {
     flexDirection: "row",
     alignItems: "center",
-    marginHorizontal: 20,
-    marginVertical: 12,
+    marginHorizontal: 16,
+    marginVertical: 10,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 12,
     gap: 10,
   },
-  drawerSearchInput: {
-    flex: 1,
-    fontSize: 14,
-  },
-  categoryList: {
-    padding: 16,
-    paddingTop: 4,
-  },
-  categoryItem: {
+  sheetSearchInput: { flex: 1, fontSize: 14 },
+  sheetList: { paddingHorizontal: 16, paddingBottom: 40, gap: 8 },
+  sheetItem: {
     paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 14,
-    marginBottom: 10,
-    borderWidth: 1,
-  },
-  categoryItemText: {
-    fontSize: 15,
-  },
-  sortOptionsContainer: {
-    padding: 20,
-    gap: 12,
-  },
-  sortOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    padding: 16,
+    paddingHorizontal: 18,
     borderRadius: 14,
     borderWidth: 1,
   },
-  sortOptionText: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
+  sheetItemText: { fontSize: 15 },
 });

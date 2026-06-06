@@ -1,10 +1,10 @@
 'use client';
 
-import { Menu, Settings, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import {
   Select,
@@ -14,7 +14,6 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select';
 import { useTauri } from '@/shared/hooks/useTauri';
-import { cn } from '@/shared/lib/utils';
 import { usePlaylistStore } from '@repo/store';
 
 import { DesktopNav, MobileNav, WindowControls } from './topnav';
@@ -43,9 +42,9 @@ export default function TopNav() {
     return () => clearInterval(interval);
   }, []);
 
-  const handlePlaylistSelect = (id: string) => {
+  const handlePlaylistSelect = useCallback((id: string) => {
     selectPlaylist(storePlaylists?.find((playlist) => playlist.id === Number(id)) || null);
-  };
+  }, [storePlaylists, selectPlaylist]);
 
   const isActive = (href: string) => {
     return pathname === href || (href !== '/' && pathname.startsWith(href));
@@ -53,12 +52,10 @@ export default function TopNav() {
 
   return (
     <>
-      <header className="border-border/50 bg-background/95 fixed top-0 right-0 left-0 z-50 h-16 border-b backdrop-blur-sm">
+      <header className="border-border bg-background/95 fixed top-0 right-0 left-0 z-50 h-16 border-b backdrop-blur-sm">
         <div className="flex h-full items-center justify-between px-4 lg:px-6">
           {/* Left Section - Window Controls (Desktop App) */}
           <div className="flex items-center gap-3">
-            {isDesktopApp && <WindowControls />}
-
             {/* Logo */}
             <Link href="/" className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-sm">
@@ -81,13 +78,8 @@ export default function TopNav() {
 
           {/* Right Section */}
           <div className="flex items-center gap-2">
-            {/* Time (Desktop) */}
-            {isDesktopApp && (
-              <span className="text-muted-foreground mr-2 hidden text-sm lg:block">{time}</span>
-            )}
-
             {/* Playlist Selector */}
-            <Select value={selectedPlaylist?.id?.toString()} onValueChange={handlePlaylistSelect}>
+            <Select value={selectedPlaylist?.id?.toString() ?? ''} onValueChange={handlePlaylistSelect}>
               <SelectTrigger className="bg-background text-foreground border-border w-35 text-sm">
                 <SelectValue placeholder="Select playlist" />
               </SelectTrigger>
@@ -100,19 +92,6 @@ export default function TopNav() {
               </SelectContent>
             </Select>
 
-            {/* Settings */}
-            <Link
-              href="/settings"
-              className={cn(
-                'flex items-center gap-2 rounded-sm px-3 py-2 text-sm font-medium transition-colors',
-                isActive('/settings')
-                  ? 'text-primary bg-primary/10'
-                  : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              <Settings className="h-4 w-4" />
-            </Link>
-
             {/* Mobile Menu Toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -121,6 +100,11 @@ export default function TopNav() {
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
+          {/* Time (Desktop) */}
+          {isDesktopApp && (
+            <span className="text-muted-foreground mr-2 hidden text-sm lg:block">{time}</span>
+          )}
+          {isDesktopApp && <WindowControls />}
         </div>
       </header>
 

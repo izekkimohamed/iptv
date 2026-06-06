@@ -13,6 +13,8 @@ import { getDb } from "@/trpc/db";
 import {
   categories,
   paginationInputSchema,
+  playlists,
+  series,
   zodCategoriesSchema,
   zodSerieSchema,
 } from "@/trpc/schema";
@@ -26,7 +28,7 @@ export const seriesRouter = t.router({
     .input(
       z.object({
         playlistId: z.number(),
-        categoryId: z.number(),
+        categoryId: z.number().optional(),
         cursor: z.number().nullish(),
         limit: z.number().min(1).max(100).default(50),
       })
@@ -39,6 +41,19 @@ export const seriesRouter = t.router({
     )
     .query(async ({ input }) => {
       return await getSeriesFromDb(input);
+    }),
+
+  getSerieById: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .output(zodSerieSchema.nullable())
+    .query(async ({ input }) => {
+      const db = getDb();
+      const [result] = await db
+        .select()
+        .from(series)
+        .where(eq(series.id, input.id))
+        .limit(1);
+      return result ?? null;
     }),
 
   getSerie: publicProcedure
@@ -57,6 +72,59 @@ export const seriesRouter = t.router({
         input.password,
         input.serieId
       );
+    }),
+
+  getSerieEpisodes: publicProcedure
+    .input(z.object({ playlistId: z.number(), serieId: z.number() }))
+    .output(
+      z.object({
+        info: z.any(),
+        seasons: z.array(z.number()),
+        episodes: z.record(z.string(), z.array(
+          z.object({
+            id: z.number(),
+            episodeNum: z.number(),
+            title: z.string(),
+            streamUrl: z.string(),
+            plot: z.string().optional(),
+          })
+        )),
+        tmdb: z.any().nullable(),
+      })
+    )
+    .query(async ({ input }) => {
+      const db = getDb();
+      const [playlist] = await db
+        .select()
+        .from(playlists)
+        .where(eq(playlists.id, input.playlistId))
+        .limit(1);
+      if (!playlist) throw new Error("Playlist not found");
+
+      const data = await getSeriesDetails(
+        playlist.baseUrl,
+        playlist.username,
+        playlist.password,
+        input.serieId
+      );
+
+      const episodes: Record<string, { id: number; episodeNum: number; title: string; streamUrl: string; plot?: string }[]> = {};
+      for (const [season, eps] of Object.entries(data.episodes || {})) {
+        episodes[season] = (eps as any[]).map((ep: any) => ({
+          id: Number(ep.id),
+          episodeNum: Number(ep.episode_num),
+          title: ep.title || `Episode ${ep.episode_num}`,
+          streamUrl: `${playlist.baseUrl}/movie/${playlist.username}/${playlist.password}/${ep.id}.${ep.container_extension || "mp4"}`,
+          plot: ep.info?.plot || "",
+        }));
+      }
+
+      return {
+        info: data.info || {},
+        seasons: data.seasons || [],
+        episodes,
+        tmdb: data.tmdb || null,
+      };
     }),
 
   createSerie: publicProcedure

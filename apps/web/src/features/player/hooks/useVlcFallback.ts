@@ -18,6 +18,7 @@ interface UseVlcFallbackOptions {
   setPlaybackError: (error: { message: string; code: number } | null) => void;
   saveProgressNow: () => void;
   videoRef: React.RefObject<HTMLVideoElement | null>;
+  vlcPositionRef: React.RefObject<number>;
 }
 
 export function useVlcFallback({
@@ -32,12 +33,58 @@ export function useVlcFallback({
   setPlaybackError,
   saveProgressNow,
   videoRef,
+  vlcPositionRef,
 }: UseVlcFallbackOptions) {
   const [loadingStartTime, setLoadingStartTime] = useState<number | null>(null);
   const [vlcStatus, setVlcStatus] = useState<VlcStatus>('idle');
   const vlcFallbackRef = useRef(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Stable refs for callbacks passed to Tauri event listeners (prevents churn)
+  const saveProgressRef = useRef(saveProgressNow);
+  saveProgressRef.current = saveProgressNow;
+
+  const setVlcStatusRef = useRef(setVlcStatus);
+  setVlcStatusRef.current = setVlcStatus;
+
+  const setIsLoadingRef = useRef(setIsLoading);
+  setIsLoadingRef.current = setIsLoading;
+
+  const launchVlc = useCallback(
+    async (reason: 'stuck' | 'error' | 'manual') => {
+      if (vlcFallbackRef.current) return;
+      vlcFallbackRef.current = true;
+
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+
+      setVlcStatus('playing');
+      setIsLoading(false);
+
+      try {
+        await invoke('open_in_vlc', {
+          url: src,
+          aspectRatio,
+          startPosition: currentTime,
+        });
+        saveProgressNow();
+        setVlcStatus('closed');
+        if (reason === 'error') {
+          setPlaybackError(null);
+        }
+      } catch (err) {
+        vlcFallbackRef.current = false;
+        setVlcStatus('idle');
+        const message = err instanceof Error ? err.message : String(err);
+        setPlaybackError({ message: `VLC launch failed: ${message}`, code: 0 });
+      }
+    },
+    [src, aspectRatio, currentTime, saveProgressNow, setPlaybackError, setIsLoading],
+  );
+
+  // Reset when src changes
   useEffect(() => {
     vlcFallbackRef.current = false;
     if (intervalRef.current) {
@@ -46,6 +93,7 @@ export function useVlcFallback({
     }
   }, [src]);
 
+  // Track loading start time
   useEffect(() => {
     if (isLoading && !loadingStartTime) {
       setLoadingStartTime(Date.now());
@@ -54,6 +102,7 @@ export function useVlcFallback({
     }
   }, [isLoading, loadingStartTime]);
 
+  // Stuck-loading detection timer
   useEffect(() => {
     if (!isDesktopApp || !src || isHlsStream) return;
     if (vlcFallbackRef.current) return;
@@ -65,32 +114,7 @@ export function useVlcFallback({
         Date.now() - loadingStartTime > PLAYER_CONSTANTS.VLC_STUCK_LOADING_THRESHOLD &&
         isLoading
       ) {
-        vlcFallbackRef.current = true;
-
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
-
-        setVlcStatus('playing');
-        setIsLoading(false);
-
-        invoke<number>('open_in_vlc', {
-          url: src,
-          aspectRatio,
-          startPosition: currentTime,
-        })
-          .then((position) => {
-            if (position > 0 && videoRef.current) {
-              videoRef.current.currentTime = position;
-              saveProgressNow();
-            }
-            setVlcStatus('closed');
-          })
-          .catch(() => {
-            vlcFallbackRef.current = false;
-            setVlcStatus('idle');
-          });
+        launchVlc('stuck');
       }
     };
 
@@ -101,97 +125,16 @@ export function useVlcFallback({
         intervalRef.current = null;
       }
     };
-  }, [
-    isDesktopApp,
-    isHlsStream,
-    src,
-    loadingStartTime,
-    isLoading,
-    aspectRatio,
-    currentTime,
-    saveProgressNow,
-    setIsLoading,
-    videoRef,
-  ]);
+  }, [isDesktopApp, isHlsStream, src, loadingStartTime, isLoading, launchVlc]);
 
+  // Playback-error auto-launch
   useEffect(() => {
     if (playbackError && isDesktopApp && !isHlsStream && src && !vlcFallbackRef.current) {
-      vlcFallbackRef.current = true;
-      setVlcStatus('playing');
-      setIsLoading(false);
-
-      const openVlcFallback = async () => {
-        try {
-          const position = await invoke<number>('open_in_vlc', {
-            url: src,
-            aspectRatio,
-            startPosition: currentTime,
-          });
-          if (position > 0 && videoRef.current) {
-            videoRef.current.currentTime = position;
-            saveProgressNow();
-          }
-          setPlaybackError(null);
-          setVlcStatus('closed');
-        } catch {
-          vlcFallbackRef.current = false;
-          setVlcStatus('idle');
-        }
-      };
-      openVlcFallback();
+      launchVlc('error');
     }
-  }, [
-    playbackError,
-    isDesktopApp,
-    isHlsStream,
-    src,
-    aspectRatio,
-    currentTime,
-    saveProgressNow,
-    setPlaybackError,
-    setIsLoading,
-    videoRef,
-  ]);
+  }, [playbackError, isDesktopApp, isHlsStream, src, launchVlc]);
 
-  const handleVlcPositionUpdate = useCallback(
-    (position: number) => {
-      if (position > 0 && videoRef.current && src) {
-        videoRef.current.currentTime = position;
-        saveProgressNow();
-      }
-    },
-    [saveProgressNow, src, videoRef],
-  );
-
-  const handleOpenInVlc = useCallback(async () => {
-    if (!src || !isDesktopApp) return;
-
-    setVlcStatus('opening');
-    setIsLoading(false);
-
-    try {
-      const position = await invoke<number>('open_in_vlc', {
-        url: src,
-        aspectRatio,
-        startPosition: currentTime,
-      });
-
-      if (position > 0 && videoRef.current) {
-        videoRef.current.currentTime = position;
-        saveProgressNow();
-      }
-      setVlcStatus('closed');
-    } catch (err) {
-      console.error('Failed to open in VLC:', err);
-      setVlcStatus('idle');
-    }
-  }, [src, isDesktopApp, aspectRatio, currentTime, setIsLoading, saveProgressNow, videoRef]);
-
-  const handleVlcClosed = useCallback(() => {
-    setVlcStatus('closed');
-    setIsLoading(false);
-  }, [setIsLoading]);
-
+  // Stable Tauri event listeners — uses refs to avoid listener churn
   useEffect(() => {
     if (!isDesktopApp) return;
 
@@ -200,24 +143,35 @@ export function useVlcFallback({
 
     const setupListeners = async () => {
       unlistenPosition = await listen<number>('vlc-position-update', (event) => {
-        handleVlcPositionUpdate(event.payload);
+        vlcPositionRef.current = event.payload;
+        saveProgressRef.current();
       });
-      unlistenClosed = await listen('vlc-closed', () => {
-        handleVlcClosed();
+      unlistenClosed = await listen<number>('vlc-closed', (event) => {
+        vlcPositionRef.current = event.payload;
+        saveProgressRef.current();
+        if (videoRef.current) {
+          videoRef.current.currentTime = event.payload;
+        }
+        setVlcStatusRef.current('closed');
+        setIsLoadingRef.current(false);
       });
     };
 
     setupListeners();
 
     return () => {
-      if (unlistenPosition) unlistenPosition();
-      if (unlistenClosed) unlistenClosed();
+      unlistenPosition?.();
+      unlistenClosed?.();
     };
-  }, [isDesktopApp, handleVlcPositionUpdate, handleVlcClosed]);
+  }, [isDesktopApp, vlcPositionRef]);
+
+  const handleOpenInVlc = useCallback(async () => {
+    if (!src || !isDesktopApp) return;
+    await launchVlc('manual');
+  }, [src, isDesktopApp, launchVlc]);
 
   return {
     vlcStatus,
     handleOpenInVlc,
-    handleVlcPositionUpdate,
   };
 }

@@ -7,7 +7,7 @@ import { and, asc, eq, gt, ilike } from "drizzle-orm";
 
 export async function getMoviesFromDb(input: {
   playlistId: number;
-  categoryId: number;
+  categoryId?: number;
   cursor?: number | null;
   limit?: number;
 }) {
@@ -17,8 +17,11 @@ export async function getMoviesFromDb(input: {
 
   const whereConditions = [
     eq(movies.playlistId, input.playlistId),
-    eq(movies.categoryId, input.categoryId),
   ];
+
+  if (input.categoryId) {
+    whereConditions.push(eq(movies.categoryId, input.categoryId));
+  }
 
   if (cursor) {
     whereConditions.push(gt(movies.id, cursor));

@@ -17,7 +17,7 @@ import {
   zodChannelsSchema,
 } from "@/trpc/schema";
 import { createXtreamClient } from "@/utils/xtream";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { publicProcedure, t } from "../trpc";
 
@@ -28,11 +28,31 @@ export const channelsRouter = t.router({
         playlistId: z.number(),
         categoryId: z.number().optional(),
         favorites: z.boolean().optional(),
+        skip: z.number().int().min(0).optional(),
+        take: z.number().int().min(1).max(200).optional(),
       }),
     )
     .output(z.array(zodChannelsSchema))
     .query(async ({ input }) => {
       return await getChannelsFromDb(input);
+    }),
+
+  getChannel: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .output(zodChannelsSchema.nullable())
+    .query(async ({ input }) => {
+      const db = getDb();
+      const [result] = await db
+        .select()
+        .from(channels)
+        .where(eq(channels.id, input.id))
+        .limit(1);
+      if (!result) return null;
+      return {
+        ...result,
+        streamIcon: result.streamIcon ?? undefined,
+        isFavorite: result.isFavorite ?? false,
+      };
     }),
 
   getCategories: publicProcedure
@@ -139,47 +159,42 @@ export const channelsRouter = t.router({
       // Preserve favorite status
       const channelsToUpsert = mappedChannels.map((c) => ({
         ...c,
-        isFavorite: existingMap.get(c.streamId) || false,
+        isFavorite: existingMap.get(c.streamId) ?? false,
       }));
 
-      // Delete old channels for this category
-      await db
-        .delete(channels)
-        .where(
-          and(
-            eq(channels.playlistId, input.playlistId),
-            eq(channels.categoryId, input.categoryId),
-          ),
-        );
+      // Perform delete & insert inside a transaction, returning the inserted rows
+      const result = await db.transaction(async (trx) => {
+        await trx
+          .delete(channels)
+          .where(
+            and(
+              eq(channels.playlistId, input.playlistId),
+              eq(channels.categoryId, input.categoryId),
+            ),
+          );
 
-      // Insert new channels
-      if (channelsToUpsert.length > 0) {
-        await insertChannels(channelsToUpsert);
-      }
+        if (channelsToUpsert.length === 0) return [];
 
-      // Return the updated channels
-      const result = await db
-        .select()
-        .from(channels)
-        .where(
-          and(
-            eq(channels.playlistId, input.playlistId),
-            eq(channels.categoryId, input.categoryId),
-          ),
-        );
+        const inserted = await trx
+          .insert(channels)
+          .values(channelsToUpsert)
+          .returning();
 
-      return result.map((c) => ({
-        id: c.id,
-        name: c.name,
-        streamType: c.streamType,
-        streamId: c.streamId,
-        categoryId: c.categoryId,
-        playlistId: c.playlistId,
-        url: c.url,
-        streamIcon: c.streamIcon ?? undefined,
-        isFavorite: c.isFavorite ?? undefined,
-        createdAt: c.createdAt,
-      }));
+        return inserted.map((c) => ({
+          id: c.id,
+          name: c.name,
+          streamType: c.streamType,
+          streamId: c.streamId,
+          categoryId: c.categoryId,
+          playlistId: c.playlistId,
+          url: c.url,
+          streamIcon: c.streamIcon ?? undefined,
+          isFavorite: c.isFavorite ?? undefined,
+          createdAt: c.createdAt,
+        }));
+      });
+
+      return result;
     }),
 
   createChannels: publicProcedure
@@ -189,6 +204,14 @@ export const channelsRouter = t.router({
         username: z.string(),
         password: z.string(),
         playlistId: z.number(),
+      }),
+    )
+    .output(
+      z.object({
+        inserted: z.number(),
+        channels: z.array(
+          z.object({ id: z.number(), streamId: z.number(), name: z.string() }),
+        ),
       }),
     )
     .mutation(async ({ input }) => {
@@ -212,7 +235,24 @@ export const channelsRouter = t.router({
       await insertMissingCategories(categoryData);
       await insertChannels(newChannels);
 
-      return { success: true };
+      // Fetch back the inserted channels with their generated IDs
+      const streamIds = newChannels.map((c) => c.streamId);
+      const db = getDb();
+      const inserted = await db
+        .select({
+          id: channels.id,
+          streamId: channels.streamId,
+          name: channels.name,
+        })
+        .from(channels)
+        .where(
+          and(
+            eq(channels.playlistId, input.playlistId),
+            inArray(channels.streamId, streamIds),
+          ),
+        );
+
+      return { inserted: inserted.length, channels: inserted };
     }),
 
   createChannelsCategories: publicProcedure

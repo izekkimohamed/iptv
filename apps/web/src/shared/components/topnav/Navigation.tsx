@@ -2,7 +2,6 @@
 
 import { Home, LayoutGrid, Settings, Trophy, Tv } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 
 import { cn } from '@/shared/lib/utils';
 
@@ -12,6 +11,7 @@ const navItems = [
   { label: 'Movies', href: '/movies', icon: LayoutGrid },
   { label: 'Series', href: '/series', icon: LayoutGrid },
   { label: '365', href: '/365', icon: Trophy },
+  { label: 'Settings', href: '/settings', icon: Settings },
 ];
 
 interface DesktopNavProps {
@@ -40,11 +40,11 @@ export function DesktopNav({ isActive }: DesktopNavProps) {
   );
 }
 
-export function MobileNav({ 
-  isActive, 
-  onLinkClick 
-}: { 
-  isActive: (href: string) => boolean; 
+export function MobileNav({
+  isActive,
+  onLinkClick,
+}: {
+  isActive: (href: string) => boolean;
   onLinkClick: () => void;
 }) {
   return (

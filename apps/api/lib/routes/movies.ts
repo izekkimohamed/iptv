@@ -12,7 +12,7 @@ import {
 } from "@/services/movieService";
 import { getTmdbInfo } from "@/trpc/common";
 import { getDb } from "@/trpc/db";
-import { categories, zodCategoriesSchema, zodMovieSchema } from "@/trpc/schema";
+import { categories, movies, zodCategoriesSchema, zodMovieSchema } from "@/trpc/schema";
 import { createXtreamClient } from "@/utils/xtream";
 import { and, asc, eq } from "drizzle-orm";
 import { z } from "zod";
@@ -61,7 +61,7 @@ export const moviesRouter = t.router({
     .input(
       z.object({
         playlistId: z.number(),
-        categoryId: z.number(),
+        categoryId: z.number().optional(),
         cursor: z.number().nullish(),
         limit: z.number().min(1).max(100).default(50),
       }),
@@ -74,6 +74,19 @@ export const moviesRouter = t.router({
     )
     .query(async ({ input }) => {
       return await getMoviesFromDb(input);
+    }),
+
+  getMovieById: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .output(zodMovieSchema.nullable())
+    .query(async ({ input }) => {
+      const db = getDb();
+      const [result] = await db
+        .select()
+        .from(movies)
+        .where(eq(movies.id, input.id))
+        .limit(1);
+      return result ?? null;
     }),
 
   getMovie: publicProcedure

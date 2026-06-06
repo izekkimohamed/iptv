@@ -14,6 +14,7 @@ interface UseProgressTrackingProps {
   episodeNumber?: number;
   seasonId?: number;
   totalEpisodes?: number;
+  vlcPositionRef?: RefObject<number>;
 }
 
 export function useProgressTracking({
@@ -28,6 +29,7 @@ export function useProgressTracking({
   episodeNumber,
   seasonId,
   totalEpisodes,
+  vlcPositionRef,
 }: UseProgressTrackingProps) {
   const mediaType = usePathname();
   const { selectedPlaylist } = usePlaylistStore();
@@ -40,7 +42,7 @@ export function useProgressTracking({
     const video = videoRef.current;
     if (!video) return;
 
-    let currentTime = video.currentTime || 0;
+    let currentTime = (vlcPositionRef?.current ?? 0) || video.currentTime || 0;
     let dur = video.duration || 0;
     const movieIdNum = parseInt(movieId || '0');
     if (!movieIdNum) return;
@@ -77,7 +79,7 @@ export function useProgressTracking({
     const video = videoRef.current;
     if (!video) return;
 
-    let currentTime = video.currentTime || 0;
+    let currentTime = (vlcPositionRef?.current ?? 0) || video.currentTime || 0;
     let dur = video.duration || 0;
     const episodeNum = episodeNumber || 0;
     const seriesIdNum = parseInt(serieId || '0');

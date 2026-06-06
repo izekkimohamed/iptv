@@ -176,9 +176,14 @@ export default function SettingsScreen() {
               <Pressable
                 key={key}
                 onPress={() => setAccentColor(key)}
-                style={[styles.swatch, { backgroundColor: hex }]}
+                style={styles.swatchWrap}
               >
-                {accentColor === key && <View style={styles.swatchInner} />}
+                <View style={[styles.swatch, { backgroundColor: hex }, accentColor === key && styles.swatchActive]}>
+                  {accentColor === key && <View style={styles.swatchInner} />}
+                </View>
+                <Text style={[styles.swatchLabel, { color: accentColor === key ? hex : theme.textMuted }]}>
+                  {key.charAt(0).toUpperCase() + key.slice(1)}
+                </Text>
               </Pressable>
             ))}
           </View>
@@ -337,14 +342,25 @@ const styles = StyleSheet.create({
 
   accentRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingTop: 14, paddingBottom: 10, gap: 12 },
   accentDot: { width: 16, height: 16, borderRadius: 8 },
-  swatchesRow: { flexDirection: "row", gap: 10, paddingHorizontal: 14, paddingBottom: 14 },
+  swatchesRow: { flexDirection: "row", gap: 8, paddingHorizontal: 14, paddingBottom: 14 },
+  swatchWrap: { alignItems: "center", gap: 5 },
   swatch: {
-    width: 34, height: 34, borderRadius: 17,
+    width: 32, height: 32, borderRadius: 16,
     justifyContent: "center", alignItems: "center",
   },
+  swatchActive: {
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.6)",
+  },
   swatchInner: {
-    width: 12, height: 12, borderRadius: 6,
+    width: 10, height: 10, borderRadius: 5,
     backgroundColor: "rgba(255,255,255,0.9)",
+  },
+  swatchLabel: {
+    fontSize: 9,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+    textTransform: "capitalize",
   },
 
   divider: { height: 1, marginLeft: 58 },

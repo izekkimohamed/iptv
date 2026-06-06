@@ -170,15 +170,18 @@ const TabItem = ({ routeName, isFocused, onPress, theme }: any) => {
   return (
     <Pressable onPress={handlePress} style={styles.tabItem}>
       <Animated.View style={animatedStyle}>{getIcon()}</Animated.View>
-
-      {isFocused && (
-        <Animated.Text
-          entering={FadeIn.delay(100)}
-          style={[styles.tabLabel, { color: theme.primaryForeground }]}
-        >
-          {getLabel(routeName)}
-        </Animated.Text>
-      )}
+      <Animated.Text
+        style={[
+          styles.tabLabel,
+          {
+            color: isFocused ? theme.primaryForeground : theme.textMuted,
+            opacity: isFocused ? 1 : 0.55,
+            fontWeight: isFocused ? "700" : "500",
+          },
+        ]}
+      >
+        {getLabel(routeName)}
+      </Animated.Text>
     </Pressable>
   );
 };
@@ -234,13 +237,12 @@ const styles = StyleSheet.create({
   activeIndicator: {
     position: "absolute",
     left: PADDING_HORIZONTAL,
-    height: 48,
-    borderRadius: 16,
+    height: 44,
+    borderRadius: 14,
     zIndex: 1,
   },
   tabLabel: {
     fontSize: 9,
-    fontWeight: "700",
     marginTop: 2,
     letterSpacing: 0.3,
   },
